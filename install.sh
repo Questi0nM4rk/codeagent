@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 # Configuration
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 BIN_DIR="$HOME/.local/bin"
-REPO_URL="${CODEAGENT_REPO:-https://github.com/YOUR_USERNAME/codeagent.git}"
+REPO_URL="${CODEAGENT_REPO:-https://github.com/Questi0nM4rk/codeagent.git}"
 VERSION="0.1.0"
 
 # ============================================

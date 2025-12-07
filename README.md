@@ -15,12 +15,12 @@ Research-backed autonomous coding framework for Claude Code. Transforms Claude C
 
 ```bash
 # Clone and install
-git clone https://github.com/YOUR_USERNAME/codeagent.git
+git clone https://github.com/Questi0nM4rk/codeagent.git
 cd codeagent
 ./install.sh
 
-# Or one-liner (after publishing)
-# curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/codeagent/main/install.sh | bash
+# Or one-liner
+curl -fsSL https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh | bash
 ```
 
 ## Requirements
