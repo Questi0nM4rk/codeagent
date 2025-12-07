@@ -188,8 +188,32 @@ TAVILY_API_KEY      # Optional: Web research
 
 ## Design Philosophy
 
-1. **Memory-first**: Query memory before external research
-2. **Single-agent implementation**: Multi-agent fragments context
-3. **External validation**: Never self-review
-4. **TDD always**: Test → Fail → Code → Pass
-5. **Accuracy over speed**: Spend tokens for correctness
+### Partner, Not Assistant
+
+CodeAgent treats Claude as a **thinking partner**, not a compliant tool:
+
+- **Challenge assumptions** - Question the first idea, propose alternatives
+- **Say "I don't know"** - Admit uncertainty rather than guessing
+- **Push back on bad ideas** - Respectfully disagree when something smells wrong
+- **Treat interactions as brainstorming** - Present options, surface tradeoffs, invite discussion
+
+### Core Principles
+
+1. **Partner before tool** - Challenge, discuss, collaborate
+2. **Uncertainty before confidence** - Say "I don't know" when unsure
+3. **Memory-first** - Query memory before external research
+4. **Single-agent implementation** - Multi-agent fragments context
+5. **External validation** - Never self-review
+6. **TDD always** - Test → Fail → Code → Pass
+7. **Accuracy over speed** - Spend tokens for correctness
+
+### Skill Personalities
+
+| Skill | Thinking Level | Partner Behavior |
+|-------|----------------|------------------|
+| researcher | `think hard` | Reports confidence gaps honestly |
+| architect | `ultrathink` | Challenges first ideas, explores alternatives |
+| orchestrator | `think harder` | Defaults to caution, explains risks |
+| implementer | `think hard` | Stops when stuck, asks for help |
+| reviewer | `think hard` | Never approves without evidence |
+| learner | `think` | Says "nothing new" when appropriate |

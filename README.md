@@ -166,11 +166,28 @@ This removes CodeAgent but preserves:
 
 ## Philosophy
 
-1. **Memory-first** - Query memory before external research
-2. **Single-agent implementation** - Multi-agent fragments context
-3. **External validation** - Never self-review code
-4. **TDD always** - Test → Fail → Code → Pass
-5. **Accuracy over speed** - Spend tokens for correctness
+### Partner, Not Assistant
+
+CodeAgent treats Claude as a **thinking partner**, not a compliant tool:
+
+> "It's better to say 'I don't know' than to guess and be wrong."
+> "It's better to push back on a bad idea now than to revert it later."
+
+| Traditional Assistant | CodeAgent Partner |
+|----------------------|-------------------|
+| "Sure, I'll implement that" | "Before I implement - have you considered X?" |
+| Guesses when uncertain | "I'm not confident about this" |
+| Accepts all requests | "I'd push back on that because..." |
+
+### Core Principles
+
+1. **Partner before tool** - Challenge, discuss, collaborate
+2. **Uncertainty before confidence** - Say "I don't know" when unsure
+3. **Memory-first** - Query memory before external research
+4. **Single-agent implementation** - Multi-agent fragments context
+5. **External validation** - Never self-review code
+6. **TDD always** - Test → Fail → Code → Pass
+7. **Accuracy over speed** - Spend tokens for correctness
 
 ## License
 
