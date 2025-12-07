@@ -1,0 +1,121 @@
+#!/bin/bash
+# ============================================
+# CodeAgent CLI
+# Main entry point for all codeagent commands
+# ============================================
+
+set -e
+
+INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
+VERSION="0.1.0"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+usage() {
+    echo -e "${CYAN}CodeAgent v$VERSION${NC} - Research-Backed Autonomous Coding Framework"
+    echo ""
+    echo "Usage: codeagent <command> [options]"
+    echo ""
+    echo -e "${BLUE}Infrastructure Commands:${NC}"
+    echo "  start         Start all services (Neo4j, Qdrant, Letta)"
+    echo "  stop          Stop all services"
+    echo "  restart       Restart all services"
+    echo "  status        Check service health"
+    echo "  logs          View service logs (use -f for follow)"
+    echo ""
+    echo -e "${BLUE}Project Commands:${NC}"
+    echo "  init          Initialize CodeAgent in current project"
+    echo ""
+    echo -e "${BLUE}Maintenance Commands:${NC}"
+    echo "  update        Update CodeAgent to latest version"
+    echo "  backup        Backup memory (Letta + Neo4j)"
+    echo "  restore       Restore memory from backup"
+    echo "  uninstall     Remove CodeAgent completely"
+    echo ""
+    echo -e "${BLUE}Claude Code Commands:${NC} (use in Claude Code)"
+    echo "  /scan         Build knowledge graph of codebase"
+    echo "  /plan         Research, design, auto-detect parallel"
+    echo "  /implement    TDD implementation (sequential or parallel)"
+    echo "  /review       Validate with external tools"
+    echo ""
+    echo -e "${BLUE}Options:${NC}"
+    echo "  -h, --help    Show this help message"
+    echo "  -v, --version Show version"
+    echo ""
+}
+
+# Verify installation
+check_install() {
+    if [ ! -d "$INSTALL_DIR" ]; then
+        echo -e "${RED}Error: CodeAgent not installed at $INSTALL_DIR${NC}"
+        echo "Run the installer first: curl -fsSL URL | bash"
+        exit 1
+    fi
+}
+
+case "${1:-help}" in
+    start)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-start" "${@:2}"
+        ;;
+    stop)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-stop" "${@:2}"
+        ;;
+    restart)
+        check_install
+        "$INSTALL_DIR/bin/codeagent-stop" "${@:2}"
+        "$INSTALL_DIR/bin/codeagent-start" "${@:2}"
+        ;;
+    status)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-status" "${@:2}"
+        ;;
+    init)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-init" "${@:2}"
+        ;;
+    logs)
+        check_install
+        cd "$INSTALL_DIR/infrastructure"
+        if [ "$2" = "-f" ]; then
+            docker compose logs -f
+        else
+            docker compose logs --tail=100
+        fi
+        ;;
+    update)
+        check_install
+        exec "$INSTALL_DIR/scripts/update.sh" "${@:2}"
+        ;;
+    backup)
+        check_install
+        exec "$INSTALL_DIR/scripts/backup-memory.sh" "${@:2}"
+        ;;
+    restore)
+        check_install
+        exec "$INSTALL_DIR/scripts/restore-memory.sh" "${@:2}"
+        ;;
+    uninstall)
+        check_install
+        exec "$INSTALL_DIR/uninstall.sh" "${@:2}"
+        ;;
+    version|-v|--version)
+        echo "CodeAgent v$VERSION"
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        echo -e "${RED}Unknown command: $1${NC}"
+        echo ""
+        usage
+        exit 1
+        ;;
+esac

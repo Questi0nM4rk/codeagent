@@ -1,0 +1,30 @@
+#!/bin/bash
+# ============================================
+# CodeAgent Stop
+# Stop all infrastructure services
+# ============================================
+
+set -e
+
+INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "${CYAN}Stopping CodeAgent infrastructure...${NC}"
+echo ""
+
+cd "$INSTALL_DIR/infrastructure"
+
+# Stop services
+docker compose down
+
+echo ""
+echo -e "${GREEN}All services stopped.${NC}"
+echo ""
+echo "Data is preserved in Docker volumes."
+echo "Run 'codeagent start' to restart."
+echo ""

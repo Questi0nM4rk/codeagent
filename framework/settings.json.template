@@ -1,0 +1,93 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(python*:*)",
+      "Bash(pip*:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(git:*)",
+      "Bash(dotnet:*)",
+      "Bash(cargo:*)",
+      "Bash(rustc:*)",
+      "Bash(cmake:*)",
+      "Bash(make:*)",
+      "Bash(ctest:*)",
+      "Bash(lua:*)",
+      "Bash(luarocks:*)",
+      "Bash(busted:*)",
+      "Bash(clang-format:*)",
+      "Bash(clang-tidy:*)",
+      "Read(**/*)",
+      "Write(**/*)",
+      "Edit(**/*)",
+      "Glob(**/*)",
+      "Grep(**/*)",
+      "Skill",
+      "mcp__filesystem",
+      "mcp__git",
+      "mcp__memory",
+      "mcp__sequential-thinking",
+      "mcp__context7",
+      "mcp__fetch",
+      "mcp__semgrep",
+      "mcp__letta",
+      "mcp__github",
+      "mcp__tavily"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/*secret*)",
+      "Read(**/*credential*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "case \"$CLAUDE_TOOL_INPUT_FILE_PATH\" in *.cs) dotnet format --include \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.rs) cargo fmt 2>/dev/null || true ;; *.cpp|*.c|*.h|*.hpp) clang-format -i \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.lua) stylua \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; esac"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "."]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-fetch"]
+    },
+    "semgrep": {
+      "command": "npx",
+      "args": ["-y", "@semgrep/mcp-server"]
+    }
+  }
+}

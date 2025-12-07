@@ -1,0 +1,103 @@
+#!/bin/bash
+# ============================================
+# CodeAgent Start
+# Start all infrastructure services
+# ============================================
+
+set -e
+
+INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "${CYAN}Starting CodeAgent infrastructure...${NC}"
+echo ""
+
+# Load API keys from .env file if it exists
+ENV_FILE="$INSTALL_DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+    echo -e "${BLUE}Loading API keys from $ENV_FILE${NC}"
+    set -a  # Auto-export variables
+    source "$ENV_FILE"
+    set +a
+    echo ""
+fi
+
+# Check for OpenAI key
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo -e "${YELLOW}Warning: OPENAI_API_KEY not set${NC}"
+    echo "Memory embeddings will not work without it."
+    echo "Run './install.sh' again to configure, or set manually:"
+    echo "  export OPENAI_API_KEY=\"sk-your-key\""
+    echo ""
+fi
+
+# Start Docker services
+cd "$INSTALL_DIR/infrastructure"
+
+echo -e "${BLUE}Starting Docker services...${NC}"
+docker compose up -d
+
+# Wait for services to be ready
+echo ""
+echo -e "${BLUE}Waiting for services to initialize...${NC}"
+
+# Wait loop with status
+max_attempts=30
+attempt=0
+services_ready=false
+
+while [ $attempt -lt $max_attempts ] && [ "$services_ready" = false ]; do
+    attempt=$((attempt + 1))
+
+    neo4j_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-neo4j 2>/dev/null || echo "not_found")
+    qdrant_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_found")
+    letta_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "not_found")
+
+    if [ "$neo4j_ready" = "healthy" ] && [ "$qdrant_ready" = "healthy" ] && [ "$letta_ready" = "healthy" ]; then
+        services_ready=true
+    else
+        printf "\r  Waiting... (%d/%d) Neo4j: %s, Qdrant: %s, Letta: %s    " \
+            "$attempt" "$max_attempts" "$neo4j_ready" "$qdrant_ready" "$letta_ready"
+        sleep 2
+    fi
+done
+
+echo ""
+echo ""
+
+if [ "$services_ready" = true ]; then
+    echo -e "${GREEN}All services are healthy!${NC}"
+else
+    echo -e "${YELLOW}Some services may still be starting...${NC}"
+    echo "Run 'codeagent status' to check."
+fi
+
+# Run health check
+echo ""
+"$INSTALL_DIR/scripts/health-check.sh"
+
+# Install MCPs if Claude Code is available
+if command -v claude &> /dev/null; then
+    echo ""
+    echo -e "${BLUE}Configuring MCP servers...${NC}"
+    "$INSTALL_DIR/mcps/install-mcps.sh" 2>/dev/null || true
+fi
+
+echo ""
+echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║                CodeAgent is ready!                          ║${NC}"
+echo -e "${GREEN}╠════════════════════════════════════════════════════════════╣${NC}"
+echo -e "${GREEN}║  Neo4j Browser:  ${NC}http://localhost:7474${GREEN}                    ║${NC}"
+echo -e "${GREEN}║  Qdrant API:     ${NC}http://localhost:6333${GREEN}                    ║${NC}"
+echo -e "${GREEN}║  Letta API:      ${NC}http://localhost:8283${GREEN}                    ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo "Run 'codeagent init' in your project to get started."
+echo ""
