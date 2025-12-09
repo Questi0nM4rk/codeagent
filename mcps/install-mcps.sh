@@ -108,9 +108,9 @@ fi
 # ============================================
 # Custom MCPs (CodeAgent specific)
 # ============================================
-INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 VENV_PIP="$INSTALL_DIR/venv/bin/pip"
 VENV_PYTHON="$INSTALL_DIR/venv/bin/python"
+MCP_DIR="$INSTALL_DIR/mcps"
 
 echo ""
 echo -e "${BLUE}Installing CodeAgent custom MCPs...${NC}"
@@ -120,31 +120,37 @@ if [ ! -f "$VENV_PYTHON" ]; then
     echo -e "  ${YELLOW}○${NC} Python venv not found - custom MCPs require venv"
     echo -e "  ${YELLOW}○${NC} Run install.sh to create venv"
 else
-    # Code-Graph MCP (if installed)
-    if [ -d "$INSTALL_DIR/mcps/code-graph-mcp" ]; then
-        "$VENV_PIP" install -e "$INSTALL_DIR/mcps/code-graph-mcp" --quiet 2>/dev/null || true
-        claude mcp add code-graph -- "$VENV_PYTHON" -m code_graph_mcp.server 2>/dev/null && \
-            echo -e "  ${GREEN}✓${NC} code-graph" || echo -e "  ${YELLOW}○${NC} code-graph (failed)"
+    # Install MCP SDK first
+    "$VENV_PIP" install mcp --quiet 2>/dev/null || true
+
+    # Code-Graph MCP
+    if [ -d "$MCP_DIR/code-graph-mcp" ] && [ -f "$MCP_DIR/code-graph-mcp/pyproject.toml" ]; then
+        echo -e "  Installing code-graph MCP dependencies..."
+        "$VENV_PIP" install -e "$MCP_DIR/code-graph-mcp" --quiet 2>/dev/null && \
+            claude mcp add code-graph -- "$VENV_PYTHON" -m code_graph_mcp.server 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} code-graph" || echo -e "  ${YELLOW}○${NC} code-graph (install failed)"
     else
-        echo -e "  ${YELLOW}○${NC} code-graph (not yet implemented)"
+        echo -e "  ${YELLOW}○${NC} code-graph (not found at $MCP_DIR/code-graph-mcp)"
     fi
 
-    # Tree-of-Thought MCP (if installed)
-    if [ -d "$INSTALL_DIR/mcps/tot-mcp" ]; then
-        "$VENV_PIP" install -e "$INSTALL_DIR/mcps/tot-mcp" --quiet 2>/dev/null || true
-        claude mcp add tot -- "$VENV_PYTHON" -m tot_mcp.server 2>/dev/null && \
-            echo -e "  ${GREEN}✓${NC} tot" || echo -e "  ${YELLOW}○${NC} tot (failed)"
+    # Tree-of-Thought MCP
+    if [ -d "$MCP_DIR/tot-mcp" ] && [ -f "$MCP_DIR/tot-mcp/pyproject.toml" ]; then
+        echo -e "  Installing tot MCP dependencies..."
+        "$VENV_PIP" install -e "$MCP_DIR/tot-mcp" --quiet 2>/dev/null && \
+            claude mcp add tot -- "$VENV_PYTHON" -m tot_mcp.server 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} tot" || echo -e "  ${YELLOW}○${NC} tot (install failed)"
     else
-        echo -e "  ${YELLOW}○${NC} tot (not yet implemented)"
+        echo -e "  ${YELLOW}○${NC} tot (not found at $MCP_DIR/tot-mcp)"
     fi
 
-    # Reflection MCP (if installed)
-    if [ -d "$INSTALL_DIR/mcps/reflection-mcp" ]; then
-        "$VENV_PIP" install -e "$INSTALL_DIR/mcps/reflection-mcp" --quiet 2>/dev/null || true
-        claude mcp add reflection -- "$VENV_PYTHON" -m reflection_mcp.server 2>/dev/null && \
-            echo -e "  ${GREEN}✓${NC} reflection" || echo -e "  ${YELLOW}○${NC} reflection (failed)"
+    # Reflection MCP
+    if [ -d "$MCP_DIR/reflection-mcp" ] && [ -f "$MCP_DIR/reflection-mcp/pyproject.toml" ]; then
+        echo -e "  Installing reflection MCP dependencies..."
+        "$VENV_PIP" install -e "$MCP_DIR/reflection-mcp" --quiet 2>/dev/null && \
+            claude mcp add reflection -- "$VENV_PYTHON" -m reflection_mcp.server 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} reflection" || echo -e "  ${YELLOW}○${NC} reflection (install failed)"
     else
-        echo -e "  ${YELLOW}○${NC} reflection (not yet implemented)"
+        echo -e "  ${YELLOW}○${NC} reflection (not found at $MCP_DIR/reflection-mcp)"
     fi
 fi
 

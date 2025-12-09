@@ -186,6 +186,16 @@ install_codeagent() {
         openai \
         httpx \
         pydantic 2>/dev/null && log_success "Python dependencies installed" || log_warn "Some Python packages failed to install"
+
+    # Install custom MCP dependencies (tree-sitter etc.)
+    log_info "Installing custom MCP dependencies..."
+    "$VENV_DIR/bin/pip" install --quiet \
+        tree-sitter \
+        tree-sitter-c-sharp \
+        tree-sitter-cpp \
+        tree-sitter-rust \
+        tree-sitter-lua \
+        tree-sitter-bash 2>/dev/null && log_success "Tree-sitter parsers installed" || log_warn "Some tree-sitter packages failed (optional)"
 }
 
 # ============================================
@@ -289,7 +299,7 @@ handle_claude_config() {
 setup_fresh_claude_config() {
     log_info "Setting up Claude Code configuration..."
 
-    mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands"
+    mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/hooks"
 
     # Install global skills
     log_info "Installing global skills..."
@@ -303,6 +313,14 @@ setup_fresh_claude_config() {
     if [ -d "$INSTALL_DIR/framework/commands" ]; then
         cp "$INSTALL_DIR/framework/commands/"*.md "$HOME/.claude/commands/" 2>/dev/null || true
         log_success "Installed commands: /scan, /plan, /implement, /integrate, /review"
+    fi
+
+    # Install hooks
+    log_info "Installing global hooks..."
+    if [ -d "$INSTALL_DIR/framework/hooks" ]; then
+        cp "$INSTALL_DIR/framework/hooks/"*.sh "$HOME/.claude/hooks/" 2>/dev/null || true
+        chmod +x "$HOME/.claude/hooks/"*.sh 2>/dev/null || true
+        log_success "Installed hooks: pre-commit, pre-push, post-implement, index-file"
     fi
 
     # Create global CLAUDE.md

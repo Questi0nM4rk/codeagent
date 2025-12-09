@@ -1,83 +1,122 @@
+// ============================================
 // CodeAgent Neo4j Schema Initialization
 // Run once on first startup to create indexes and constraints
+// ============================================
 
 // ============================================
 // CONSTRAINTS (unique identifiers)
 // ============================================
 
+// Primary node constraint - matches code-graph-mcp
+CREATE CONSTRAINT code_node_id IF NOT EXISTS
+FOR (n:CodeNode) REQUIRE n.id IS UNIQUE;
+
 CREATE CONSTRAINT file_path IF NOT EXISTS
 FOR (f:File) REQUIRE f.path IS UNIQUE;
 
-CREATE CONSTRAINT function_id IF NOT EXISTS
-FOR (fn:Function) REQUIRE fn.id IS UNIQUE;
-
-CREATE CONSTRAINT class_id IF NOT EXISTS
-FOR (c:Class) REQUIRE c.id IS UNIQUE;
-
-CREATE CONSTRAINT namespace_id IF NOT EXISTS
-FOR (n:Namespace) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT import_name IF NOT EXISTS
+FOR (i:Import) REQUIRE i.name IS UNIQUE;
 
 // ============================================
 // INDEXES (query performance)
 // ============================================
 
-CREATE INDEX file_language IF NOT EXISTS
-FOR (f:File) ON (f.language);
+// Name-based lookups (most common query pattern)
+CREATE INDEX code_node_name IF NOT EXISTS
+FOR (n:CodeNode) ON (n.name);
 
-CREATE INDEX function_name IF NOT EXISTS
-FOR (fn:Function) ON (fn.name);
+CREATE INDEX code_node_full_name IF NOT EXISTS
+FOR (n:CodeNode) ON (n.full_name);
 
-CREATE INDEX class_name IF NOT EXISTS
-FOR (c:Class) ON (c.name);
-
-CREATE INDEX node_type IF NOT EXISTS
+// Type filtering (function, class, struct, etc.)
+CREATE INDEX code_node_type IF NOT EXISTS
 FOR (n:CodeNode) ON (n.type);
 
-// Full-text search for code content
-CREATE FULLTEXT INDEX code_search IF NOT EXISTS
-FOR (n:Function|Class|File) ON EACH [n.name, n.content];
+// File-based lookups
+CREATE INDEX code_node_file IF NOT EXISTS
+FOR (n:CodeNode) ON (n.file);
+
+// Line number lookups
+CREATE INDEX code_node_line IF NOT EXISTS
+FOR (n:CodeNode) ON (n.line);
 
 // ============================================
 // NODE LABELS
 // ============================================
-// :File        - Source files
-// :Function    - Functions/methods
-// :Class       - Classes/structs/interfaces
-// :Namespace   - Namespaces/modules
-// :Parameter   - Function parameters
-// :Import      - Import statements
-// :CodeNode    - Generic code element
+// :CodeNode    - Any code entity (class, function, struct, etc.)
+//   Properties:
+//   - id: Unique identifier (file:line:name)
+//   - type: Entity type (class, function, struct, interface, trait, etc.)
+//   - name: Short name
+//   - full_name: Fully qualified name (including parent scope)
+//   - file: File path
+//   - line: Start line number
+//   - end_line: End line number
+//
+// :File        - Source file
+//   Properties:
+//   - path: Absolute file path
+//   - last_indexed: Timestamp of last indexing
+//   - language: Programming language
+//
+// :Import      - Import/using statement
+//   Properties:
+//   - name: Imported module/namespace name
 
 // ============================================
 // RELATIONSHIP TYPES
 // ============================================
-// :CONTAINS    - File contains class/function
-// :CALLS       - Function calls function
-// :IMPORTS     - File imports file/module
-// :INHERITS    - Class inherits from class
-// :IMPLEMENTS  - Class implements interface
-// :DEPENDS_ON  - Generic dependency
-// :RETURNS     - Function returns type
-// :PARAMETER   - Function has parameter
+// (:CodeNode)-[:CALLS]->(:CodeNode)
+//   Function/method calls another function/method
+//   Properties:
+//   - file: File where call occurs
+//   - line: Line number of call
+//
+// (:CodeNode)-[:CONTAINS]->(:CodeNode)
+//   Parent contains child (class contains method)
+//
+// (:CodeNode)-[:INHERITS]->(:CodeNode)
+//   Class inherits from another class
+//
+// (:CodeNode)-[:IMPLEMENTS]->(:CodeNode)
+//   Class implements interface/trait
+//
+// (:CodeNode)-[:USES]->(:CodeNode)
+//   Code uses another entity (field access, type reference)
+//
+// (:File)-[:IMPORTS]->(:Import)
+//   File imports a module/namespace
+//
+// (:File)-[:DEFINES]->(:CodeNode)
+//   File defines a code entity
 
 // ============================================
 // SAMPLE QUERIES (for reference)
 // ============================================
 
-// Find all callers of a function:
-// MATCH (caller:Function)-[:CALLS]->(target:Function {name: $name})
-// RETURN caller
+// Find all functions in a file:
+// MATCH (n:CodeNode {type: 'function'})
+// WHERE n.file ENDS WITH 'MyFile.cs'
+// RETURN n ORDER BY n.line
 
-// Find impact of changing a file:
-// MATCH (f:File {path: $path})-[:CONTAINS]->(fn:Function)
-// MATCH (caller:Function)-[:CALLS]->(fn)
-// RETURN DISTINCT caller.file AS affected_file, caller.name AS affected_function
+// Find what calls a function:
+// MATCH (caller:CodeNode)-[:CALLS]->(callee:CodeNode {name: 'MyFunction'})
+// RETURN caller.file, caller.name, caller.line
 
-// Find dependency chain:
-// MATCH path = (start:File {path: $path})-[:IMPORTS*1..5]->(dep:File)
+// Find impact of changing a function:
+// MATCH (affected:CodeNode)-[:CALLS*1..5]->(changed:CodeNode {name: 'MyFunction'})
+// RETURN DISTINCT affected.file, affected.name, affected.line
+
+// Get call graph from entry point:
+// MATCH path = (start:CodeNode {name: 'Main'})-[:CALLS*1..3]->(called)
 // RETURN path
 
-// Search for code by name:
-// CALL db.index.fulltext.queryNodes('code_search', $query)
-// YIELD node, score
-// RETURN node, score ORDER BY score DESC LIMIT 10
+// Search for symbols by name pattern:
+// MATCH (n:CodeNode)
+// WHERE toLower(n.name) CONTAINS 'user'
+// RETURN n.name, n.file, n.line, n.type
+// LIMIT 20
+
+// Find circular dependencies:
+// MATCH path = (a:CodeNode)-[:CALLS*]->(a)
+// RETURN path

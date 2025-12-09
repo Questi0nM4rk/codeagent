@@ -68,6 +68,33 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # Local embeddings (optional - saves API costs, requires GPU)
+  # Uncomment to use local embeddings instead of OpenAI
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: codeagent-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - codeagent_ollama_data:/root/.ollama
+  #   environment:
+  #     OLLAMA_HOST: 0.0.0.0
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags > /dev/null || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 60s
+  #   restart: unless-stopped
+  #   # GPU support (NVIDIA)
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+
 volumes:
   codeagent_neo4j_data:
     name: codeagent_neo4j_data
@@ -77,6 +104,9 @@ volumes:
     name: codeagent_qdrant_data
   codeagent_letta_data:
     name: codeagent_letta_data
+  # Uncomment if using Ollama
+  # codeagent_ollama_data:
+  #   name: codeagent_ollama_data
 
 networks:
   default:
