@@ -506,6 +506,134 @@ install_mcps() {
 }
 
 # ============================================
+# Start Infrastructure
+# ============================================
+start_infrastructure() {
+    echo ""
+    log_info "Starting CodeAgent infrastructure..."
+
+    # Load API keys
+    local env_file="$INSTALL_DIR/.env"
+    if [ -f "$env_file" ]; then
+        set -a
+        source "$env_file"
+        set +a
+    fi
+
+    # Start Docker containers
+    cd "$INSTALL_DIR/infrastructure"
+
+    log_info "Starting Docker containers..."
+    docker compose up -d 2>/dev/null || {
+        log_warn "Docker compose failed. Try running 'codeagent start' manually."
+        return 1
+    }
+
+    # Wait for containers to be healthy
+    log_info "Waiting for services to be healthy..."
+    local max_wait=120
+    local waited=0
+
+    while [ $waited -lt $max_wait ]; do
+        local neo4j_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-neo4j 2>/dev/null || echo "none")
+        local qdrant_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "none")
+        local letta_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "none")
+
+        if [ "$neo4j_healthy" = "healthy" ] && [ "$qdrant_healthy" = "healthy" ] && [ "$letta_healthy" = "healthy" ]; then
+            log_success "All services are healthy!"
+            return 0
+        fi
+
+        sleep 5
+        waited=$((waited + 5))
+        echo -n "."
+    done
+
+    echo ""
+    log_warn "Some services may not be fully healthy yet. Check with 'codeagent status'"
+    return 0
+}
+
+# ============================================
+# Verify Installation
+# ============================================
+verify_installation() {
+    echo ""
+    log_info "Verifying installation..."
+
+    local all_ok=true
+
+    # Check CLI commands
+    if [ -x "$BIN_DIR/codeagent" ]; then
+        log_success "CLI commands installed"
+    else
+        log_warn "CLI commands may need PATH update"
+        all_ok=false
+    fi
+
+    # Check skills
+    if [ -d "$HOME/.claude/skills" ] && [ "$(ls -A $HOME/.claude/skills 2>/dev/null)" ]; then
+        log_success "Skills installed ($(ls -d $HOME/.claude/skills/*/ 2>/dev/null | wc -l) skills)"
+    else
+        log_warn "Skills not found"
+        all_ok=false
+    fi
+
+    # Check commands
+    if [ -d "$HOME/.claude/commands" ] && [ "$(ls -A $HOME/.claude/commands 2>/dev/null)" ]; then
+        log_success "Commands installed ($(ls $HOME/.claude/commands/*.md 2>/dev/null | wc -l) commands)"
+    else
+        log_warn "Commands not found"
+        all_ok=false
+    fi
+
+    # Check hooks
+    if [ -d "$HOME/.claude/hooks" ] && [ "$(ls -A $HOME/.claude/hooks/*.sh 2>/dev/null)" ]; then
+        log_success "Hooks installed"
+    else
+        log_warn "Hooks not found"
+        all_ok=false
+    fi
+
+    # Check Docker containers
+    if docker ps | grep -q "codeagent-neo4j"; then
+        log_success "Neo4j container running"
+    else
+        log_warn "Neo4j not running"
+        all_ok=false
+    fi
+
+    if docker ps | grep -q "codeagent-qdrant"; then
+        log_success "Qdrant container running"
+    else
+        log_warn "Qdrant not running"
+        all_ok=false
+    fi
+
+    if docker ps | grep -q "codeagent-letta"; then
+        log_success "Letta container running"
+    else
+        log_warn "Letta not running"
+        all_ok=false
+    fi
+
+    # Check custom MCPs
+    if [ -f "$INSTALL_DIR/mcps/code-graph-mcp/pyproject.toml" ]; then
+        log_success "Custom MCPs installed (code-graph, tot, reflection)"
+    else
+        log_warn "Custom MCPs not found"
+        all_ok=false
+    fi
+
+    echo ""
+    if [ "$all_ok" = true ]; then
+        log_success "All components verified successfully!"
+    else
+        log_warn "Some components need attention"
+    fi
+}
+
+# ============================================
 # Print Success
 # ============================================
 print_success() {
@@ -514,26 +642,25 @@ print_success() {
     echo -e "${GREEN}║              Installation Complete!                            ║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${CYAN}Next steps:${NC}"
+    echo -e "${CYAN}CodeAgent is ready to use!${NC}"
     echo ""
     echo -e "  ${BLUE}1.${NC} Restart your shell or run:"
     echo -e "     ${YELLOW}source ~/.zshrc${NC}  (or ~/.bashrc)"
     echo ""
-    echo -e "  ${BLUE}2.${NC} Set your OpenAI API key (for memory embeddings):"
-    echo -e "     ${YELLOW}export OPENAI_API_KEY=\"sk-your-key-here\"${NC}"
-    echo ""
-    echo -e "  ${BLUE}3.${NC} Start infrastructure:"
-    echo -e "     ${YELLOW}codeagent start${NC}"
-    echo ""
-    echo -e "  ${BLUE}4.${NC} Initialize in your project:"
+    echo -e "  ${BLUE}2.${NC} Initialize in your project:"
     echo -e "     ${YELLOW}cd /your/project${NC}"
     echo -e "     ${YELLOW}codeagent init${NC}"
     echo ""
-    echo -e "  ${BLUE}5.${NC} Start coding with Claude Code:"
+    echo -e "  ${BLUE}3.${NC} Start coding with Claude Code:"
     echo -e "     ${YELLOW}/scan${NC}              Build knowledge graph"
     echo -e "     ${YELLOW}/plan \"task\"${NC}       Research & design"
     echo -e "     ${YELLOW}/implement${NC}         TDD implementation"
     echo -e "     ${YELLOW}/review${NC}            Validate changes"
+    echo ""
+    echo -e "${CYAN}Useful commands:${NC}"
+    echo -e "  ${YELLOW}codeagent status${NC}   Check service health"
+    echo -e "  ${YELLOW}codeagent stop${NC}     Stop infrastructure"
+    echo -e "  ${YELLOW}codeagent start${NC}    Start infrastructure"
     echo ""
     echo -e "Documentation: ${CYAN}$INSTALL_DIR/Docs/${NC}"
     echo ""
@@ -543,13 +670,42 @@ print_success() {
 # Main
 # ============================================
 main() {
+    # Parse arguments
+    local skip_docker=false
+    local auto_yes=false
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --no-docker)
+                skip_docker=true
+                shift
+                ;;
+            -y|--yes)
+                auto_yes=true
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
     print_banner
     check_requirements
     install_codeagent
     configure_shell
     setup_global_config
     setup_api_keys
+
+    # Start infrastructure unless skipped
+    if [ "$skip_docker" = false ]; then
+        start_infrastructure
+    else
+        log_info "Skipping Docker setup (--no-docker flag)"
+    fi
+
     install_mcps
+    verify_installation
     print_success
 }
 
