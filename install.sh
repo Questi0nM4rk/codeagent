@@ -252,6 +252,9 @@ handle_claude_config() {
                 mkdir -p "$backup_dir"
                 cp -r "$HOME/.claude"/* "$backup_dir/" 2>/dev/null || true
                 log_success "Backup created at $backup_dir"
+                # Remove existing config files to ensure fresh install
+                rm -f "$HOME/.claude/CLAUDE.md" "$HOME/.claude/settings.json"
+                rm -rf "$HOME/.claude/commands" "$HOME/.claude/skills" 2>/dev/null || true
                 setup_fresh_claude_config
                 ;;
             2)
@@ -260,6 +263,7 @@ handle_claude_config() {
                 ;;
             3)
                 log_info "Skipping Claude Code config modification"
+                log_warn "Note: CodeAgent global config will not be installed"
                 ;;
             *)
                 log_warn "Invalid choice, skipping config modification"
@@ -304,9 +308,8 @@ Run `codeagent init` in your project to set up project-specific agents and comma
 GLOBALMD
     log_success "Created ~/.claude/CLAUDE.md"
 
-    # Create global settings.json if not exists
-    if [ ! -f "$HOME/.claude/settings.json" ]; then
-        cat > "$HOME/.claude/settings.json" << 'SETTINGSJSON'
+    # Create global settings.json (overwrite if exists since user chose fresh install)
+    cat > "$HOME/.claude/settings.json" << 'SETTINGSJSON'
 {
   "permissions": {
     "allow": [
@@ -330,8 +333,7 @@ GLOBALMD
   }
 }
 SETTINGSJSON
-        log_success "Created ~/.claude/settings.json"
-    fi
+    log_success "Created ~/.claude/settings.json"
 }
 
 merge_claude_config() {

@@ -17,6 +17,41 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# ============================================
+# Helper Functions
+# ============================================
+
+# Prompt for yes/no with default
+prompt_yes_no() {
+    local prompt="$1"
+    local default="${2:-y}"
+
+    if [ "$default" = "y" ]; then
+        prompt="$prompt [Y/n]: "
+    else
+        prompt="$prompt [y/N]: "
+    fi
+
+    read -p "$prompt" -n 1 -r response
+    echo ""
+
+    if [ -z "$response" ]; then
+        response="$default"
+    fi
+
+    [[ "$response" =~ ^[Yy]$ ]]
+}
+
+# Check if directory has content
+dir_has_content() {
+    local dir="$1"
+    [ -d "$dir" ] && [ "$(ls -A "$dir" 2>/dev/null)" ]
+}
+
+# ============================================
+# Main Script
+# ============================================
+
 echo -e "${CYAN}Initializing CodeAgent in: ${NC}$PROJECT_DIR"
 echo ""
 
@@ -39,54 +74,176 @@ PROJECT_TYPE=$(detect_project_type)
 echo -e "${BLUE}Detected project type:${NC} $PROJECT_TYPE"
 echo ""
 
+# ============================================
+# Check for existing configurations
+# ============================================
+
+echo -e "${BLUE}Checking for existing configurations...${NC}"
+echo ""
+
+has_existing_skills=false
+has_existing_commands=false
+has_existing_settings=false
+has_existing_claude_md=false
+
+if dir_has_content ".claude/skills"; then
+    has_existing_skills=true
+    echo -e "  ${YELLOW}!${NC} Existing skills found in .claude/skills/"
+fi
+
+if dir_has_content ".claude/commands"; then
+    has_existing_commands=true
+    echo -e "  ${YELLOW}!${NC} Existing commands found in .claude/commands/"
+fi
+
+if [ -f ".claude/settings.json" ]; then
+    has_existing_settings=true
+    echo -e "  ${YELLOW}!${NC} Existing settings.json found"
+fi
+
+if [ -f "CLAUDE.md" ]; then
+    has_existing_claude_md=true
+    echo -e "  ${YELLOW}!${NC} Existing CLAUDE.md found"
+fi
+
+# If any existing config, ask about overwriting
+if [ "$has_existing_skills" = true ] || [ "$has_existing_commands" = true ] || [ "$has_existing_settings" = true ] || [ "$has_existing_claude_md" = true ]; then
+    echo ""
+    echo -e "${YELLOW}Existing Claude Code configuration detected.${NC}"
+    echo -e "CodeAgent needs to install its skills, commands, and settings to work properly."
+    echo ""
+fi
+
+# ============================================
 # Create directories
+# ============================================
+
 echo -e "${BLUE}Creating directory structure...${NC}"
 mkdir -p .claude/skills .claude/commands docs/decisions
+echo -e "  ${GREEN}✓${NC} Created .claude/skills/"
+echo -e "  ${GREEN}✓${NC} Created .claude/commands/"
+echo -e "  ${GREEN}✓${NC} Created docs/decisions/"
 
-# Copy skills (Claude Code's native extension system)
+# ============================================
+# Install Skills
+# ============================================
+
+echo ""
 echo -e "${BLUE}Installing skills...${NC}"
-if [ -d "$INSTALL_DIR/framework/skills" ]; then
-    cp -r "$INSTALL_DIR/framework/skills/"* .claude/skills/ 2>/dev/null || true
-    echo -e "  ${GREEN}✓${NC} researcher (context gathering)"
-    echo -e "  ${GREEN}✓${NC} architect (solution design)"
-    echo -e "  ${GREEN}✓${NC} orchestrator (parallel analysis)"
-    echo -e "  ${GREEN}✓${NC} implementer (TDD coding)"
-    echo -e "  ${GREEN}✓${NC} reviewer (external validation)"
-    echo -e "  ${GREEN}✓${NC} learner (pattern extraction)"
-else
-    echo -e "  ${YELLOW}○${NC} Skill templates not found"
+
+install_skills=true
+if [ "$has_existing_skills" = true ]; then
+    echo ""
+    if prompt_yes_no "  Overwrite existing skills with CodeAgent skills?" "y"; then
+        install_skills=true
+        # Remove existing skills first
+        rm -rf .claude/skills/*
+    else
+        install_skills=false
+        echo -e "  ${YELLOW}○${NC} Keeping existing skills"
+    fi
 fi
 
-# Copy commands
+if [ "$install_skills" = true ]; then
+    if [ -d "$INSTALL_DIR/framework/skills" ]; then
+        cp -r "$INSTALL_DIR/framework/skills/"* .claude/skills/ 2>/dev/null || true
+        echo -e "  ${GREEN}✓${NC} researcher (context gathering)"
+        echo -e "  ${GREEN}✓${NC} architect (solution design)"
+        echo -e "  ${GREEN}✓${NC} orchestrator (parallel analysis)"
+        echo -e "  ${GREEN}✓${NC} implementer (TDD coding)"
+        echo -e "  ${GREEN}✓${NC} reviewer (external validation)"
+        echo -e "  ${GREEN}✓${NC} learner (pattern extraction)"
+    else
+        echo -e "  ${RED}✗${NC} Skill templates not found in $INSTALL_DIR/framework/skills"
+    fi
+fi
+
+# ============================================
+# Install Commands
+# ============================================
+
 echo ""
 echo -e "${BLUE}Installing commands...${NC}"
-if [ -d "$INSTALL_DIR/framework/commands" ]; then
-    cp "$INSTALL_DIR/framework/commands/"*.md .claude/commands/ 2>/dev/null || true
-    echo -e "  ${GREEN}✓${NC} scan.md"
-    echo -e "  ${GREEN}✓${NC} plan.md"
-    echo -e "  ${GREEN}✓${NC} implement.md"
-    echo -e "  ${GREEN}✓${NC} integrate.md"
-    echo -e "  ${GREEN}✓${NC} review.md"
-else
-    echo -e "  ${YELLOW}○${NC} Command templates not found"
+
+install_commands=true
+if [ "$has_existing_commands" = true ]; then
+    echo ""
+    if prompt_yes_no "  Overwrite existing commands with CodeAgent commands?" "y"; then
+        install_commands=true
+        # Remove existing commands first
+        rm -f .claude/commands/*.md
+    else
+        install_commands=false
+        echo -e "  ${YELLOW}○${NC} Keeping existing commands"
+    fi
 fi
 
-# Copy settings (includes permissions, hooks, and MCP config)
+if [ "$install_commands" = true ]; then
+    if [ -d "$INSTALL_DIR/framework/commands" ]; then
+        cp "$INSTALL_DIR/framework/commands/"*.md .claude/commands/ 2>/dev/null || true
+        echo -e "  ${GREEN}✓${NC} /scan (build knowledge graph)"
+        echo -e "  ${GREEN}✓${NC} /plan (research + design)"
+        echo -e "  ${GREEN}✓${NC} /implement (TDD execution)"
+        echo -e "  ${GREEN}✓${NC} /integrate (parallel merge)"
+        echo -e "  ${GREEN}✓${NC} /review (external validation)"
+    else
+        echo -e "  ${RED}✗${NC} Command templates not found in $INSTALL_DIR/framework/commands"
+    fi
+fi
+
+# ============================================
+# Install Settings
+# ============================================
+
 echo ""
 echo -e "${BLUE}Installing settings...${NC}"
-if [ ! -f ".claude/settings.json" ]; then
+
+install_settings=true
+if [ "$has_existing_settings" = true ]; then
+    echo ""
+    echo -e "  ${YELLOW}Note:${NC} settings.json contains permissions, hooks, and MCP configs."
+    echo -e "  CodeAgent requires specific permissions and MCP servers to function."
+    echo ""
+    if prompt_yes_no "  Overwrite settings.json with CodeAgent settings?" "y"; then
+        install_settings=true
+    else
+        install_settings=false
+        echo -e "  ${YELLOW}○${NC} Keeping existing settings.json"
+        echo -e "  ${YELLOW}!${NC} Warning: CodeAgent may not work correctly without its settings"
+    fi
+fi
+
+if [ "$install_settings" = true ]; then
     if [ -f "$INSTALL_DIR/framework/settings.json.template" ]; then
         cp "$INSTALL_DIR/framework/settings.json.template" .claude/settings.json
         echo -e "  ${GREEN}✓${NC} settings.json (permissions, hooks, MCPs)"
+    else
+        echo -e "  ${RED}✗${NC} Settings template not found"
     fi
-else
-    echo -e "  ${YELLOW}○${NC} settings.json already exists"
 fi
 
-# Create or update CLAUDE.md
+# ============================================
+# Setup CLAUDE.md
+# ============================================
+
 echo ""
 echo -e "${BLUE}Setting up CLAUDE.md...${NC}"
-if [ ! -f "CLAUDE.md" ]; then
+
+install_claude_md=true
+if [ "$has_existing_claude_md" = true ]; then
+    echo ""
+    echo -e "  ${YELLOW}Note:${NC} CLAUDE.md contains project-specific instructions for Claude."
+    echo -e "  You may want to keep your existing customizations."
+    echo ""
+    if prompt_yes_no "  Overwrite CLAUDE.md with CodeAgent template?" "n"; then
+        install_claude_md=true
+    else
+        install_claude_md=false
+        echo -e "  ${GREEN}✓${NC} Keeping existing CLAUDE.md"
+    fi
+fi
+
+if [ "$install_claude_md" = true ]; then
     TEMPLATE_PATH="$INSTALL_DIR/templates/$PROJECT_TYPE/CLAUDE.md"
     if [ -f "$TEMPLATE_PATH" ]; then
         cp "$TEMPLATE_PATH" CLAUDE.md
@@ -122,21 +279,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Conventions
 
 [List coding conventions and patterns]
+
+## CodeAgent Integration
+
+This project uses CodeAgent for enhanced Claude Code capabilities.
+Available commands: /scan, /plan, /implement, /review
 CLAUDEMD
         echo -e "  ${GREEN}✓${NC} Created generic CLAUDE.md"
     fi
     echo -e "  ${YELLOW}!${NC} Please customize CLAUDE.md for your project"
-else
-    echo -e "  ${YELLOW}○${NC} CLAUDE.md already exists"
 fi
 
+# ============================================
 # Summary
+# ============================================
+
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                  Project Initialized!                           ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "Created:"
+echo "Installed:"
 echo "  ├── CLAUDE.md                 (project config - customize this!)"
 echo "  ├── .claude/"
 echo "  │   ├── settings.json         (permissions, hooks, MCPs)"
