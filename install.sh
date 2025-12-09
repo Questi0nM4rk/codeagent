@@ -328,18 +328,22 @@ GLOBALMD
       "Bash(npm:*)",
       "Bash(npx:*)",
       "Bash(node:*)",
-      "Bash(python*:*)",
-      "Bash(pip*:*)",
-      "Bash(docker*:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
       "Bash(git:*)",
       "Bash(dotnet:*)",
       "Bash(cargo:*)",
       "Bash(rustc:*)",
       "Bash(cmake:*)",
       "Bash(make:*)",
-      "Bash(lua*:*)",
+      "Bash(lua:*)",
+      "Bash(luarocks:*)",
       "Bash(busted:*)",
-      "mcp__*(*)"
+      "mcp__*"
     ],
     "deny": []
   }
