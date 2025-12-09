@@ -289,7 +289,21 @@ handle_claude_config() {
 setup_fresh_claude_config() {
     log_info "Setting up Claude Code configuration..."
 
-    mkdir -p "$HOME/.claude"
+    mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands"
+
+    # Install global skills
+    log_info "Installing global skills..."
+    if [ -d "$INSTALL_DIR/framework/skills" ]; then
+        cp -r "$INSTALL_DIR/framework/skills/"* "$HOME/.claude/skills/" 2>/dev/null || true
+        log_success "Installed skills: researcher, architect, orchestrator, implementer, reviewer, learner"
+    fi
+
+    # Install global commands
+    log_info "Installing global commands..."
+    if [ -d "$INSTALL_DIR/framework/commands" ]; then
+        cp "$INSTALL_DIR/framework/commands/"*.md "$HOME/.claude/commands/" 2>/dev/null || true
+        log_success "Installed commands: /scan, /plan, /implement, /integrate, /review"
+    fi
 
     # Create global CLAUDE.md
     cat > "$HOME/.claude/CLAUDE.md" << 'GLOBALMD'
