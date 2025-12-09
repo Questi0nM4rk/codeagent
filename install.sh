@@ -166,14 +166,26 @@ install_codeagent() {
     done
 
     # Install Python dependencies for custom MCPs
-    log_info "Installing Python dependencies..."
-    python3 -m pip install --user --quiet --upgrade pip
-    python3 -m pip install --user --quiet \
+    log_info "Setting up Python virtual environment..."
+
+    # Create venv in install directory
+    VENV_DIR="$INSTALL_DIR/venv"
+    if [ ! -d "$VENV_DIR" ]; then
+        python3 -m venv "$VENV_DIR"
+        log_success "Created virtual environment at $VENV_DIR"
+    else
+        log_info "Virtual environment already exists"
+    fi
+
+    # Install packages in venv
+    log_info "Installing Python dependencies in venv..."
+    "$VENV_DIR/bin/pip" install --quiet --upgrade pip 2>/dev/null || true
+    "$VENV_DIR/bin/pip" install --quiet \
         mcp \
         neo4j \
         openai \
         httpx \
-        pydantic 2>/dev/null || log_warn "Some Python packages failed to install"
+        pydantic 2>/dev/null && log_success "Python dependencies installed" || log_warn "Some Python packages failed to install"
 }
 
 # ============================================

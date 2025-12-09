@@ -109,35 +109,43 @@ fi
 # Custom MCPs (CodeAgent specific)
 # ============================================
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
+VENV_PIP="$INSTALL_DIR/venv/bin/pip"
+VENV_PYTHON="$INSTALL_DIR/venv/bin/python"
 
 echo ""
 echo -e "${BLUE}Installing CodeAgent custom MCPs...${NC}"
 
-# Code-Graph MCP (if installed)
-if [ -d "$INSTALL_DIR/mcps/code-graph-mcp" ]; then
-    pip install -e "$INSTALL_DIR/mcps/code-graph-mcp" --quiet 2>/dev/null || true
-    claude mcp add code-graph -- python -m code_graph_mcp.server 2>/dev/null && \
-        echo -e "  ${GREEN}✓${NC} code-graph" || echo -e "  ${YELLOW}○${NC} code-graph (failed)"
+# Check if venv exists
+if [ ! -f "$VENV_PYTHON" ]; then
+    echo -e "  ${YELLOW}○${NC} Python venv not found - custom MCPs require venv"
+    echo -e "  ${YELLOW}○${NC} Run install.sh to create venv"
 else
-    echo -e "  ${YELLOW}○${NC} code-graph (not yet implemented)"
-fi
+    # Code-Graph MCP (if installed)
+    if [ -d "$INSTALL_DIR/mcps/code-graph-mcp" ]; then
+        "$VENV_PIP" install -e "$INSTALL_DIR/mcps/code-graph-mcp" --quiet 2>/dev/null || true
+        claude mcp add code-graph -- "$VENV_PYTHON" -m code_graph_mcp.server 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} code-graph" || echo -e "  ${YELLOW}○${NC} code-graph (failed)"
+    else
+        echo -e "  ${YELLOW}○${NC} code-graph (not yet implemented)"
+    fi
 
-# Tree-of-Thought MCP (if installed)
-if [ -d "$INSTALL_DIR/mcps/tot-mcp" ]; then
-    pip install -e "$INSTALL_DIR/mcps/tot-mcp" --quiet 2>/dev/null || true
-    claude mcp add tot -- python -m tot_mcp.server 2>/dev/null && \
-        echo -e "  ${GREEN}✓${NC} tot" || echo -e "  ${YELLOW}○${NC} tot (failed)"
-else
-    echo -e "  ${YELLOW}○${NC} tot (not yet implemented)"
-fi
+    # Tree-of-Thought MCP (if installed)
+    if [ -d "$INSTALL_DIR/mcps/tot-mcp" ]; then
+        "$VENV_PIP" install -e "$INSTALL_DIR/mcps/tot-mcp" --quiet 2>/dev/null || true
+        claude mcp add tot -- "$VENV_PYTHON" -m tot_mcp.server 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} tot" || echo -e "  ${YELLOW}○${NC} tot (failed)"
+    else
+        echo -e "  ${YELLOW}○${NC} tot (not yet implemented)"
+    fi
 
-# Reflection MCP (if installed)
-if [ -d "$INSTALL_DIR/mcps/reflection-mcp" ]; then
-    pip install -e "$INSTALL_DIR/mcps/reflection-mcp" --quiet 2>/dev/null || true
-    claude mcp add reflection -- python -m reflection_mcp.server 2>/dev/null && \
-        echo -e "  ${GREEN}✓${NC} reflection" || echo -e "  ${YELLOW}○${NC} reflection (failed)"
-else
-    echo -e "  ${YELLOW}○${NC} reflection (not yet implemented)"
+    # Reflection MCP (if installed)
+    if [ -d "$INSTALL_DIR/mcps/reflection-mcp" ]; then
+        "$VENV_PIP" install -e "$INSTALL_DIR/mcps/reflection-mcp" --quiet 2>/dev/null || true
+        claude mcp add reflection -- "$VENV_PYTHON" -m reflection_mcp.server 2>/dev/null && \
+            echo -e "  ${GREEN}✓${NC} reflection" || echo -e "  ${YELLOW}○${NC} reflection (failed)"
+    else
+        echo -e "  ${YELLOW}○${NC} reflection (not yet implemented)"
+    fi
 fi
 
 # Letta MCP (if server running)
