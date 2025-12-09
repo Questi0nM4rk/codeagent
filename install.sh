@@ -499,7 +499,7 @@ install_mcps() {
     log_info "Configuring MCP servers..."
 
     if [ -f "$INSTALL_DIR/mcps/install-mcps.sh" ]; then
-        bash "$INSTALL_DIR/mcps/install-mcps.sh"
+        bash "$INSTALL_DIR/mcps/install-mcps.sh" "$@"
     else
         log_warn "MCP installer not found. MCPs will need manual configuration."
     fi
@@ -523,8 +523,24 @@ start_infrastructure() {
     # Start Docker containers
     cd "$INSTALL_DIR/infrastructure"
 
+    # Check if containers exist but are unhealthy - recreate them
+    local needs_recreate=false
+    for container in codeagent-neo4j codeagent-qdrant codeagent-letta; do
+        local status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "none")
+        if [ "$status" = "unhealthy" ]; then
+            log_warn "$container is unhealthy, will recreate..."
+            needs_recreate=true
+        fi
+    done
+
+    if [ "$needs_recreate" = true ]; then
+        log_info "Stopping unhealthy containers..."
+        docker compose down 2>/dev/null || true
+        sleep 2
+    fi
+
     log_info "Starting Docker containers..."
-    docker compose up -d 2>/dev/null || {
+    docker compose up -d --remove-orphans 2>/dev/null || {
         log_warn "Docker compose failed. Try running 'codeagent start' manually."
         return 1
     }
@@ -672,6 +688,7 @@ print_success() {
 main() {
     # Parse arguments
     local skip_docker=false
+    local force_reinstall=false
     local auto_yes=false
 
     while [[ $# -gt 0 ]]; do
@@ -680,9 +697,26 @@ main() {
                 skip_docker=true
                 shift
                 ;;
+            --force|-f)
+                force_reinstall=true
+                shift
+                ;;
             -y|--yes)
                 auto_yes=true
                 shift
+                ;;
+            -h|--help)
+                echo "CodeAgent Installer"
+                echo ""
+                echo "Usage: ./install.sh [OPTIONS]"
+                echo ""
+                echo "Options:"
+                echo "  --no-docker    Skip Docker container setup"
+                echo "  --force, -f    Force reinstall MCPs and recreate unhealthy containers"
+                echo "  -y, --yes      Auto-accept prompts (not fully implemented)"
+                echo "  -h, --help     Show this help message"
+                echo ""
+                exit 0
                 ;;
             *)
                 shift
@@ -704,7 +738,13 @@ main() {
         log_info "Skipping Docker setup (--no-docker flag)"
     fi
 
-    install_mcps
+    # Install MCPs (pass --force if specified)
+    if [ "$force_reinstall" = true ]; then
+        install_mcps --force
+    else
+        install_mcps
+    fi
+
     verify_installation
     print_success
 }
