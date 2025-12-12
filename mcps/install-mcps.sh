@@ -172,7 +172,7 @@ remove_all_mcps() {
         if [ -n "$name" ]; then
             claude mcp remove "$name" 2>/dev/null || true
             log_info "  Removed: $name"
-            ((removed++))
+            removed=$((removed + 1))
         fi
     done <<< "$mcp_list"
 
