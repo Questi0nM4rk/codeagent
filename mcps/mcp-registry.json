@@ -56,13 +56,6 @@
       "required": true
     },
     {
-      "name": "filesystem",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
-      "env": {},
-      "required": true
-    },
-    {
       "name": "context7",
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"],

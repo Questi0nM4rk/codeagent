@@ -153,6 +153,32 @@ run_installer() {
 }
 
 # ============================================
+# Remove ALL MCPs (for --force complete wipe)
+# ============================================
+remove_all_mcps() {
+    log_warn "Removing ALL MCPs from system..."
+
+    # Get list of all registered MCPs
+    local mcp_list=$(claude mcp list 2>/dev/null | grep "^[a-zA-Z]" | cut -d':' -f1 || echo "")
+
+    if [ -z "$mcp_list" ]; then
+        log_info "No MCPs currently registered"
+        return 0
+    fi
+
+    local removed=0
+    while IFS= read -r name; do
+        if [ -n "$name" ]; then
+            claude mcp remove "$name" 2>/dev/null || true
+            log_info "  Removed: $name"
+            ((removed++))
+        fi
+    done <<< "$mcp_list"
+
+    log_success "Removed $removed MCPs"
+}
+
+# ============================================
 # Remove All CodeAgent MCPs (for --force)
 # ============================================
 remove_all_codeagent_mcps() {
@@ -295,10 +321,10 @@ main() {
     # Pre-flight checks
     preflight_checks
 
-    # Remove all CodeAgent MCPs if force (centralized removal)
+    # Remove ALL MCPs if force (complete clean slate)
     if [ "$FORCE" = "true" ]; then
         echo ""
-        remove_all_codeagent_mcps
+        remove_all_mcps
     fi
 
     # Run sub-installers

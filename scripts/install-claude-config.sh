@@ -654,13 +654,27 @@ install_claude_md() {
 clean_all_configs() {
     log_warn "Wiping ALL existing Claude Code configurations..."
 
-    # Remove everything in ~/.claude/
+    # User-customizable directories - WIPE ALL
     rm -rf "$CLAUDE_DIR/skills" 2>/dev/null
     rm -rf "$CLAUDE_DIR/commands" 2>/dev/null
     rm -rf "$CLAUDE_DIR/hooks" 2>/dev/null
     rm -rf "$CLAUDE_DIR/rules" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/agents" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/downloads" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/memories" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/patterns" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/plugins" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/projects" 2>/dev/null
+    rm -rf "$CLAUDE_DIR/session-env" 2>/dev/null
+
+    # User config files - WIPE
     rm -f "$CLAUDE_DIR/settings.json" 2>/dev/null
+    rm -f "$CLAUDE_DIR/settings.local.json" 2>/dev/null
     rm -f "$CLAUDE_DIR/CLAUDE.md" 2>/dev/null
+
+    # Note: NOT wiping Claude Code internal state:
+    # - debug/, file-history/, statsig/, todos/, shell-snapshots/, plans/
+    # - .credentials.json, history.jsonl, stats-cache.json
 
     log_success "Wiped all Claude Code configurations"
 }
