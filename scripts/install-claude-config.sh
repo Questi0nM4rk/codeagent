@@ -190,10 +190,8 @@ validate_settings() {
         return 1
     fi
 
-    # Check required structure
-    if ! jq -e '.permissions' "$settings_file" > /dev/null 2>&1; then
-        errors+=("Missing permissions section")
-    fi
+    # Note: permissions section is optional (bypass mode is default)
+    # Only check for valid JSON structure
 
     if [ ${#errors[@]} -gt 0 ]; then
         echo "${errors[*]}"
@@ -577,19 +575,24 @@ merge_settings() {
     # Create merged file using jq
     local merged=$(mktemp)
 
-    # Merge permissions.allow arrays (deduplicate)
+    # Deep merge: combine hook arrays, merge env vars
+    # Hooks structure: { "PreToolUse": [...], "PostToolUse": [...] }
     jq -s '
         .[0] as $existing |
         .[1] as $new |
         {
-            permissions: {
-                allow: (($existing.permissions.allow // []) + ($new.permissions.allow // []) | unique),
-                deny: (($existing.permissions.deny // []) + ($new.permissions.deny // []) | unique)
-            },
-            hooks: ($new.hooks // $existing.hooks // {}),
-            env: (($existing.env // {}) * ($new.env // {})),
-            mcpServers: (($existing.mcpServers // {}) * ($new.mcpServers // {}))
-        }
+            hooks: (
+                # Merge each hook type array (deduplicate by matcher)
+                reduce (["PreToolUse", "PostToolUse", "Notification", "Stop"][] | . as $hookType |
+                    (($existing.hooks[$hookType] // []) + ($new.hooks[$hookType] // [])) |
+                    unique_by(.matcher // .) |
+                    {($hookType): .}
+                ) as $item ({}; . * $item)
+            ),
+            env: (($existing.env // {}) * ($new.env // {}))
+        } |
+        # Remove empty hook arrays
+        .hooks |= with_entries(select(.value | length > 0))
     ' "$target_file" "$source_file" > "$merged"
 
     if [ -s "$merged" ]; then

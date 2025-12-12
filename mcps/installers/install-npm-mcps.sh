@@ -19,10 +19,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Counters (exported back to parent)
-NPM_INSTALLED=0
-NPM_SKIPPED=0
-NPM_FAILED=0
+# Counters (exported back to parent - must match parent's grep pattern)
+INSTALLED=0
+SKIPPED=0
+FAILED=0
 
 # ============================================
 # Logging
@@ -83,7 +83,7 @@ install_npm_required() {
         # Skip if exists and not force
         if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
             log_info "  Skipped: $name (already registered)"
-            ((NPM_SKIPPED++)) || true
+            ((SKIPPED++)) || true
             continue
         fi
 
@@ -99,10 +99,10 @@ install_npm_required() {
         # Check if registration succeeded (either added or already exists)
         if mcp_exists "$name"; then
             log_success "  Installed: $name"
-            ((NPM_INSTALLED++)) || true
+            ((INSTALLED++)) || true
         else
             log_error "  Failed: $name"
-            ((NPM_FAILED++)) || true
+            ((FAILED++)) || true
         fi
     done
 }
@@ -126,14 +126,14 @@ install_npm_optional() {
         local key_value=$(get_key_value "$env_key")
         if [ -z "$key_value" ]; then
             log_info "  Skipped: $name ($env_key not configured)"
-            ((NPM_SKIPPED++)) || true
+            ((SKIPPED++)) || true
             continue
         fi
 
         # Skip if exists and not force
         if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
             log_info "  Skipped: $name (already registered)"
-            ((NPM_SKIPPED++)) || true
+            ((SKIPPED++)) || true
             continue
         fi
 
@@ -149,10 +149,10 @@ install_npm_optional() {
         # Check if registration succeeded (either added or already exists)
         if mcp_exists "$name"; then
             log_success "  Installed: $name"
-            ((NPM_INSTALLED++)) || true
+            ((INSTALLED++)) || true
         else
             log_error "  Failed: $name"
-            ((NPM_FAILED++)) || true
+            ((FAILED++)) || true
         fi
     done
 }
@@ -203,10 +203,10 @@ main() {
     install_npm_required
     install_npm_optional
 
-    # Export counters
-    echo "NPM_INSTALLED=$NPM_INSTALLED"
-    echo "NPM_SKIPPED=$NPM_SKIPPED"
-    echo "NPM_FAILED=$NPM_FAILED"
+    # Export counters (names must match parent's grep pattern)
+    echo "INSTALLED=$INSTALLED"
+    echo "SKIPPED=$SKIPPED"
+    echo "FAILED=$FAILED"
 }
 
 # Run if executed directly (not sourced)

@@ -21,10 +21,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Counters
-PYTHON_INSTALLED=0
-PYTHON_SKIPPED=0
-PYTHON_FAILED=0
+# Counters (names must match parent's grep pattern)
+INSTALLED=0
+SKIPPED=0
+FAILED=0
 
 # ============================================
 # Logging
@@ -56,14 +56,24 @@ remove_mcp() {
 setup_venv() {
     if [ ! -f "$VENV_PYTHON" ]; then
         log_info "Creating Python virtual environment..."
-        python3 -m venv "$VENV_DIR"
-        "$VENV_PIP" install --upgrade pip --quiet
+        if ! python3 -m venv "$VENV_DIR"; then
+            log_error "Failed to create virtual environment"
+            log_info "Check python3-venv is installed: apt install python3-venv (Debian) or pacman -S python (Arch)"
+            exit 1
+        fi
+        if ! "$VENV_PIP" install --upgrade pip --quiet; then
+            log_error "Failed to upgrade pip in venv"
+            exit 1
+        fi
     fi
 
     # Install MCP SDK if not present
     if ! "$VENV_PYTHON" -c "import mcp" 2>/dev/null; then
         log_info "Installing MCP SDK..."
-        "$VENV_PIP" install mcp --quiet
+        if ! "$VENV_PIP" install mcp --quiet; then
+            log_error "Failed to install MCP SDK"
+            exit 1
+        fi
     fi
 }
 
@@ -105,21 +115,21 @@ install_python_mcps() {
         # Check MCP directory exists
         if [ ! -d "$mcp_path" ]; then
             log_warn "  Skipped: $name (directory not found: $mcp_path)"
-            ((PYTHON_SKIPPED++)) || true
+            ((SKIPPED++)) || true
             continue
         fi
 
         # Skip if exists and not force
         if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
             log_info "  Skipped: $name (already registered)"
-            ((PYTHON_SKIPPED++)) || true
+            ((SKIPPED++)) || true
             continue
         fi
 
         # Install package
         if ! install_python_package "$name" "$mcp_path"; then
             log_error "  Failed to install package: $name"
-            ((PYTHON_FAILED++)) || true
+            ((FAILED++)) || true
             continue
         fi
 
@@ -131,10 +141,10 @@ install_python_mcps() {
         # Register MCP with Claude (user scope for global)
         if claude mcp add --scope user "$name" -- "$VENV_PYTHON" -m "$module" 2>/dev/null; then
             log_success "  Installed: $name"
-            ((PYTHON_INSTALLED++)) || true
+            ((INSTALLED++)) || true
         else
             log_error "  Failed to register: $name"
-            ((PYTHON_FAILED++)) || true
+            ((FAILED++)) || true
         fi
     done
 }
@@ -220,10 +230,10 @@ main() {
     # Verify (optional)
     verify_python_mcps || true
 
-    # Export counters
-    echo "PYTHON_INSTALLED=$PYTHON_INSTALLED"
-    echo "PYTHON_SKIPPED=$PYTHON_SKIPPED"
-    echo "PYTHON_FAILED=$PYTHON_FAILED"
+    # Export counters (names must match parent's grep pattern)
+    echo "INSTALLED=$INSTALLED"
+    echo "SKIPPED=$SKIPPED"
+    echo "FAILED=$FAILED"
 }
 
 # Run if executed directly
