@@ -35,25 +35,29 @@ services:
     environment:
       QDRANT__SERVICE__GRPC_PORT: 6334
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
+      # Qdrant exposes /healthz but image lacks curl/wget - use /dev/tcp as fallback
+      # This checks if port is listening (basic health), not full API health
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/6333' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   # Memory system with 74% LOCOMO accuracy
-  # Uses OpenAI embeddings (loaded from ~/.codeagent/.env by codeagent-start)
+  # OpenAI key is read from ../.env by Docker Compose (env_file directive)
   letta:
     image: letta/letta:latest
     container_name: codeagent-letta
     ports:
       - "8283:8283"
+    env_file:
+      - path: ../.env  # Reads ~/.codeagent/.env (API keys stored by install.sh)
+        required: false  # Don't fail if file doesn't exist yet
     environment:
       # Vector store connection
       LETTA_QDRANT_HOST: qdrant
       LETTA_QDRANT_PORT: 6333
-      # OpenAI for embeddings (~$4/month) - sourced from .env before docker compose runs
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Embedding model configuration
       LETTA_LLM_EMBEDDING_MODEL: text-embedding-3-small
     volumes:
       - codeagent_letta_data:/root/.letta
@@ -61,7 +65,8 @@ services:
       qdrant:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8283/ > /dev/null || exit 1"]
+      # Letta health endpoint is /v1/health/ - no auth required for health check
+      test: ["CMD-SHELL", "curl -sf http://localhost:8283/v1/health/ > /dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

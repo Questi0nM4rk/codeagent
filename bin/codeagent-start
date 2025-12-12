@@ -19,26 +19,18 @@ NC='\033[0m'
 echo -e "${CYAN}Starting CodeAgent infrastructure...${NC}"
 echo ""
 
-# Load API keys from .env file if it exists
+# Check if .env file exists with API keys
 ENV_FILE="$INSTALL_DIR/.env"
-if [ -f "$ENV_FILE" ]; then
-    echo -e "${BLUE}Loading API keys from $ENV_FILE${NC}"
-    set -a  # Auto-export variables
-    source "$ENV_FILE"
-    set +a
-    echo ""
-fi
-
-# Check for OpenAI key
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo -e "${YELLOW}Warning: OPENAI_API_KEY not set${NC}"
+if [ -f "$ENV_FILE" ] && grep -q "OPENAI_API_KEY=" "$ENV_FILE"; then
+    echo -e "${GREEN}✓${NC} API keys configured in $ENV_FILE"
+else
+    echo -e "${YELLOW}Warning: OPENAI_API_KEY not found in $ENV_FILE${NC}"
     echo "Memory embeddings will not work without it."
-    echo "Run './install.sh' again to configure, or set manually:"
-    echo "  export OPENAI_API_KEY=\"sk-your-key\""
+    echo "Run './install.sh' to configure API keys."
     echo ""
 fi
 
-# Start Docker services
+# Start Docker services (Docker Compose reads .env automatically via env_file directive)
 cd "$INSTALL_DIR/infrastructure"
 
 echo -e "${BLUE}Starting Docker services...${NC}"

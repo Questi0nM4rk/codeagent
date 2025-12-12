@@ -238,176 +238,60 @@ configure_shell() {
 # ============================================
 # Claude Code Configuration Handling
 # ============================================
-handle_claude_config() {
-    echo ""
-    log_info "Checking existing Claude Code configuration..."
+# Delegated to scripts/install-claude-config.sh for:
+# - Skills, commands, hooks installation with validation
+# - Settings.json from template with merge support
+# - CLAUDE.md from template with merge support
+# - Update detection (skip unchanged files)
+# - Force reinstall support
+# ============================================
+setup_global_config() {
+    # Export variables for sub-script
+    export CODEAGENT_HOME="$INSTALL_DIR"
+    export CODEAGENT_FORCE="${CODEAGENT_FORCE_REINSTALL:-false}"
+    export RED GREEN YELLOW BLUE CYAN NC
 
-    local backup_dir="$HOME/.claude-backup-$(date +%Y%m%d_%H%M%S)"
-    local has_existing=false
-
-    # Check for existing Claude Code config
-    if [ -d "$HOME/.claude" ]; then
-        if [ -f "$HOME/.claude/CLAUDE.md" ] || [ -f "$HOME/.claude/settings.json" ] || [ -d "$HOME/.claude/commands" ]; then
-            has_existing=true
-        fi
-    fi
-
-    if [ "$has_existing" = true ]; then
-        echo ""
-        echo -e "${YELLOW}Existing Claude Code configuration detected:${NC}"
-        [ -f "$HOME/.claude/CLAUDE.md" ] && echo "  - ~/.claude/CLAUDE.md"
-        [ -f "$HOME/.claude/settings.json" ] && echo "  - ~/.claude/settings.json"
-        [ -d "$HOME/.claude/commands" ] && echo "  - ~/.claude/commands/"
-        [ -d "$HOME/.claude/agents" ] && echo "  - ~/.claude/agents/"
-        echo ""
-        echo "Options:"
-        echo "  1) Backup existing and install CodeAgent config"
-        echo "  2) Merge (keep existing, add CodeAgent additions)"
-        echo "  3) Skip (don't modify existing config)"
-        echo ""
-        read -p "Choose option [1/2/3]: " -n 1 -r config_choice
-        echo ""
-
-        case "$config_choice" in
-            1)
-                log_info "Backing up existing config to $backup_dir..."
-                mkdir -p "$backup_dir"
-                cp -r "$HOME/.claude"/* "$backup_dir/" 2>/dev/null || true
-                log_success "Backup created at $backup_dir"
-                # Remove existing config files to ensure fresh install
-                rm -f "$HOME/.claude/CLAUDE.md" "$HOME/.claude/settings.json"
-                rm -rf "$HOME/.claude/commands" "$HOME/.claude/skills" 2>/dev/null || true
-                setup_fresh_claude_config
-                ;;
-            2)
-                log_info "Merging configurations..."
-                merge_claude_config
-                ;;
-            3)
-                log_info "Skipping Claude Code config modification"
-                log_warn "Note: CodeAgent global config will not be installed"
-                ;;
-            *)
-                log_warn "Invalid choice, skipping config modification"
-                ;;
-        esac
+    # Call the dedicated config installer
+    if [ -f "$INSTALL_DIR/scripts/install-claude-config.sh" ]; then
+        bash "$INSTALL_DIR/scripts/install-claude-config.sh"
     else
-        setup_fresh_claude_config
+        log_error "Config installer not found: $INSTALL_DIR/scripts/install-claude-config.sh"
+        log_warn "Falling back to basic installation..."
+        fallback_claude_config
     fi
 }
 
-setup_fresh_claude_config() {
-    log_info "Setting up Claude Code configuration..."
-
+# Fallback if sub-script is missing (shouldn't happen)
+fallback_claude_config() {
     mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/hooks"
 
-    # Install global skills
-    log_info "Installing global skills..."
+    # Copy skills
     if [ -d "$INSTALL_DIR/framework/skills" ]; then
         cp -r "$INSTALL_DIR/framework/skills/"* "$HOME/.claude/skills/" 2>/dev/null || true
-        log_success "Installed skills: researcher, architect, orchestrator, implementer, reviewer, learner"
     fi
 
-    # Install global commands
-    log_info "Installing global commands..."
+    # Copy commands
     if [ -d "$INSTALL_DIR/framework/commands" ]; then
         cp "$INSTALL_DIR/framework/commands/"*.md "$HOME/.claude/commands/" 2>/dev/null || true
-        log_success "Installed commands: /scan, /plan, /implement, /integrate, /review"
     fi
 
-    # Install hooks
-    log_info "Installing global hooks..."
+    # Copy hooks
     if [ -d "$INSTALL_DIR/framework/hooks" ]; then
         cp "$INSTALL_DIR/framework/hooks/"*.sh "$HOME/.claude/hooks/" 2>/dev/null || true
         chmod +x "$HOME/.claude/hooks/"*.sh 2>/dev/null || true
-        log_success "Installed hooks: pre-commit, pre-push, post-implement, index-file"
     fi
 
-    # Create global CLAUDE.md
-    cat > "$HOME/.claude/CLAUDE.md" << 'GLOBALMD'
-# Global Claude Configuration
-
-## Identity
-Senior software engineer. Direct communication. No fluff.
-
-## Principles
-1. Accuracy over speed - verify before acting
-2. Test-first development - always TDD
-3. Memory-first research - check project memory before external search
-4. External validation - never self-review code
-
-## Languages
-Primary: C# (.NET 10), C++23, C, Rust, Lua
-Shell: Bash, Zsh
-
-## Response Style
-- Concise, technical
-- Code over prose
-- Show commands, not just describe
-- Include file:line references
-
-## CodeAgent Integration
-This configuration is managed by CodeAgent.
-Run `codeagent init` in your project to set up project-specific agents and commands.
-GLOBALMD
-    log_success "Created ~/.claude/CLAUDE.md"
-
-    # Create global settings.json (overwrite if exists since user chose fresh install)
-    cat > "$HOME/.claude/settings.json" << 'SETTINGSJSON'
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(node:*)",
-      "Bash(python:*)",
-      "Bash(python3:*)",
-      "Bash(pip:*)",
-      "Bash(pip3:*)",
-      "Bash(docker:*)",
-      "Bash(docker-compose:*)",
-      "Bash(git:*)",
-      "Bash(dotnet:*)",
-      "Bash(cargo:*)",
-      "Bash(rustc:*)",
-      "Bash(cmake:*)",
-      "Bash(make:*)",
-      "Bash(lua:*)",
-      "Bash(luarocks:*)",
-      "Bash(busted:*)",
-      "mcp__*"
-    ],
-    "deny": []
-  }
-}
-SETTINGSJSON
-    log_success "Created ~/.claude/settings.json"
-}
-
-merge_claude_config() {
-    # Append CodeAgent section to existing CLAUDE.md if not present
-    if [ -f "$HOME/.claude/CLAUDE.md" ]; then
-        if ! grep -q "CodeAgent Integration" "$HOME/.claude/CLAUDE.md"; then
-            cat >> "$HOME/.claude/CLAUDE.md" << 'APPENDMD'
-
-## CodeAgent Integration
-This configuration works with CodeAgent.
-Run `codeagent init` in your project to set up project-specific agents and commands.
-APPENDMD
-            log_success "Added CodeAgent section to existing CLAUDE.md"
-        else
-            log_info "CodeAgent section already present in CLAUDE.md"
-        fi
-    else
-        setup_fresh_claude_config
+    # Copy settings from template
+    if [ -f "$INSTALL_DIR/framework/settings.json.template" ]; then
+        cp "$INSTALL_DIR/framework/settings.json.template" "$HOME/.claude/settings.json"
     fi
-}
 
-# ============================================
-# Global Configuration (legacy - now calls handle_claude_config)
-# ============================================
-setup_global_config() {
-    handle_claude_config
+    # Copy CLAUDE.md from template
+    if [ -f "$INSTALL_DIR/templates/CLAUDE.md.template" ]; then
+        cp "$INSTALL_DIR/templates/CLAUDE.md.template" "$HOME/.claude/CLAUDE.md"
+    fi
+
+    log_success "Basic Claude Code configuration installed"
 }
 
 # ============================================
@@ -416,78 +300,112 @@ setup_global_config() {
 setup_api_keys() {
     echo ""
     log_info "Configuring API keys..."
-    echo ""
 
+    # .env file location (Docker Compose reads this automatically)
     local env_file="$INSTALL_DIR/.env"
 
-    # Create .env file if it doesn't exist
+    # Create .env if it doesn't exist
     if [ ! -f "$env_file" ]; then
-        touch "$env_file"
-        chmod 600 "$env_file"  # Secure permissions
+        cat > "$env_file" << 'ENVHEADER'
+# CodeAgent API Keys
+# This file is read by Docker Compose automatically.
+# Add these exports to your ~/.zshrc or ~/.bashrc for CLI access.
+ENVHEADER
     fi
 
-    # Helper function to check and prompt for a key
+    # Helper to check if key exists in environment (not reading files)
+    key_exists_in_env() {
+        local key_name="$1"
+        [ -n "${!key_name}" ]
+    }
+
+    # Helper to prompt for a key
     prompt_for_key() {
         local key_name="$1"
-        local key_description="$2"
+        local description="$2"
         local required="$3"
-        local current_value="${!key_name}"
+        local example="$4"
 
-        # Check if already in environment
-        if [ -n "$current_value" ]; then
-            log_success "$key_name is set"
-            # Save to .env if not already there
-            if ! grep -q "^$key_name=" "$env_file" 2>/dev/null; then
-                echo "$key_name=$current_value" >> "$env_file"
-            fi
-            return 0
-        fi
-
-        # Check if already in .env file
-        if grep -q "^$key_name=" "$env_file" 2>/dev/null; then
-            log_success "$key_name is configured"
-            return 0
-        fi
-
-        # Prompt user
         echo ""
-        if [ "$required" = "required" ]; then
-            echo -e "${YELLOW}$key_name${NC} - $key_description ${RED}(required)${NC}"
-        else
-            echo -e "${YELLOW}$key_name${NC} - $key_description ${BLUE}(optional)${NC}"
-        fi
-
-        read -p "Enter $key_name (or press Enter to skip): " -r key_value
-
-        if [ -n "$key_value" ]; then
-            echo "$key_name=$key_value" >> "$env_file"
-            log_success "$key_name saved to $env_file"
-            export "$key_name=$key_value"
-        else
-            if [ "$required" = "required" ]; then
-                log_warn "$key_name skipped - memory features will not work"
+        if key_exists_in_env "$key_name"; then
+            # Key exists in environment
+            log_success "$key_name found in environment"
+            echo -n "  Use existing value? [Y/n]: "
+            read -r use_existing
+            if [ "$use_existing" = "n" ] || [ "$use_existing" = "N" ]; then
+                echo -n "  Enter new value: "
+                read -r new_value
+                if [ -n "$new_value" ]; then
+                    # Update .env file
+                    if grep -q "^$key_name=" "$env_file" 2>/dev/null; then
+                        sed -i "s|^$key_name=.*|$key_name=$new_value|" "$env_file"
+                    else
+                        echo "$key_name=$new_value" >> "$env_file"
+                    fi
+                    export "$key_name=$new_value"
+                    log_success "Updated $key_name"
+                fi
             else
-                log_info "$key_name skipped"
+                # Make sure it's in .env for Docker
+                local current_value="${!key_name}"
+                if ! grep -q "^$key_name=" "$env_file" 2>/dev/null; then
+                    echo "$key_name=$current_value" >> "$env_file"
+                fi
+                log_success "Using existing $key_name"
+            fi
+        else
+            # Key doesn't exist
+            if [ "$required" = "required" ]; then
+                log_warn "$key_name not found - $description"
+                echo -n "  Enter $key_name (e.g., $example): "
+                read -r new_value
+                if [ -n "$new_value" ]; then
+                    echo "$key_name=$new_value" >> "$env_file"
+                    export "$key_name=$new_value"
+                    log_success "Saved $key_name"
+                else
+                    log_warn "Skipped - some features won't work without this key"
+                fi
+            else
+                log_info "$key_name not found (optional) - $description"
+                echo -n "  Enter $key_name or press Enter to skip: "
+                read -r new_value
+                if [ -n "$new_value" ]; then
+                    echo "$key_name=$new_value" >> "$env_file"
+                    export "$key_name=$new_value"
+                    log_success "Saved $key_name"
+                else
+                    log_info "Skipped $key_name"
+                fi
             fi
         fi
     }
 
-    echo -e "${CYAN}CodeAgent needs API keys for some features.${NC}"
-    echo -e "${CYAN}Keys are stored securely in: $env_file${NC}"
+    echo ""
+    echo -e "${CYAN}API keys are stored in $env_file${NC}"
+    echo -e "${CYAN}Docker Compose reads this file automatically.${NC}"
     echo ""
 
-    # Required key
-    prompt_for_key "OPENAI_API_KEY" "For memory embeddings (~\$4/month)" "required"
-
-    # Optional keys
-    echo ""
-    echo -e "${BLUE}Optional API keys (enhance functionality):${NC}"
-    prompt_for_key "GITHUB_TOKEN" "For GitHub MCP integration" "optional"
-    prompt_for_key "TAVILY_API_KEY" "For web research MCP" "optional"
+    # Prompt for each key
+    echo -e "${BLUE}Required:${NC}"
+    prompt_for_key "OPENAI_API_KEY" "needed for memory embeddings (~\$4/month)" "required" "sk-..."
 
     echo ""
-    log_success "API key configuration complete"
-    echo -e "Keys stored in: ${CYAN}$env_file${NC}"
+    echo -e "${BLUE}Optional:${NC}"
+    prompt_for_key "GITHUB_TOKEN" "enables GitHub MCP integration" "optional" "ghp_..."
+    prompt_for_key "TAVILY_API_KEY" "enables web research MCP" "optional" "tvly-..."
+
+    echo ""
+
+    # Remind user to add to shell config for CLI access
+    echo -e "${CYAN}For CLI access outside Docker, add to your ~/.zshrc or ~/.bashrc:${NC}"
+    echo ""
+    if [ -f "$env_file" ]; then
+        grep -v "^#" "$env_file" | grep "=" | while read -r line; do
+            local key=$(echo "$line" | cut -d= -f1)
+            echo -e "  ${YELLOW}export $key=\"\${$key}\"${NC}"
+        done
+    fi
     echo ""
 }
 
@@ -495,11 +413,24 @@ setup_api_keys() {
 # MCP Configuration
 # ============================================
 install_mcps() {
+    local force_flag="$1"
+
     echo ""
     log_info "Configuring MCP servers..."
 
+    # Export variables for sub-script
+    export CODEAGENT_HOME="$INSTALL_DIR"
+    export CODEAGENT_NO_DOCKER="${skip_docker:-false}"
+
+    # Set force based on argument or global flag
+    if [ "$force_flag" = "--force" ] || [ "$force_reinstall" = "true" ]; then
+        export CODEAGENT_FORCE="true"
+    else
+        export CODEAGENT_FORCE="false"
+    fi
+
     if [ -f "$INSTALL_DIR/mcps/install-mcps.sh" ]; then
-        bash "$INSTALL_DIR/mcps/install-mcps.sh" "$@"
+        bash "$INSTALL_DIR/mcps/install-mcps.sh"
     else
         log_warn "MCP installer not found. MCPs will need manual configuration."
     fi
@@ -512,13 +443,8 @@ start_infrastructure() {
     echo ""
     log_info "Starting CodeAgent infrastructure..."
 
-    # Load API keys
-    local env_file="$INSTALL_DIR/.env"
-    if [ -f "$env_file" ]; then
-        set -a
-        source "$env_file"
-        set +a
-    fi
+    # Docker Compose reads API keys from .env file automatically (via env_file directive)
+    # No need to export or read keys here
 
     # Start Docker containers
     cd "$INSTALL_DIR/infrastructure"
@@ -723,6 +649,9 @@ main() {
                 ;;
         esac
     done
+
+    # Export force flag for sub-scripts
+    export CODEAGENT_FORCE_REINSTALL="$force_reinstall"
 
     print_banner
     check_requirements

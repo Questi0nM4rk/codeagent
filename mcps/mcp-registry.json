@@ -1,0 +1,109 @@
+{
+  "version": "1.0",
+  "prefix": "codeagent-",
+  "description": "Registry of CodeAgent-managed MCPs. Force reinstall only affects MCPs listed here.",
+  "docker": [
+    {
+      "name": "qdrant",
+      "container": "codeagent-qdrant",
+      "healthcheck": {
+        "type": "tcp",
+        "port": 6333
+      },
+      "dependencies": [],
+      "mcp_registration": false
+    },
+    {
+      "name": "neo4j",
+      "container": "codeagent-neo4j",
+      "healthcheck": {
+        "type": "http",
+        "url": "http://localhost:7474"
+      },
+      "dependencies": [],
+      "mcp_registration": false
+    },
+    {
+      "name": "letta",
+      "container": "codeagent-letta",
+      "healthcheck": {
+        "type": "http",
+        "url": "http://localhost:8283/v1/health/"
+      },
+      "dependencies": ["qdrant"],
+      "mcp_registration": true,
+      "mcp_name": "letta",
+      "mcp_command": "npx",
+      "mcp_args": ["-y", "letta-mcp-server"],
+      "mcp_env": {
+        "LETTA_BASE_URL": "http://localhost:8283"
+      }
+    }
+  ],
+  "npm": [
+    {
+      "name": "memory",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {},
+      "required": true
+    },
+    {
+      "name": "sequential-thinking",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {},
+      "required": true
+    },
+    {
+      "name": "filesystem",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "env": {},
+      "required": true
+    },
+    {
+      "name": "context7",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {},
+      "required": true
+    }
+  ],
+  "npm_optional": [
+    {
+      "name": "github",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env_key": "GITHUB_TOKEN",
+      "env_var": "GITHUB_TOKEN"
+    },
+    {
+      "name": "tavily",
+      "command": "npx",
+      "args": ["-y", "tavily-mcp"],
+      "env_key": "TAVILY_API_KEY",
+      "env_var": "TAVILY_API_KEY"
+    }
+  ],
+  "python": [
+    {
+      "name": "code-graph",
+      "module": "code_graph_mcp.server",
+      "path": "mcps/code-graph-mcp",
+      "required": true
+    },
+    {
+      "name": "tot",
+      "module": "tot_mcp.server",
+      "path": "mcps/tot-mcp",
+      "required": true
+    },
+    {
+      "name": "reflection",
+      "module": "reflection_mcp.server",
+      "path": "mcps/reflection-mcp",
+      "required": true
+    }
+  ]
+}
