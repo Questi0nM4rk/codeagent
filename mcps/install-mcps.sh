@@ -170,7 +170,9 @@ remove_all_mcps() {
     local removed=0
     while IFS= read -r name; do
         if [ -n "$name" ]; then
-            claude mcp remove "$name" 2>/dev/null || true
+            # Remove from all scopes (user and local) for complete wipe
+            claude mcp remove --scope user "$name" 2>/dev/null || true
+            claude mcp remove --scope local "$name" 2>/dev/null || true
             log_info "  Removed: $name"
             removed=$((removed + 1))
         fi

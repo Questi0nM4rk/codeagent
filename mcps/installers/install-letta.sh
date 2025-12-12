@@ -134,10 +134,10 @@ mcp_exists() {
     claude mcp list 2>/dev/null | grep -q "^$name:" 2>/dev/null
 }
 
-# Remove MCP registration
+# Remove MCP registration (user scope for global)
 remove_mcp() {
     local name="$1"
-    claude mcp remove "$name" 2>/dev/null || true
+    claude mcp remove --scope user "$name" 2>/dev/null || true
 }
 
 # Get env value from file or environment
@@ -268,11 +268,11 @@ register_mcp() {
         remove_mcp "$LETTA_MCP_NAME"
     fi
 
-    # Register with Claude
+    # Register with Claude (user scope for global)
     # Note: LETTA_BASE_URL without /v1 suffix for the MCP server
     log_step "Registering letta-mcp-server..."
 
-    if claude mcp add "$LETTA_MCP_NAME" \
+    if claude mcp add --scope user "$LETTA_MCP_NAME" \
         --env "LETTA_BASE_URL=http://localhost:$LETTA_PORT" \
         -- npx -y letta-mcp-server 2>/dev/null; then
         log_success "Letta MCP registered"

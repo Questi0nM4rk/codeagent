@@ -44,10 +44,10 @@ mcp_exists() {
     claude mcp list 2>/dev/null | grep -q "^$name:" 2>/dev/null
 }
 
-# Remove MCP registration
+# Remove MCP registration (user scope for global)
 remove_mcp() {
     local name="$1"
-    claude mcp remove "$name" 2>/dev/null || true
+    claude mcp remove --scope user "$name" 2>/dev/null || true
 }
 
 # ============================================
@@ -128,8 +128,8 @@ install_python_mcps() {
             remove_mcp "$name"
         fi
 
-        # Register MCP with Claude
-        if claude mcp add "$name" -- "$VENV_PYTHON" -m "$module" 2>/dev/null; then
+        # Register MCP with Claude (user scope for global)
+        if claude mcp add --scope user "$name" -- "$VENV_PYTHON" -m "$module" 2>/dev/null; then
             log_success "  Installed: $name"
             ((PYTHON_INSTALLED++)) || true
         else

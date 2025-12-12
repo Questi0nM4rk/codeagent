@@ -42,10 +42,10 @@ mcp_exists() {
     claude mcp list 2>/dev/null | grep -q "^$name:" 2>/dev/null
 }
 
-# Remove MCP registration
+# Remove MCP registration (user scope for global)
 remove_mcp() {
     local name="$1"
-    claude mcp remove "$name" 2>/dev/null || true
+    claude mcp remove --scope user "$name" 2>/dev/null || true
 }
 
 # Get API key value from environment or .env file
@@ -92,9 +92,9 @@ install_npm_required() {
             remove_mcp "$name"
         fi
 
-        # Register MCP
+        # Register MCP (user scope for global)
         local add_output
-        add_output=$(claude mcp add "$name" -- $command $args 2>&1) || true
+        add_output=$(claude mcp add --scope user "$name" -- $command $args 2>&1) || true
 
         # Check if registration succeeded (either added or already exists)
         if mcp_exists "$name"; then
@@ -142,9 +142,9 @@ install_npm_optional() {
             remove_mcp "$name"
         fi
 
-        # Register MCP with env var
+        # Register MCP with env var (user scope for global)
         local add_output
-        add_output=$(claude mcp add "$name" --env "$env_var=$key_value" -- $command $args 2>&1) || true
+        add_output=$(claude mcp add --scope user "$name" --env "$env_var=$key_value" -- $command $args 2>&1) || true
 
         # Check if registration succeeded (either added or already exists)
         if mcp_exists "$name"; then

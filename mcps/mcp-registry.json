@@ -42,13 +42,6 @@
   ],
   "npm": [
     {
-      "name": "memory",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {},
-      "required": true
-    },
-    {
       "name": "sequential-thinking",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
