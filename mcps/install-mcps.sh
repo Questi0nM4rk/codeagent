@@ -158,8 +158,9 @@ run_installer() {
 remove_all_mcps() {
     log_warn "Removing ALL MCPs from system..."
 
-    # Get list of all registered MCPs
-    local mcp_list=$(claude mcp list 2>/dev/null | grep "^[a-zA-Z]" | cut -d':' -f1 || echo "")
+    # Get list of all registered MCPs (format: "name: command - status")
+    # Filter lines containing ": " to exclude headers like "Checking MCP server health..."
+    local mcp_list=$(claude mcp list 2>/dev/null | grep ": .* - " | cut -d':' -f1 || echo "")
 
     if [ -z "$mcp_list" ]; then
         log_info "No MCPs currently registered"
