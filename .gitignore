@@ -48,3 +48,6 @@ temp/
 *.key
 secrets/
 credentials/
+
+# Internal documentation (not for distribution)
+Docs/
