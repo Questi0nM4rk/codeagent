@@ -1,34 +1,34 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(node:*)",
-      "Bash(python:*)",
-      "Bash(python3:*)",
-      "Bash(pip:*)",
-      "Bash(pip3:*)",
-      "Bash(docker:*)",
-      "Bash(docker-compose:*)",
-      "Bash(git:*)",
-      "Bash(dotnet:*)",
-      "Bash(cargo:*)",
-      "Bash(rustc:*)",
-      "Bash(cmake:*)",
-      "Bash(make:*)",
-      "Bash(ctest:*)",
-      "Bash(lua:*)",
-      "Bash(luarocks:*)",
-      "Bash(busted:*)",
-      "Bash(clang-format:*)",
-      "Bash(clang-tidy:*)",
-      "Bash(stylua:*)",
-      "Bash(shfmt:*)",
-      "Bash(semgrep:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)",
-      "Bash(tree:*)",
-      "Bash(jq:*)",
+      "Bash(npm::*)",
+      "Bash(npx::*)",
+      "Bash(node::*)",
+      "Bash(python::*)",
+      "Bash(python3::*)",
+      "Bash(pip::*)",
+      "Bash(pip3::*)",
+      "Bash(docker::*)",
+      "Bash(docker-compose::*)",
+      "Bash(git::*)",
+      "Bash(dotnet::*)",
+      "Bash(cargo::*)",
+      "Bash(rustc::*)",
+      "Bash(cmake::*)",
+      "Bash(make::*)",
+      "Bash(ctest::*)",
+      "Bash(lua::*)",
+      "Bash(luarocks::*)",
+      "Bash(busted::*)",
+      "Bash(clang-format::*)",
+      "Bash(clang-tidy::*)",
+      "Bash(stylua::*)",
+      "Bash(shfmt::*)",
+      "Bash(semgrep::*)",
+      "Bash(curl::*)",
+      "Bash(wget::*)",
+      "Bash(tree::*)",
+      "Bash(jq::*)",
       "Read(**/*)",
       "Write(**/*)",
       "Edit(**/*)",
@@ -52,8 +52,8 @@
       "mcp__reflection"
     ],
     "deny": [
-      "Bash(rm -rf /:*)",
-      "Bash(sudo rm:*)",
+      "Bash(rm -rf /::*)",
+      "Bash(sudo rm::*)",
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./secrets/**)",
@@ -64,7 +64,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash(git commit:*)",
+        "matcher": "Bash(git commit::*)",
         "hooks": [
           {
             "type": "command",
@@ -73,7 +73,7 @@
         ]
       },
       {
-        "matcher": "Bash(git push:*)",
+        "matcher": "Bash(git push::*)",
         "hooks": [
           {
             "type": "command",
