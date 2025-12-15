@@ -64,68 +64,69 @@ curl http://localhost:8283/v1/health/
 
 ### High Priority
 
-#### 1. code-graph MCP Enhancement
-- **Current status**: Implemented with basic AST parsing
+#### 1. code-graph MCP Enhancement ✅ COMPLETED
+- **Current status**: ✅ Fully implemented (v0.2.0)
 - **File**: `mcps/code-graph-mcp/src/code_graph_mcp/server.py`
-- **Research needed**:
-  - Better Neo4j relationship types (INHERITS, IMPLEMENTS, USES, OVERRIDES)
-  - Cross-file dependency tracking improvements
-  - Index optimization for large codebases (>10k files)
-  - Query patterns for common code analysis:
-    - "What calls this function?"
-    - "What would break if I change this?"
-    - "Show me the inheritance hierarchy"
-- **Languages supported**: C#, C++, Rust, Lua, Bash
-- **Languages to add**: Python, TypeScript/JavaScript, Go
+- **Completed**:
+  - ✅ Better Neo4j relationship types (INHERITS, IMPLEMENTS, USES, CONTAINS, DEFINES)
+  - ✅ Cross-file dependency tracking via IMPORTS and USES relationships
+  - ✅ Index optimization using UNWIND batch operations
+  - ✅ Query patterns for common code analysis (all existing tools work)
+- **Languages supported**: C#, C++, Rust, Lua, Bash, Python, TypeScript, JavaScript, Go (9 total)
 
-#### 2. tot-mcp Enhancement
-- **Current status**: ✅ Fully implemented
+#### 2. tot-mcp Enhancement ✅ COMPLETED
+- **Current status**: ✅ Fully implemented (v0.2.0)
 - **File**: `mcps/tot-mcp/src/tot_mcp/server.py`
-- **Future enhancements**:
-  - Integration with Claude's thinking levels (`think`, `think hard`, `ultrathink`)
-  - Persistent storage for thought trees
-  - Advanced pruning strategies based on domain knowledge
+- **Completed**:
+  - ✅ Integration with Claude's thinking levels (auto-detected from problem complexity)
+  - ✅ Persistent storage to `~/.codeagent/data/thought-trees/`
+  - ✅ Advanced pruning (alpha-beta style, weighted criteria, diversity preservation)
+  - ✅ New "diverse" strategy for exploring different solutions
+  - ✅ New tools: `delete_tree`, `set_criteria_weights`
 - **Reference**: https://arxiv.org/abs/2305.10601
 
-#### 3. reflection-mcp Enhancement
-- **Current status**: ✅ Fully implemented
+#### 3. reflection-mcp Enhancement ✅ COMPLETED
+- **Current status**: ✅ Fully implemented (v0.2.0)
 - **File**: `mcps/reflection-mcp/src/reflection_mcp/server.py`
-- **Future enhancements**:
-  - Persistent episodic storage (currently in-memory)
-  - Integration with learner skill for pattern extraction
-  - Cross-session learning aggregation
+- **Completed**:
+  - ✅ Persistent storage to `~/.codeagent/data/reflection-episodes/`
+  - ✅ Lesson effectiveness tracking (`mark_lesson_effective`, `link_episode_to_lesson`)
+  - ✅ Cross-session learning aggregation (`LessonPattern`, `_update_lesson_patterns`)
+  - ✅ Export for learner skill (`export_lessons` tool)
 
 ### Medium Priority
 
-#### 4. Neo4j Graph Schema
+#### 4. Neo4j Graph Schema ✅ COMPLETED
 - **Init script**: `infrastructure/neo4j/init.cypher`
-- **Current schema**: Basic CodeNode with CALLS relationship
-- **Research needed**:
-  - Constraint optimization
-  - Full-text search indexes
-  - Query performance tuning
-  - Backup/restore procedures
+- **Completed**:
+  - ✅ Constraints for unique identifiers (code_node_id, file_path, import_name)
+  - ✅ Basic indexes for common lookups (name, full_name, type, file, line)
+  - ✅ Composite indexes for query patterns (file+type, name+type, language)
+  - ✅ Full-text search indexes (code_name_search, file_path_search, import_name_search)
+  - ✅ Documentation of schema, relationships, and sample queries
+  - ✅ Backup/restore scripts already implemented in `scripts/backup-memory.sh` and `scripts/restore-memory.sh`
 
-#### 5. MCP Health Monitoring
-- **Current status**: Basic checks in installer
-- **Research needed**:
-  - Continuous monitoring via `codeagent status`
-  - Automatic restart on failure
-  - Log aggregation
-  - Alert thresholds
+#### 5. MCP Health Monitoring ✅ COMPLETED
+- **CLI**: `bin/codeagent-status`
+- **Config**: `config/monitoring.conf`
+- **Completed**:
+  - ✅ Continuous monitoring via `codeagent status --watch`
+  - ✅ Auto-restart on failure with `--auto-restart` flag
+  - ✅ Configurable alert thresholds with `--threshold N`
+  - ✅ Log aggregation with service filtering: `codeagent logs [neo4j|qdrant|letta]`
+  - ✅ JSON output for integration: `codeagent status --json`
+  - ✅ Container stats (CPU, memory) in JSON output
 
 ### Low Priority
 
-#### 6. Additional Tree-sitter Languages
-- **Current**: C#, C++, Rust, Lua, Bash
-- **Priority additions**:
-  - Python (tree-sitter-python)
-  - TypeScript (tree-sitter-typescript)
-  - Go (tree-sitter-go)
-- **Considerations**:
-  - Each language adds ~1-2MB to dependencies
-  - Parser loading time impact
-  - Node type mapping complexity
+#### 6. Additional Tree-sitter Languages ✅ COMPLETED
+- **Current**: C#, C++, Rust, Lua, Bash, Python, TypeScript, JavaScript, Go (9 languages)
+- **Completed**:
+  - ✅ Python (tree-sitter-python)
+  - ✅ TypeScript (tree-sitter-typescript)
+  - ✅ JavaScript (tree-sitter-javascript)
+  - ✅ Go (tree-sitter-go)
+- **Implementation**: Added to `pyproject.toml` and `install.sh`
 
 ---
 

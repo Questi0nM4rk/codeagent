@@ -29,6 +29,42 @@ Think of this as a design session between two senior engineers. Challenge assump
 
 ## Tree-of-Thought Process
 
+Use the ToT MCP for structured exploration:
+
+```
+# Initialize thought tree
+mcp__tot__create_tree:
+  problem="[problem statement]"
+  criteria=["feasibility", "complexity", "risk", "maintainability"]
+  strategy="greedy" | "beam" | "diverse"
+  max_depth=5
+
+# Generate candidate approaches
+mcp__tot__generate_thoughts:
+  tree_id="[id]"
+  thoughts=[
+    {content: "Approach A", rationale: "..."},
+    {content: "Approach B", rationale: "..."},
+    {content: "Approach C", rationale: "..."}
+  ]
+
+# Evaluate approaches
+mcp__tot__evaluate_thoughts:
+  tree_id="[id]"
+  evaluations=[
+    {thought_id: "...", scores: {feasibility: 8, complexity: 6, risk: 3}}
+  ]
+
+# Select best path
+mcp__tot__select_path: tree_id="[id]"
+
+# If stuck, backtrack
+mcp__tot__backtrack: tree_id="[id]", reason="[why this path failed]"
+
+# Get final recommendation
+mcp__tot__get_best_path: tree_id="[id]"
+```
+
 ### Step 1: Challenge the Problem Statement
 
 Before solving, verify:

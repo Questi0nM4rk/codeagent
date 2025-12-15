@@ -1,6 +1,7 @@
 // ============================================
 // CodeAgent Neo4j Schema Initialization
 // Run once on first startup to create indexes and constraints
+// Version: 2.0.0
 // ============================================
 
 // ============================================
@@ -18,7 +19,7 @@ CREATE CONSTRAINT import_name IF NOT EXISTS
 FOR (i:Import) REQUIRE i.name IS UNIQUE;
 
 // ============================================
-// INDEXES (query performance)
+// BASIC INDEXES (query performance)
 // ============================================
 
 // Name-based lookups (most common query pattern)
@@ -39,6 +40,42 @@ FOR (n:CodeNode) ON (n.file);
 // Line number lookups
 CREATE INDEX code_node_line IF NOT EXISTS
 FOR (n:CodeNode) ON (n.line);
+
+// ============================================
+// COMPOSITE INDEXES (common query patterns)
+// ============================================
+
+// Find all entities of a type in a file (very common)
+CREATE INDEX code_node_file_type IF NOT EXISTS
+FOR (n:CodeNode) ON (n.file, n.type);
+
+// Find entities by name and type
+CREATE INDEX code_node_name_type IF NOT EXISTS
+FOR (n:CodeNode) ON (n.name, n.type);
+
+// File language filtering
+CREATE INDEX file_language IF NOT EXISTS
+FOR (f:File) ON (f.language);
+
+// ============================================
+// FULL-TEXT SEARCH INDEXES (semantic search)
+// ============================================
+
+// Full-text index on code names for fuzzy searching
+// Supports: contains, starts with, ends with, fuzzy match
+CREATE FULLTEXT INDEX code_name_search IF NOT EXISTS
+FOR (n:CodeNode)
+ON EACH [n.name, n.full_name];
+
+// Full-text index on file paths
+CREATE FULLTEXT INDEX file_path_search IF NOT EXISTS
+FOR (f:File)
+ON EACH [f.path];
+
+// Full-text index on import names
+CREATE FULLTEXT INDEX import_name_search IF NOT EXISTS
+FOR (i:Import)
+ON EACH [i.name];
 
 // ============================================
 // NODE LABELS

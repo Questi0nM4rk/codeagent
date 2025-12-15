@@ -36,7 +36,7 @@ ALL checks must pass. Any failure = CHANGES REQUIRED. No exceptions.
 ### 1. Static Analysis
 
 ```bash
-# .NET
+# .NET (C#)
 dotnet format --verify-no-changes
 dotnet build --warnaserror
 
@@ -47,6 +47,29 @@ cargo clippy -- -D warnings
 # C/C++
 clang-format --dry-run --Werror src/*.cpp
 clang-tidy src/*.cpp
+
+# Python
+black --check .
+ruff check .
+mypy .
+
+# TypeScript/JavaScript
+prettier --check "**/*.{ts,tsx,js,jsx}"
+eslint . --ext .ts,.tsx,.js,.jsx
+tsc --noEmit  # TypeScript only
+
+# Go
+gofmt -l .
+go vet ./...
+staticcheck ./...
+
+# Lua
+luacheck . --codes
+stylua --check .
+
+# Bash
+shellcheck **/*.sh
+shfmt -d .
 ```
 
 ### 2. Security Scan (NEVER SKIP)
@@ -55,20 +78,31 @@ clang-tidy src/*.cpp
 # Universal security scan
 semgrep --config auto --error .
 
-# Language-specific
+# Language-specific vulnerability scanning
 dotnet list package --vulnerable    # .NET
 cargo audit                         # Rust
+pip-audit                           # Python
+npm audit                           # JavaScript/TypeScript
+govulncheck ./...                   # Go
 
-# Secrets detection
-grep -r "password\|secret\|api_key\|token" --include="*.cs" | grep -v test
+# Secrets detection (check all source files)
+grep -rE "password|secret|api_key|token|private_key" \
+  --include="*.cs" --include="*.py" --include="*.ts" \
+  --include="*.js" --include="*.go" --include="*.rs" \
+  | grep -v test | grep -v node_modules
 ```
 
 ### 3. Test Execution
 
 ```bash
+# Full test suite by language
 dotnet test --verbosity normal  # .NET
 cargo test                       # Rust
 ctest --test-dir build          # C/C++
+pytest                          # Python
+npm test                        # JavaScript/TypeScript
+go test ./...                   # Go
+busted                          # Lua
 ```
 
 ### 4. Pattern Consistency

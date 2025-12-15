@@ -26,8 +26,8 @@ usage() {
     echo "  start         Start all services (Neo4j, Qdrant, Letta)"
     echo "  stop          Stop all services"
     echo "  restart       Restart all services"
-    echo "  status        Check service health"
-    echo "  logs          View service logs (use -f for follow)"
+    echo "  status        Check service health (-w for watch, -r for auto-restart)"
+    echo "  logs          View service logs (use -f for follow, service name for filter)"
     echo ""
     echo -e "${BLUE}Project Commands:${NC}"
     echo "  init          Initialize CodeAgent in current project"
@@ -84,10 +84,48 @@ case "${1:-help}" in
     logs)
         check_install
         cd "$INSTALL_DIR/infrastructure"
-        if [ "$2" = "-f" ]; then
-            docker compose logs -f
+        follow=false
+        service=""
+        lines=100
+
+        # Parse logs arguments
+        shift
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                -f|--follow)
+                    follow=true
+                    shift
+                    ;;
+                -n|--lines)
+                    lines="$2"
+                    shift 2
+                    ;;
+                neo4j|qdrant|letta)
+                    service="$1"
+                    shift
+                    ;;
+                all)
+                    service=""
+                    shift
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
+
+        if [ "$follow" = true ]; then
+            if [ -n "$service" ]; then
+                docker compose logs -f "$service"
+            else
+                docker compose logs -f
+            fi
         else
-            docker compose logs --tail=100
+            if [ -n "$service" ]; then
+                docker compose logs --tail="$lines" "$service"
+            else
+                docker compose logs --tail="$lines"
+            fi
         fi
         ;;
     update)

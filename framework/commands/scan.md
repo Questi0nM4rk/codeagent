@@ -29,18 +29,26 @@ Scans entire codebase and builds knowledge graph + memory store.
 Find all relevant source files:
 
 ```bash
-# Languages we scan
-.cs, .csproj, .sln     # .NET
+# Languages we scan (9 supported by code-graph MCP)
+.cs, .csproj, .sln     # .NET (C#)
 .cpp, .c, .h, .hpp     # C/C++
 .rs, Cargo.toml        # Rust
 .lua, *.rockspec       # Lua
-.sh, .zsh              # Shell
+.sh, .zsh              # Shell (Bash)
+.py, pyproject.toml    # Python
+.ts, .tsx              # TypeScript
+.js, .jsx              # JavaScript
+.go, go.mod            # Go
 
 # Exclude patterns
 */bin/*, */obj/*       # Build outputs
 */node_modules/*       # Dependencies
 */target/*             # Rust target
 */.git/*               # Git internals
+*/__pycache__/*        # Python cache
+*/dist/*, */build/*    # Build outputs
+*.min.js, *.bundle.js  # Bundled JS
+*/vendor/*             # Go vendor
 ```
 
 ### Step 2: Structure Extraction
@@ -87,6 +95,11 @@ Store extracted data:
 | C++ | X | X | X |
 | Rust | X | X | X |
 | Lua | X | X | X |
+| Python | X | X | X |
+| TypeScript | X | X | X |
+| JavaScript | X | X | X |
+| Go | X | X | X |
+| Bash | X | X | - |
 
 ### Patterns Detected
 | Pattern | Occurrences | Files |

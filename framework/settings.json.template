@@ -1,4 +1,29 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(dotnet:*)",
+      "Bash(cargo:*)",
+      "Bash(go:*)",
+      "Bash(npm:*)",
+      "Bash(python:*)",
+      "Bash(git:*)",
+      "Read(**/*)",
+      "Write(**/*)",
+      "Edit(**/*)",
+      "mcp__code-graph__*",
+      "mcp__tot__*",
+      "mcp__reflection__*",
+      "mcp__letta__*",
+      "mcp__context7__*",
+      "mcp__sequential-thinking__*"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Read(.env)",
+      "Read(**/secrets/**)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -17,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "case \"$CLAUDE_TOOL_INPUT_FILE_PATH\" in *.cs) dotnet format --include \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.rs) cargo fmt 2>/dev/null || true ;; *.cpp|*.c|*.h|*.hpp) clang-format -i \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.lua) stylua \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.sh) shfmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; esac"
+            "command": "case \"$CLAUDE_TOOL_INPUT_FILE_PATH\" in *.cs) dotnet format --include \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.rs) cargo fmt 2>/dev/null || true ;; *.cpp|*.c|*.h|*.hpp) clang-format -i \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.lua) stylua \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.sh) shfmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.py) black \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.ts|*.tsx|*.js|*.jsx) prettier --write \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.go) gofmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; esac"
           },
           {
             "type": "command",

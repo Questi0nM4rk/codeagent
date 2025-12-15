@@ -49,18 +49,41 @@ Multi-agent/parallel only works when tasks are TRULY isolated. One shared depend
 
 ## Isolation Analysis Process
 
+Use code-graph MCP to trace dependencies:
+
+```
+# Get dependencies for each file/function
+mcp__code-graph__query_dependencies:
+  symbol="[function_name]"
+  depth=3  # Trace transitive dependencies
+
+# Find what would be affected by changes
+mcp__code-graph__find_affected_by_change:
+  file_path="[file]"
+  function_name="[function]"
+
+# Get call graph to understand relationships
+mcp__code-graph__get_call_graph:
+  entry_point="[function]"
+  depth=3
+
+# Search for shared symbols
+mcp__code-graph__search_symbols:
+  pattern="[shared service name]"
+```
+
 ### Step 1: Map Files for Each Task
 
 ```
 Task A: [description]
 - Will modify: [file list]
 - Will read: [file list]
-- Dependencies: [imports, services, shared code]
+- Dependencies: [from mcp__code-graph__query_dependencies]
 
 Task B: [description]
 - Will modify: [file list]
 - Will read: [file list]
-- Dependencies: [imports, services, shared code]
+- Dependencies: [from mcp__code-graph__query_dependencies]
 
 Uncertainty:
 - [Files I'm not sure about]
@@ -72,8 +95,8 @@ Uncertainty:
 ```
 files_A = files modified by A
 files_B = files modified by B
-deps_A = ALL dependencies of files_A (direct and transitive)
-deps_B = ALL dependencies of files_B (direct and transitive)
+deps_A = ALL dependencies of files_A (from code-graph, direct and transitive)
+deps_B = ALL dependencies of files_B (from code-graph, direct and transitive)
 
 CHECK 1: files_A ∩ files_B = ?
   → If not empty: CONFLICT
@@ -85,6 +108,7 @@ CHECK 3: deps_A ∩ files_B = ?
   → If not empty: CONFLICT
 
 CHECK 4: shared_services(A, B) = ?
+  → Use mcp__code-graph__search_symbols to find shared services
   → If any: POTENTIAL CONFLICT (investigate)
 
 CHECK 5: database_tables(A, B) = ?

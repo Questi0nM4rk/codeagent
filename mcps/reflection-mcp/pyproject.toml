@@ -1,7 +1,7 @@
 [project]
 name = "reflection-mcp"
-version = "0.1.0"
-description = "Self-reflection MCP server with episodic memory for learning from failures"
+version = "0.2.0"
+description = "Self-reflection MCP server with persistent episodic memory and lesson effectiveness tracking"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

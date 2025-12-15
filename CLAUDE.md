@@ -4,216 +4,137 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**CodeAgent** is a research-backed autonomous coding framework for Claude Code. It provides skills, commands, and infrastructure to transform Claude Code into an accuracy-optimized system.
+**CodeAgent** (v0.1.0) is a research-backed autonomous coding framework for Claude Code. It provides skills, commands, MCP servers, and Docker infrastructure to transform Claude Code into an accuracy-optimized system.
 
 ## Quick Start
 
 ```bash
-# Install
-./install.sh
-
-# Start infrastructure
-codeagent start
-
-# Initialize in a project
-cd /your/project
-codeagent init
-
-# Use in Claude Code
-/scan              # Build knowledge graph
-/plan "task"       # Research & design
-/implement         # TDD execution
-/review            # Validate
+./install.sh           # Install everything
+codeagent start        # Start infrastructure
+cd /your/project && codeagent init   # Initialize in any project
 ```
 
-## Repository Structure
-
-```
-codeagent/
-├── install.sh                    # Main installer (handles existing configs)
-├── uninstall.sh                  # Clean removal
-├── CLAUDE.md                     # This file
-│
-├── bin/                          # CLI commands
-│   ├── codeagent                 # Main CLI entry point
-│   ├── codeagent-start           # Start Docker services
-│   ├── codeagent-stop            # Stop services
-│   ├── codeagent-status          # Health check
-│   └── codeagent-init            # Initialize project
-│
-├── infrastructure/
-│   ├── docker-compose.yml        # Neo4j, Qdrant, Letta (OpenAI embeddings)
-│   └── neo4j/init.cypher         # Graph schema
-│
-├── framework/
-│   ├── skills/                   # Claude Code skills (native feature)
-│   │   ├── researcher/SKILL.md   # Context gathering
-│   │   ├── architect/SKILL.md    # Solution design (ToT)
-│   │   ├── orchestrator/SKILL.md # Parallel analysis
-│   │   ├── implementer/SKILL.md  # TDD coding
-│   │   ├── reviewer/SKILL.md     # External validation
-│   │   └── learner/SKILL.md      # Pattern extraction
-│   ├── commands/                 # Slash commands
-│   │   ├── scan.md
-│   │   ├── plan.md
-│   │   ├── implement.md
-│   │   ├── integrate.md
-│   │   └── review.md
-│   └── settings.json.template    # Permissions, hooks, MCP config
-│
-├── mcps/
-│   ├── install-mcps.sh           # Configure MCP servers
-│   ├── tot-mcp/                  # Tree-of-Thought (placeholder)
-│   ├── reflection-mcp/           # Self-Reflection (placeholder)
-│   └── code-graph-mcp/           # Code knowledge graph (placeholder)
-│
-├── templates/                    # Project CLAUDE.md templates
-│   ├── dotnet/CLAUDE.md
-│   ├── rust/CLAUDE.md
-│   ├── cpp/CLAUDE.md
-│   └── lua/CLAUDE.md
-│
-├── scripts/
-│   ├── health-check.sh
-│   ├── backup-memory.sh
-│   ├── restore-memory.sh
-│   └── update.sh
-│
-└── Docs/                         # Design documentation
-    ├── ProjectVision.md
-    ├── Implementation.md
-    └── GitHubRepoStructure.md
-```
-
-## Claude Code Integration
-
-### Skills (Native Feature)
-
-Skills are Claude Code's extension system. Each skill is a directory with `SKILL.md`:
-
-```yaml
----
-name: skill-name
-description: When to activate this skill
----
-
-# Instructions Claude follows when skill is active
-```
-
-Skills activate automatically based on their description matching the user's request.
-
-### Commands
-
-Slash commands in `.claude/commands/`:
-
-```yaml
----
-description: What this command does
----
-
-# Command instructions
-```
-
-### Settings
-
-`settings.json` format:
-
-```json
-{
-  "permissions": {
-    "allow": ["Bash(npm:*)", "Read(**/*)", "mcp__github"],
-    "deny": ["Bash(rm -rf:*)", "Read(./.env)"]
-  },
-  "hooks": {
-    "PostToolUse": [{"matcher": "Edit", "hooks": [...]}]
-  },
-  "mcpServers": {
-    "github": {"command": "npx", "args": [...]}
-  }
-}
-```
-
-## Key Commands
-
-### CLI Commands
+## Development Commands
 
 ```bash
-codeagent start      # Start Neo4j, Qdrant, Letta
-codeagent stop       # Stop services
-codeagent status     # Health check
-codeagent init       # Initialize project
-codeagent backup     # Backup memory
-codeagent restore    # Restore backup
+# Validate shell scripts
+shellcheck install.sh bin/* scripts/*.sh mcps/*.sh
+
+# Test custom MCP servers
+~/.codeagent/venv/bin/python -m pytest mcps/code-graph-mcp/
+~/.codeagent/venv/bin/python -m pytest mcps/tot-mcp/
+~/.codeagent/venv/bin/python -m pytest mcps/reflection-mcp/
+
+# Infrastructure management
+codeagent start        # Start Neo4j, Qdrant, Letta
+codeagent stop         # Stop services
+codeagent status       # Health check
+codeagent logs -f      # Follow logs
+
+# Manual Docker control
+cd infrastructure && docker compose up -d
+docker compose logs -f
 ```
 
-### Slash Commands
+## Architecture
 
-| Command | Description |
-|---------|-------------|
-| `/scan` | Build knowledge graph |
-| `/plan "task"` | Research → Design |
-| `/implement` | TDD execution |
-| `/integrate` | Merge parallel work |
-| `/review` | External validation |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Claude Code CLI                          │
+├─────────────────────────────────────────────────────────────┤
+│  Skills           │  Commands        │  Hooks               │
+│  ~/.claude/       │  ~/.claude/      │  ~/.claude/          │
+│  skills/          │  commands/       │  hooks/              │
+├─────────────────────────────────────────────────────────────┤
+│                     MCP Servers                              │
+│  ┌──────────┐ ┌─────────┐ ┌──────────┐ ┌────────────────┐   │
+│  │code-graph│ │   tot   │ │reflection│ │ letta + npm    │   │
+│  │ (Neo4j)  │ │  (ToT)  │ │(episodic)│ │(context7, etc) │   │
+│  └──────────┘ └─────────┘ └──────────┘ └────────────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│              Docker Infrastructure                           │
+│  Neo4j:7687       │    Qdrant:6333   │    Letta:8283        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Key Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `bin/` | CLI entry points (codeagent, codeagent-start, etc.) |
+| `framework/skills/` | 6 skill definitions (researcher, architect, orchestrator, implementer, reviewer, learner) |
+| `framework/commands/` | 5 slash commands (scan, plan, implement, integrate, review) |
+| `framework/hooks/` | Git and post-edit hooks |
+| `mcps/` | Custom Python MCP servers + installers |
+| `infrastructure/` | Docker Compose for Neo4j, Qdrant, Letta |
+| `templates/` | Project-specific CLAUDE.md templates (dotnet, rust, cpp, lua) |
+| `scripts/` | Maintenance scripts (backup, restore, update, health-check) |
+
+## Custom MCPs
+
+Python MCP servers in `mcps/`:
+
+| MCP | Backend | Purpose |
+|-----|---------|---------|
+| `code-graph-mcp` | Neo4j | AST-based code knowledge graph (75% retrieval improvement) |
+| `tot-mcp` | In-memory | Tree-of-Thought reasoning (+70% on complex tasks) |
+| `reflection-mcp` | Qdrant | Self-reflection and episodic memory (+21% on HumanEval) |
+
+Install: `mcps/install-mcps.sh` registers all MCPs in global Claude Code scope.
 
 ## Skills System
 
-| Skill | Purpose |
-|-------|---------|
-| researcher | Memory-first context gathering |
-| architect | Tree-of-Thought solution design |
-| orchestrator | Parallel execution analysis |
-| implementer | Strict TDD workflow |
-| reviewer | External tool validation |
-| learner | Pattern extraction |
+Skills auto-activate based on context. Each has a thinking level:
+
+| Skill | Thinking | Purpose |
+|-------|----------|---------|
+| researcher | `think hard` | Memory-first context gathering |
+| architect | `ultrathink` | Tree-of-Thought solution design |
+| orchestrator | `think harder` | Parallel execution analysis |
+| implementer | `think hard` | Strict TDD workflow |
+| reviewer | `think hard` | External tool validation |
+| learner | `think` | Pattern extraction |
+
+## Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/scan` | Build knowledge graph of codebase |
+| `/plan "task"` | Research → Design (auto-detects parallel) |
+| `/implement` | TDD execution (sequential or parallel) |
+| `/integrate` | Merge parallel work streams |
+| `/review` | Validate with external tools |
 
 ## Infrastructure
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| Neo4j | 7474, 7687 | Code graph |
-| Qdrant | 6333 | Vectors |
-| Letta | 8283 | Memory (74% LOCOMO) |
+| Service | Ports | Purpose |
+|---------|-------|---------|
+| Neo4j | 7474, 7687 | Code structure graph |
+| Qdrant | 6333, 6334 | Vector embeddings |
+| Letta | 8283 | Memory system (74% LOCOMO) |
 
 **Embeddings**: OpenAI `text-embedding-3-small` (~$4/month)
 
 ## Environment Variables
 
 ```bash
-OPENAI_API_KEY      # Required for embeddings
-CODEAGENT_HOME      # Install dir (default: ~/.codeagent)
+OPENAI_API_KEY      # Required: Letta embeddings
+CODEAGENT_HOME      # Default: ~/.codeagent
 GITHUB_TOKEN        # Optional: GitHub MCP
 TAVILY_API_KEY      # Optional: Web research
 ```
 
 ## Design Philosophy
 
-### Partner, Not Assistant
+1. **Partner, not assistant** - Challenge assumptions, push back on bad ideas
+2. **Memory-first** - Query Letta/code-graph before external research
+3. **External validation** - Never self-review, use tools (semgrep, linters)
+4. **TDD always** - Test → Fail → Code → Pass
+5. **Accuracy over speed** - Spend tokens for correctness
 
-CodeAgent treats Claude as a **thinking partner**, not a compliant tool:
+## Detailed Documentation
 
-- **Challenge assumptions** - Question the first idea, propose alternatives
-- **Say "I don't know"** - Admit uncertainty rather than guessing
-- **Push back on bad ideas** - Respectfully disagree when something smells wrong
-- **Treat interactions as brainstorming** - Present options, surface tradeoffs, invite discussion
-
-### Core Principles
-
-1. **Partner before tool** - Challenge, discuss, collaborate
-2. **Uncertainty before confidence** - Say "I don't know" when unsure
-3. **Memory-first** - Query memory before external research
-4. **Single-agent implementation** - Multi-agent fragments context
-5. **External validation** - Never self-review
-6. **TDD always** - Test → Fail → Code → Pass
-7. **Accuracy over speed** - Spend tokens for correctness
-
-### Skill Personalities
-
-| Skill | Thinking Level | Partner Behavior |
-|-------|----------------|------------------|
-| researcher | `think hard` | Reports confidence gaps honestly |
-| architect | `ultrathink` | Challenges first ideas, explores alternatives |
-| orchestrator | `think harder` | Defaults to caution, explains risks |
-| implementer | `think hard` | Stops when stuck, asks for help |
-| reviewer | `think hard` | Never approves without evidence |
-| learner | `think` | Says "nothing new" when appropriate |
+- `Docs/Implementation.md` - Full technical specification
+- `Docs/ProjectVision.md` - Research backing and design decisions
+- `Docs/McpInstallWorkflow.md` - MCP installation details
+- `README.md` - User-facing documentation

@@ -21,6 +21,44 @@ Think of yourself as maintaining the team's institutional knowledge. You're sele
 
 **Focus on future value.** Ask: "Will this help someone working on a similar task in 6 months?" If not, don't record it.
 
+## MCP Tools for Learning
+
+Use reflection MCP to store and retrieve learnings:
+
+```
+# Store a learning episode
+mcp__reflection__store_episode:
+  task="[task description]"
+  approach="[what was tried]"
+  outcome="success" | "partial" | "failure"
+  feedback="[result or error]"
+  feedback_type="test_failure" | "review_comment" | "build_error"
+  reflection={
+    what_went_wrong: "...",
+    root_cause: "...",
+    what_to_try_next: "...",
+    general_lesson: "..."
+  }
+  code_context="[relevant code snippet]"
+  file_path="[file modified]"
+  tags=["pattern-name", "language"]
+
+# Mark a lesson as effective (after it helped)
+mcp__reflection__mark_lesson_effective:
+  episode_id="[id]"
+  effectiveness_score=0.9
+
+# Export lessons for project memory
+mcp__reflection__export_lessons:
+  feedback_type="test_failure"  # optional filter
+  min_occurrences=2
+
+# Store in Letta for long-term memory
+mcp__letta__create_passage:
+  agent_id="[project agent]"
+  text="[formatted lesson]"
+```
+
 ## What to Extract
 
 ### 1. Patterns (How we solved things)

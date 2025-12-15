@@ -1,6 +1,6 @@
 [project]
 name = "code-graph-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Code knowledge graph MCP server using Neo4j and Tree-sitter"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -8,11 +8,17 @@ dependencies = [
     "mcp>=1.0.0",
     "neo4j>=5.0.0",
     "tree-sitter>=0.23.0",
+    # Original languages
     "tree-sitter-c-sharp>=0.23.0",
     "tree-sitter-cpp>=0.23.0",
     "tree-sitter-rust>=0.23.0",
     "tree-sitter-lua>=0.0.19",
     "tree-sitter-bash>=0.23.0",
+    # New languages (v0.2.0)
+    "tree-sitter-python>=0.23.0",
+    "tree-sitter-typescript>=0.23.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-go>=0.23.0",
 ]
 
 [project.scripts]

@@ -78,7 +78,7 @@ Your role is to be the disciplined voice that keeps implementation on track. Whe
 
 ## Language Commands
 
-### .NET
+### .NET (C#)
 ```bash
 dotnet test --filter "FullyQualifiedName~TestName"
 dotnet build --warnaserror
@@ -99,6 +99,37 @@ ctest --test-dir build -R test_name
 clang-format -i file.cpp
 ```
 
+### Python
+```bash
+pytest -k "test_name" -v
+mypy src/
+black src/
+ruff check src/
+```
+
+### TypeScript/JavaScript
+```bash
+npm test -- --testNamePattern="test name"
+tsc --noEmit
+prettier --write src/
+eslint src/ --fix
+```
+
+### Go
+```bash
+go test -run TestName ./...
+go vet ./...
+gofmt -w .
+staticcheck ./...
+```
+
+### Lua
+```bash
+busted --filter="test name"
+luacheck .
+stylua .
+```
+
 ## Commit Format
 
 ```
@@ -113,6 +144,29 @@ Examples:
 ```
 
 ## Failure Handling
+
+When a test fails, use reflection MCP to learn from it:
+
+```
+# Reflect on the failure
+mcp__reflection__reflect_on_failure:
+  output="[the code that failed]"
+  feedback="[error message]"
+  feedback_type="test_failure" | "build_error" | "type_error"
+  context="[what you were trying to do]"
+
+# Check for similar past failures
+mcp__reflection__retrieve_episodes:
+  task="[current task]"
+  error_pattern="[error message pattern]"
+  feedback_type="test_failure"
+
+# Get guidance for improved attempt
+mcp__reflection__generate_improved_attempt:
+  original_output="[failed code]"
+  reflection={...}  # from reflect_on_failure
+  similar_episodes=[...]  # from retrieve_episodes
+```
 
 After 3 failed attempts, output:
 
@@ -131,6 +185,12 @@ After 3 failed attempts, output:
 1. [what I tried] → [what happened]
 2. [what I tried] → [what happened]
 3. [what I tried] → [what happened]
+
+### Reflection Analysis
+[Output from mcp__reflection__reflect_on_failure]
+
+### Similar Past Issues
+[Output from mcp__reflection__retrieve_episodes]
 
 ### My Analysis
 [Why I think it's failing - or "I'm not sure why"]

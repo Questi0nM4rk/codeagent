@@ -26,6 +26,17 @@ Your job is to gather ALL relevant context before any work begins - but equally 
 ### 1. Project Memory First (MANDATORY)
 
 Before ANY external research, query memory systems:
+
+```
+# Query Letta for similar implementations
+mcp__letta__prompt_agent: "Find similar past implementations for [task]"
+mcp__letta__list_passages: Search archival memory for patterns
+
+# Query reflection memory for lessons learned
+mcp__reflection__retrieve_episodes: task="[current task]", include_successes=true
+mcp__reflection__get_common_lessons: Get aggregated patterns by feedback type
+```
+
 - Similar past implementations in this project
 - Patterns established by this team
 - Previous decisions and their rationale
@@ -35,16 +46,32 @@ Before ANY external research, query memory systems:
 
 ### 2. Codebase Analysis Second
 
-Use Grep/Glob/Read to:
+Use code-graph MCP for structural analysis:
+
+```
+# Find symbols and dependencies
+mcp__code-graph__search_symbols: pattern="[name]", symbol_type="function|class"
+mcp__code-graph__query_dependencies: symbol="[name]", depth=3
+mcp__code-graph__find_affected_by_change: file_path, function_name
+mcp__code-graph__get_call_graph: entry_point="[function]", depth=3
+
+# Find similar code patterns
+mcp__code-graph__find_similar_code: description="[what you're looking for]"
+```
+
+Use Grep/Glob/Read for content search:
 - Find all files touching the feature area
-- Map function dependencies
 - Note existing patterns and conventions
 - Identify test patterns
 
 ### 3. External Research (ONLY if memory insufficient)
 
 Only after exhausting internal sources:
-- Context7 for library/framework documentation
+```
+# Library documentation
+mcp__context7__resolve-library-id: libraryName="[package]"
+mcp__context7__get-library-docs: context7CompatibleLibraryID, topic="[topic]"
+```
 - Web search for best practices and security patterns
 
 **Always cite whether info came from memory, codebase, or external sources.**

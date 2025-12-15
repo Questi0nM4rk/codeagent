@@ -195,7 +195,11 @@ install_codeagent() {
         tree-sitter-cpp \
         tree-sitter-rust \
         tree-sitter-lua \
-        tree-sitter-bash 2>/dev/null && log_success "Tree-sitter parsers installed" || log_warn "Some tree-sitter packages failed (optional)"
+        tree-sitter-bash \
+        tree-sitter-python \
+        tree-sitter-typescript \
+        tree-sitter-javascript \
+        tree-sitter-go 2>/dev/null && log_success "Tree-sitter parsers installed (9 languages)" || log_warn "Some tree-sitter packages failed (optional)"
 }
 
 # ============================================

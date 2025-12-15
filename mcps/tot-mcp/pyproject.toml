@@ -1,7 +1,7 @@
 [project]
 name = "tot-mcp"
-version = "0.1.0"
-description = "Tree-of-Thought reasoning MCP server for systematic solution exploration"
+version = "0.2.0"
+description = "Tree-of-Thought reasoning MCP server with persistent storage and thinking levels"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
