@@ -131,7 +131,30 @@ install_codeagent() {
     if [ -d "$INSTALL_DIR" ]; then
         log_info "Updating existing installation..."
         cd "$INSTALL_DIR"
-        git pull origin main 2>/dev/null || git pull origin master 2>/dev/null || true
+
+        # Check if this is a git repo
+        if [ -d ".git" ]; then
+            if [ "$force_reinstall" = true ]; then
+                # Force mode: discard all local changes and reset to remote
+                log_warn "Force mode: discarding local changes in $INSTALL_DIR..."
+                git fetch origin 2>/dev/null || true
+                git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || {
+                    log_warn "Git reset failed, continuing anyway..."
+                }
+                log_success "Reset to latest remote version"
+            else
+                # Normal mode: try to pull, warn if dirty
+                if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+                    log_warn "Local changes detected in $INSTALL_DIR"
+                    log_warn "Use --force to discard changes and update"
+                fi
+                git pull origin main 2>/dev/null || git pull origin master 2>/dev/null || {
+                    log_warn "Git pull failed (local changes?). Use --force to overwrite."
+                }
+            fi
+        else
+            log_warn "$INSTALL_DIR exists but is not a git repo"
+        fi
     else
         log_info "Cloning repository..."
         if [ "$REPO_URL" = "https://github.com/YOUR_USERNAME/codeagent.git" ]; then
