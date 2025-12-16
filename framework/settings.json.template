@@ -4,7 +4,7 @@
     "deny": [
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
-      "Bash(*fork bomb*)",
+      "Bash(:*fork bomb:*)",
       "Read(**/secrets/**)",
       "Read(**/.env.local)",
       "Read(**/*.pem)",
@@ -14,7 +14,7 @@
     ]
   },
   "hooks": {
-    "UserPromptSubmit": [
+    "SessionStart": [
       {
         "matcher": "",
         "hooks": [
