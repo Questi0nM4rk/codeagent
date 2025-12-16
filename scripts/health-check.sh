@@ -64,6 +64,57 @@ check_http_service "Qdrant API" "http://localhost:6333/healthz"
 check_http_service "Letta API" "http://localhost:8283/v1/health/"
 
 echo ""
+echo "Qdrant Stats:"
+
+# Get Qdrant collections info
+QDRANT_COLLECTIONS=$(curl -sf "http://localhost:6333/collections" 2>/dev/null)
+if [ $? -eq 0 ] && [ -n "$QDRANT_COLLECTIONS" ]; then
+    COLLECTION_COUNT=$(echo "$QDRANT_COLLECTIONS" | grep -o '"name"' | wc -l)
+    echo -e "  Collections: $COLLECTION_COUNT"
+
+    # Get vector count from each collection
+    TOTAL_VECTORS=0
+    for col in $(echo "$QDRANT_COLLECTIONS" | grep -o '"name":"[^"]*"' | cut -d'"' -f4); do
+        COL_INFO=$(curl -sf "http://localhost:6333/collections/$col" 2>/dev/null)
+        if [ -n "$COL_INFO" ]; then
+            VECTORS=$(echo "$COL_INFO" | grep -o '"vectors_count":[0-9]*' | cut -d':' -f2 | head -1)
+            if [ -n "$VECTORS" ]; then
+                TOTAL_VECTORS=$((TOTAL_VECTORS + VECTORS))
+                echo -e "  - $col: $VECTORS vectors"
+            fi
+        fi
+    done
+    echo -e "  Total vectors: $TOTAL_VECTORS"
+
+    # Memory warning if over 500K vectors
+    if [ "$TOTAL_VECTORS" -gt 500000 ]; then
+        echo -e "  ${YELLOW}!${NC} High vector count - consider cleanup"
+    fi
+else
+    echo -e "  ${YELLOW}○${NC} Could not retrieve Qdrant stats"
+fi
+
+echo ""
+echo "Letta Stats:"
+
+# Get Letta agents count
+LETTA_AGENTS=$(curl -sf "http://localhost:8283/v1/agents" 2>/dev/null)
+if [ $? -eq 0 ] && [ -n "$LETTA_AGENTS" ]; then
+    AGENT_COUNT=$(echo "$LETTA_AGENTS" | grep -o '"id"' | wc -l)
+    echo -e "  Agents: $AGENT_COUNT"
+
+    # List agent names
+    for agent in $(echo "$LETTA_AGENTS" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | head -5); do
+        echo -e "  - $agent"
+    done
+    if [ "$AGENT_COUNT" -gt 5 ]; then
+        echo -e "  ... and $((AGENT_COUNT - 5)) more"
+    fi
+else
+    echo -e "  ${YELLOW}○${NC} Could not retrieve Letta stats"
+fi
+
+echo ""
 
 if [ "$all_healthy" = true ]; then
     echo -e "${GREEN}All services healthy!${NC}"

@@ -335,75 +335,107 @@ setup_api_keys() {
     if [ ! -f "$env_file" ]; then
         cat > "$env_file" << 'ENVHEADER'
 # CodeAgent API Keys
+# ===================
+# Keys are stored with CODEAGENT_ prefix to avoid conflicts with system-wide keys.
+# Docker Compose maps these to what services expect (e.g., CODEAGENT_OPENAI_API_KEY -> OPENAI_API_KEY)
+#
 # This file is read by Docker Compose automatically.
-# Add these exports to your ~/.zshrc or ~/.bashrc for CLI access.
+# For CLI tools, add to your ~/.zshrc or ~/.bashrc:
+#   source ~/.codeagent/.env
 ENVHEADER
     fi
 
-    # Helper to check if key exists in environment (not reading files)
-    key_exists_in_env() {
-        local key_name="$1"
-        [ -n "${!key_name}" ]
-    }
-
     # Helper to prompt for a key
+    # Priority: CODEAGENT_ prefix > base key > prompt user
     prompt_for_key() {
         local key_name="$1"
         local description="$2"
         local required="$3"
         local example="$4"
+        local codeagent_key="CODEAGENT_$key_name"
 
         echo ""
-        if key_exists_in_env "$key_name"; then
-            # Key exists in environment
-            log_success "$key_name found in environment"
+
+        # Priority 1: Check for CODEAGENT_ prefixed key
+        if [ -n "${!codeagent_key}" ]; then
+            log_success "$codeagent_key found in environment"
             echo -n "  Use existing value? [Y/n]: "
             read -r use_existing
             if [ "$use_existing" = "n" ] || [ "$use_existing" = "N" ]; then
                 echo -n "  Enter new value: "
                 read -r new_value
                 if [ -n "$new_value" ]; then
-                    # Update .env file
-                    if grep -q "^$key_name=" "$env_file" 2>/dev/null; then
-                        sed -i "s|^$key_name=.*|$key_name=$new_value|" "$env_file"
+                    if grep -q "^$codeagent_key=" "$env_file" 2>/dev/null; then
+                        sed -i "s|^$codeagent_key=.*|$codeagent_key=$new_value|" "$env_file"
                     else
-                        echo "$key_name=$new_value" >> "$env_file"
+                        echo "$codeagent_key=$new_value" >> "$env_file"
                     fi
-                    export "$key_name=$new_value"
-                    log_success "Updated $key_name"
+                    export "$codeagent_key=$new_value"
+                    log_success "Updated $codeagent_key"
                 fi
             else
-                # Make sure it's in .env for Docker
-                local current_value="${!key_name}"
-                if ! grep -q "^$key_name=" "$env_file" 2>/dev/null; then
-                    echo "$key_name=$current_value" >> "$env_file"
+                # Make sure it's in .env
+                if ! grep -q "^$codeagent_key=" "$env_file" 2>/dev/null; then
+                    echo "$codeagent_key=${!codeagent_key}" >> "$env_file"
                 fi
-                log_success "Using existing $key_name"
+                log_success "Using existing $codeagent_key"
+            fi
+            return
+        fi
+
+        # Priority 2: Check for base key (without CODEAGENT_ prefix)
+        if [ -n "${!key_name}" ]; then
+            log_info "Found $key_name in environment (system-wide)"
+            echo -e "  ${CYAN}1)${NC} Use existing $key_name for CodeAgent"
+            echo -e "  ${CYAN}2)${NC} Enter a separate key just for CodeAgent"
+            echo -n "  Choice [1]: "
+            read -r choice
+
+            if [ "$choice" = "2" ]; then
+                echo -n "  Enter new value for $codeagent_key: "
+                read -r new_value
+                if [ -n "$new_value" ]; then
+                    echo "$codeagent_key=$new_value" >> "$env_file"
+                    export "$codeagent_key=$new_value"
+                    log_success "Saved as $codeagent_key (separate from system $key_name)"
+                else
+                    # Use system key as fallback
+                    echo "$codeagent_key=${!key_name}" >> "$env_file"
+                    log_info "No value entered, using system $key_name"
+                fi
+            else
+                # Use existing system key
+                echo "$codeagent_key=${!key_name}" >> "$env_file"
+                export "$codeagent_key=${!key_name}"
+                log_success "Copied $key_name to $codeagent_key"
+            fi
+            return
+        fi
+
+        # Priority 3: No key found - prompt user
+        if [ "$required" = "required" ]; then
+            log_warn "$key_name not found - $description"
+            echo -n "  Enter $key_name (e.g., $example): "
+            read -r new_value
+            if [ -n "$new_value" ]; then
+                echo "$codeagent_key=$new_value" >> "$env_file"
+                export "$codeagent_key=$new_value"
+                log_success "Saved as $codeagent_key"
+            else
+                echo "$codeagent_key=CODEAGENT_REPLACE_WITH_YOUR_KEY" >> "$env_file"
+                log_warn "Added placeholder for $codeagent_key - edit $env_file to set it"
             fi
         else
-            # Key doesn't exist
-            if [ "$required" = "required" ]; then
-                log_warn "$key_name not found - $description"
-                echo -n "  Enter $key_name (e.g., $example): "
-                read -r new_value
-                if [ -n "$new_value" ]; then
-                    echo "$key_name=$new_value" >> "$env_file"
-                    export "$key_name=$new_value"
-                    log_success "Saved $key_name"
-                else
-                    log_warn "Skipped - some features won't work without this key"
-                fi
+            log_info "$key_name not found (optional) - $description"
+            echo -n "  Enter $key_name or press Enter to skip: "
+            read -r new_value
+            if [ -n "$new_value" ]; then
+                echo "$codeagent_key=$new_value" >> "$env_file"
+                export "$codeagent_key=$new_value"
+                log_success "Saved as $codeagent_key"
             else
-                log_info "$key_name not found (optional) - $description"
-                echo -n "  Enter $key_name or press Enter to skip: "
-                read -r new_value
-                if [ -n "$new_value" ]; then
-                    echo "$key_name=$new_value" >> "$env_file"
-                    export "$key_name=$new_value"
-                    log_success "Saved $key_name"
-                else
-                    log_info "Skipped $key_name"
-                fi
+                echo "$codeagent_key=CODEAGENT_REPLACE_WITH_YOUR_KEY" >> "$env_file"
+                log_info "Added placeholder for $codeagent_key - edit $env_file to set it later"
             fi
         fi
     }
@@ -425,12 +457,16 @@ ENVHEADER
     echo ""
 
     # Remind user to add to shell config for CLI access
-    echo -e "${CYAN}For CLI access outside Docker, add to your ~/.zshrc or ~/.bashrc:${NC}"
+    echo -e "${CYAN}For CLI access outside Docker, source the env file in your shell:${NC}"
+    echo ""
+    echo -e "  ${YELLOW}echo 'source $env_file' >> ~/.zshrc${NC}  # or ~/.bashrc"
+    echo ""
+    echo -e "${CYAN}Or export individual keys (stored with CODEAGENT_ prefix):${NC}"
     echo ""
     if [ -f "$env_file" ]; then
-        grep -v "^#" "$env_file" | grep "=" | while read -r line; do
+        grep -v "^#" "$env_file" | grep "^CODEAGENT_" | while read -r line; do
             local key=$(echo "$line" | cut -d= -f1)
-            echo -e "  ${YELLOW}export $key=\"\${$key}\"${NC}"
+            echo -e "  ${YELLOW}export $key=\"...\"${NC}"
         done
     fi
     echo ""

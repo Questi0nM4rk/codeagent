@@ -57,17 +57,49 @@ docker compose logs -f
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Key Directories
+## Installation Structure
+
+CodeAgent uses a **global-first** architecture. Everything is installed globally except project-specific memory.
+
+### Global (installed by `install.sh`)
+
+```
+~/.claude/                    # Claude Code global config
+├── CLAUDE.md                 # Personality + CodeAgent instructions
+├── settings.json             # Permissions, hooks, MCPs
+├── skills/                   # 6 auto-activating skills
+└── commands/                 # 5 slash commands
+
+~/.codeagent/                 # CodeAgent installation
+├── bin/                      # CLI tools
+├── mcps/                     # Custom MCP servers
+├── templates/                # CLAUDE.md templates
+├── infrastructure/           # docker-compose.yml
+└── .env                      # API keys
+```
+
+### Per-Project (created by `codeagent init`)
+
+```
+project/
+├── CLAUDE.md                 # Project instructions (created by /init)
+├── .claude/
+│   └── letta-agent           # Letta agent ID (project memory)
+└── docs/
+    └── decisions/            # Architecture decision records
+```
+
+## Source Directories
 
 | Directory | Purpose |
 |-----------|---------|
 | `bin/` | CLI entry points (codeagent, codeagent-start, etc.) |
-| `framework/skills/` | 6 skill definitions (researcher, architect, orchestrator, implementer, reviewer, learner) |
-| `framework/commands/` | 5 slash commands (scan, plan, implement, integrate, review) |
+| `framework/skills/` | 6 skill definitions → installed to `~/.claude/skills/` |
+| `framework/commands/` | 5 slash commands → installed to `~/.claude/commands/` |
 | `framework/hooks/` | Git and post-edit hooks |
 | `mcps/` | Custom Python MCP servers + installers |
 | `infrastructure/` | Docker Compose for Neo4j, Qdrant, Letta |
-| `templates/` | Project-specific CLAUDE.md templates (dotnet, rust, cpp, lua) |
+| `templates/` | CLAUDE.md templates by language (dotnet, rust, cpp, lua) |
 | `scripts/` | Maintenance scripts (backup, restore, update, health-check) |
 
 ## Custom MCPs

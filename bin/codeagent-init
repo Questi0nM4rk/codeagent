@@ -1,12 +1,19 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Init
-# Initialize CodeAgent in a project
+# Initialize CodeAgent infrastructure for a project
+#
+# This ONLY sets up infrastructure:
+# - Letta agent (per-project memory)
+# - docs/decisions/ directory
+#
+# CLAUDE.md is created by /init slash command
+# Global config (skills, commands, settings) is
+# installed to ~/.claude/ by install.sh
 # ============================================
 
 set -e
 
-INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 PROJECT_DIR="$(pwd)"
 
 # Colors
@@ -18,44 +25,20 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # ============================================
-# Helper Functions
-# ============================================
-
-# Prompt for yes/no with default
-prompt_yes_no() {
-    local prompt="$1"
-    local default="${2:-y}"
-
-    if [ "$default" = "y" ]; then
-        prompt="$prompt [Y/n]: "
-    else
-        prompt="$prompt [y/N]: "
-    fi
-
-    read -p "$prompt" -n 1 -r response
-    echo ""
-
-    if [ -z "$response" ]; then
-        response="$default"
-    fi
-
-    [[ "$response" =~ ^[Yy]$ ]]
-}
-
-# Check if directory has content
-dir_has_content() {
-    local dir="$1"
-    [ -d "$dir" ] && [ "$(ls -A "$dir" 2>/dev/null)" ]
-}
-
-# ============================================
 # Main Script
 # ============================================
 
-echo -e "${CYAN}Initializing CodeAgent in: ${NC}$PROJECT_DIR"
+echo -e "${CYAN}Initializing CodeAgent infrastructure in: ${NC}$PROJECT_DIR"
 echo ""
 
-# Detect project type
+# Check global installation
+if [ ! -d "$HOME/.claude/skills" ] || [ ! -d "$HOME/.claude/commands" ]; then
+    echo -e "${YELLOW}!${NC} Global CodeAgent not installed"
+    echo -e "${YELLOW}!${NC} Run 'install.sh' first to install skills/commands to ~/.claude/"
+    echo ""
+fi
+
+# Detect project type (used for Letta agent description)
 detect_project_type() {
     if ls *.csproj *.sln 2>/dev/null | head -1 > /dev/null; then
         echo "dotnet"
@@ -75,219 +58,71 @@ echo -e "${BLUE}Detected project type:${NC} $PROJECT_TYPE"
 echo ""
 
 # ============================================
-# Check for existing configurations
+# Create Project Directories
 # ============================================
 
-echo -e "${BLUE}Checking for existing configurations...${NC}"
-echo ""
-
-has_existing_skills=false
-has_existing_commands=false
-has_existing_settings=false
-has_existing_claude_md=false
-
-if dir_has_content ".claude/skills"; then
-    has_existing_skills=true
-    echo -e "  ${YELLOW}!${NC} Existing skills found in .claude/skills/"
-fi
-
-if dir_has_content ".claude/commands"; then
-    has_existing_commands=true
-    echo -e "  ${YELLOW}!${NC} Existing commands found in .claude/commands/"
-fi
-
-if [ -f ".claude/settings.json" ]; then
-    has_existing_settings=true
-    echo -e "  ${YELLOW}!${NC} Existing settings.json found"
-fi
-
-if [ -f "CLAUDE.md" ]; then
-    has_existing_claude_md=true
-    echo -e "  ${YELLOW}!${NC} Existing CLAUDE.md found"
-fi
-
-# If any existing config, ask about overwriting
-if [ "$has_existing_skills" = true ] || [ "$has_existing_commands" = true ] || [ "$has_existing_settings" = true ] || [ "$has_existing_claude_md" = true ]; then
-    echo ""
-    echo -e "${YELLOW}Existing Claude Code configuration detected.${NC}"
-    echo -e "CodeAgent needs to install its skills, commands, and settings to work properly."
-    echo ""
-fi
+echo -e "${BLUE}Creating project structure...${NC}"
+mkdir -p .claude docs/decisions
+echo -e "  ${GREEN}✓${NC} Created .claude/ (for letta-agent ID)"
+echo -e "  ${GREEN}✓${NC} Created docs/decisions/ (architecture decision records)"
 
 # ============================================
-# Create directories
-# ============================================
-
-echo -e "${BLUE}Creating directory structure...${NC}"
-mkdir -p .claude/skills .claude/commands docs/decisions
-echo -e "  ${GREEN}✓${NC} Created .claude/skills/"
-echo -e "  ${GREEN}✓${NC} Created .claude/commands/"
-echo -e "  ${GREEN}✓${NC} Created docs/decisions/"
-
-# ============================================
-# Install Skills
+# Create Letta Agent for Project
 # ============================================
 
 echo ""
-echo -e "${BLUE}Installing skills...${NC}"
+echo -e "${BLUE}Setting up Letta memory agent...${NC}"
 
-install_skills=true
-if [ "$has_existing_skills" = true ]; then
-    echo ""
-    if prompt_yes_no "  Overwrite existing skills with CodeAgent skills?" "y"; then
-        install_skills=true
-        # Remove existing skills first
-        rm -rf .claude/skills/*
+# Get project name from directory (sanitize for agent name)
+PROJECT_NAME=$(basename "$PROJECT_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+
+# Check if Letta is running
+if curl -sf http://localhost:8283/v1/health/ > /dev/null 2>&1; then
+    # Check if agent already exists
+    EXISTING_AGENT=$(curl -sf "http://localhost:8283/v1/agents" 2>/dev/null | grep -o "\"name\":\"codeagent-$PROJECT_NAME\"" || true)
+
+    if [ -n "$EXISTING_AGENT" ]; then
+        echo -e "  ${GREEN}✓${NC} Letta agent already exists: codeagent-$PROJECT_NAME"
+
+        # Try to get and store agent ID
+        AGENT_ID=$(curl -sf "http://localhost:8283/v1/agents" 2>/dev/null | grep -o "\"id\":\"[^\"]*\",\"name\":\"codeagent-$PROJECT_NAME\"" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || true)
+        if [ -n "$AGENT_ID" ]; then
+            echo "$AGENT_ID" > .claude/letta-agent
+        fi
     else
-        install_skills=false
-        echo -e "  ${YELLOW}○${NC} Keeping existing skills"
+        # Create agent via Letta API
+        AGENT_RESPONSE=$(curl -sf -X POST "http://localhost:8283/v1/agents" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"name\": \"codeagent-$PROJECT_NAME\",
+                \"description\": \"CodeAgent memory for $PROJECT_NAME ($PROJECT_TYPE project)\",
+                \"memory_blocks\": [
+                    {\"label\": \"persona\", \"value\": \"I am a coding assistant for $PROJECT_NAME. I remember context, patterns, and decisions across sessions. I help with $PROJECT_TYPE development.\", \"limit\": 5000},
+                    {\"label\": \"human\", \"value\": \"Developer working on $PROJECT_NAME\", \"limit\": 3000},
+                    {\"label\": \"project\", \"value\": \"Project: $PROJECT_NAME\\nType: $PROJECT_TYPE\\nPath: $PROJECT_DIR\", \"limit\": 2000}
+                ]
+            }" 2>/dev/null)
+
+        if [ $? -eq 0 ] && [ -n "$AGENT_RESPONSE" ]; then
+            AGENT_ID=$(echo "$AGENT_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+            if [ -n "$AGENT_ID" ]; then
+                echo -e "  ${GREEN}✓${NC} Created Letta agent: codeagent-$PROJECT_NAME"
+                echo -e "  ${CYAN}Agent ID:${NC} $AGENT_ID"
+
+                # Store agent ID in .claude/letta-agent for reference
+                echo "$AGENT_ID" > .claude/letta-agent
+                echo -e "  ${GREEN}✓${NC} Saved agent ID to .claude/letta-agent"
+            else
+                echo -e "  ${YELLOW}!${NC} Agent created but could not parse ID"
+            fi
+        else
+            echo -e "  ${YELLOW}!${NC} Could not create Letta agent (API error)"
+            echo -e "  ${YELLOW}!${NC} Run 'codeagent init' again after starting services"
+        fi
     fi
-fi
-
-if [ "$install_skills" = true ]; then
-    if [ -d "$INSTALL_DIR/framework/skills" ]; then
-        cp -r "$INSTALL_DIR/framework/skills/"* .claude/skills/ 2>/dev/null || true
-        echo -e "  ${GREEN}✓${NC} researcher (context gathering)"
-        echo -e "  ${GREEN}✓${NC} architect (solution design)"
-        echo -e "  ${GREEN}✓${NC} orchestrator (parallel analysis)"
-        echo -e "  ${GREEN}✓${NC} implementer (TDD coding)"
-        echo -e "  ${GREEN}✓${NC} reviewer (external validation)"
-        echo -e "  ${GREEN}✓${NC} learner (pattern extraction)"
-    else
-        echo -e "  ${RED}✗${NC} Skill templates not found in $INSTALL_DIR/framework/skills"
-    fi
-fi
-
-# ============================================
-# Install Commands
-# ============================================
-
-echo ""
-echo -e "${BLUE}Installing commands...${NC}"
-
-install_commands=true
-if [ "$has_existing_commands" = true ]; then
-    echo ""
-    if prompt_yes_no "  Overwrite existing commands with CodeAgent commands?" "y"; then
-        install_commands=true
-        # Remove existing commands first
-        rm -f .claude/commands/*.md
-    else
-        install_commands=false
-        echo -e "  ${YELLOW}○${NC} Keeping existing commands"
-    fi
-fi
-
-if [ "$install_commands" = true ]; then
-    if [ -d "$INSTALL_DIR/framework/commands" ]; then
-        cp "$INSTALL_DIR/framework/commands/"*.md .claude/commands/ 2>/dev/null || true
-        echo -e "  ${GREEN}✓${NC} /scan (build knowledge graph)"
-        echo -e "  ${GREEN}✓${NC} /plan (research + design)"
-        echo -e "  ${GREEN}✓${NC} /implement (TDD execution)"
-        echo -e "  ${GREEN}✓${NC} /integrate (parallel merge)"
-        echo -e "  ${GREEN}✓${NC} /review (external validation)"
-    else
-        echo -e "  ${RED}✗${NC} Command templates not found in $INSTALL_DIR/framework/commands"
-    fi
-fi
-
-# ============================================
-# Install Settings
-# ============================================
-
-echo ""
-echo -e "${BLUE}Installing settings...${NC}"
-
-install_settings=true
-if [ "$has_existing_settings" = true ]; then
-    echo ""
-    echo -e "  ${YELLOW}Note:${NC} settings.json contains permissions, hooks, and MCP configs."
-    echo -e "  CodeAgent requires specific permissions and MCP servers to function."
-    echo ""
-    if prompt_yes_no "  Overwrite settings.json with CodeAgent settings?" "y"; then
-        install_settings=true
-    else
-        install_settings=false
-        echo -e "  ${YELLOW}○${NC} Keeping existing settings.json"
-        echo -e "  ${YELLOW}!${NC} Warning: CodeAgent may not work correctly without its settings"
-    fi
-fi
-
-if [ "$install_settings" = true ]; then
-    if [ -f "$INSTALL_DIR/framework/settings.json.template" ]; then
-        cp "$INSTALL_DIR/framework/settings.json.template" .claude/settings.json
-        echo -e "  ${GREEN}✓${NC} settings.json (permissions, hooks, MCPs)"
-    else
-        echo -e "  ${RED}✗${NC} Settings template not found"
-    fi
-fi
-
-# ============================================
-# Setup CLAUDE.md
-# ============================================
-
-echo ""
-echo -e "${BLUE}Setting up CLAUDE.md...${NC}"
-
-install_claude_md=true
-if [ "$has_existing_claude_md" = true ]; then
-    echo ""
-    echo -e "  ${YELLOW}Note:${NC} CLAUDE.md contains project-specific instructions for Claude."
-    echo -e "  You may want to keep your existing customizations."
-    echo ""
-    if prompt_yes_no "  Overwrite CLAUDE.md with CodeAgent template?" "n"; then
-        install_claude_md=true
-    else
-        install_claude_md=false
-        echo -e "  ${GREEN}✓${NC} Keeping existing CLAUDE.md"
-    fi
-fi
-
-if [ "$install_claude_md" = true ]; then
-    TEMPLATE_PATH="$INSTALL_DIR/templates/$PROJECT_TYPE/CLAUDE.md"
-    if [ -f "$TEMPLATE_PATH" ]; then
-        cp "$TEMPLATE_PATH" CLAUDE.md
-        echo -e "  ${GREEN}✓${NC} Created CLAUDE.md (from $PROJECT_TYPE template)"
-    else
-        # Create a generic one
-        cat > CLAUDE.md << 'CLAUDEMD'
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Project Overview
-
-[Describe your project here]
-
-## Commands
-
-```bash
-# Build
-[your build command]
-
-# Test
-[your test command]
-
-# Run
-[your run command]
-```
-
-## Architecture
-
-[Describe key architectural decisions]
-
-## Conventions
-
-[List coding conventions and patterns]
-
-## CodeAgent Integration
-
-This project uses CodeAgent for enhanced Claude Code capabilities.
-Available commands: /scan, /plan, /implement, /review
-CLAUDEMD
-        echo -e "  ${GREEN}✓${NC} Created generic CLAUDE.md"
-    fi
-    echo -e "  ${YELLOW}!${NC} Please customize CLAUDE.md for your project"
+else
+    echo -e "  ${YELLOW}!${NC} Letta not running - skipping agent creation"
+    echo -e "  ${YELLOW}!${NC} Run 'codeagent start' then 'codeagent init' to create agent"
 fi
 
 # ============================================
@@ -296,34 +131,22 @@ fi
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║                  Project Initialized!                           ║${NC}"
+echo -e "${GREEN}║              CodeAgent Infrastructure Ready!                    ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo "Installed:"
-echo "  ├── CLAUDE.md                 (project config - customize this!)"
+echo "Created:"
 echo "  ├── .claude/"
-echo "  │   ├── settings.json         (permissions, hooks, MCPs)"
-echo "  │   ├── skills/               (Claude Code skills)"
-echo "  │   │   ├── researcher/       (context gathering)"
-echo "  │   │   ├── architect/        (solution design)"
-echo "  │   │   ├── orchestrator/     (parallel analysis)"
-echo "  │   │   ├── implementer/      (TDD coding)"
-echo "  │   │   ├── reviewer/         (external validation)"
-echo "  │   │   └── learner/          (pattern extraction)"
-echo "  │   └── commands/             (slash commands)"
-echo "  │       ├── scan.md"
-echo "  │       ├── plan.md"
-echo "  │       ├── implement.md"
-echo "  │       ├── integrate.md"
-echo "  │       └── review.md"
+echo "  │   └── letta-agent        (Letta agent ID for this project)"
 echo "  └── docs/"
-echo "      └── decisions/"
+echo "      └── decisions/         (architecture decision records)"
 echo ""
-echo -e "${CYAN}Usage:${NC}"
-echo "  /scan              Build knowledge graph (run once)"
+echo "Global config (from ~/.claude/):"
+echo "  ├── skills/                (researcher, architect, implementer, ...)"
+echo "  ├── commands/              (/scan, /plan, /implement, /init, /review)"
+echo "  └── settings.json          (permissions, hooks, MCPs)"
+echo ""
+echo -e "${CYAN}Next steps in Claude Code:${NC}"
+echo "  /init              Create CLAUDE.md for this project"
+echo "  /scan              Build knowledge graph"
 echo "  /plan \"task\"       Research + design"
-echo "  /implement         TDD execution"
-echo "  /review            Validate with external tools"
-echo ""
-echo -e "${YELLOW}Next: Edit CLAUDE.md, then run /scan in Claude Code${NC}"
 echo ""

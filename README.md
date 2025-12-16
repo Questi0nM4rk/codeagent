@@ -117,14 +117,31 @@ CodeAgent installs and configures these MCP servers (all in global user scope):
 
 ## Configuration
 
-### Environment Variables
+### API Key Management
 
-Set in `~/.codeagent/.env`:
+CodeAgent uses namespaced keys (`CODEAGENT_*` prefix) to avoid conflicts with system-wide keys.
+
+**Priority order:**
+1. `CODEAGENT_OPENAI_API_KEY` (CodeAgent-specific)
+2. `OPENAI_API_KEY` (system fallback)
+3. Prompt user (if neither exists)
+
+**During install**, if a system key exists, you choose:
+- Use existing key for CodeAgent
+- Enter a separate key just for CodeAgent
+
+**Storage:** `~/.codeagent/.env`
 
 ```bash
-OPENAI_API_KEY      # Required - for Letta memory embeddings
-GITHUB_TOKEN        # Optional - for GitHub MCP
-TAVILY_API_KEY      # Optional - for web research MCP
+# ~/.codeagent/.env
+CODEAGENT_OPENAI_API_KEY=sk-...    # Required - Letta embeddings
+CODEAGENT_GITHUB_TOKEN=ghp-...     # Optional - GitHub MCP
+CODEAGENT_TAVILY_API_KEY=tvly-...  # Optional - Web research
+```
+
+**For CLI access** (outside Docker):
+```bash
+echo 'source ~/.codeagent/.env' >> ~/.zshrc
 ```
 
 ### Hooks
@@ -135,17 +152,36 @@ CodeAgent configures automatic hooks in `~/.claude/settings.json`:
 - **Post-edit hooks** - Auto-format code based on file type (.cs, .rs, .cpp, .lua, .sh)
 - **File indexing** - Update code graph on file changes
 
-### Project Initialization
+## Installation Structure
 
-Run `codeagent init` in any project to set up project-specific configuration:
+CodeAgent uses a **global-first** architecture - skills, commands, settings, and MCPs are installed globally and work across all projects.
+
+### Global (`install.sh`)
+
+```
+~/.claude/                    # Claude Code reads this globally
+├── CLAUDE.md                 # Personality + CodeAgent instructions
+├── settings.json             # Permissions, hooks, MCPs
+├── skills/                   # 6 skill definitions (auto-activate)
+└── commands/                 # 5 slash commands
+
+~/.codeagent/                 # CodeAgent installation
+├── bin/                      # CLI tools
+├── mcps/                     # Custom MCP servers
+├── templates/                # CLAUDE.md templates by language
+├── infrastructure/           # docker-compose.yml
+└── .env                      # API keys
+```
+
+### Per-Project (`codeagent init`)
 
 ```
 your-project/
-├── CLAUDE.md                 # Project-specific instructions
-└── .claude/
-    ├── settings.json         # Project settings
-    ├── skills/               # 6 skill definitions
-    └── commands/             # 5 slash commands
+├── CLAUDE.md                 # Project instructions (created by /init in Claude Code)
+├── .claude/
+│   └── letta-agent           # Letta agent ID (project-specific memory)
+└── docs/
+    └── decisions/            # Architecture decision records
 ```
 
 ## Workflow Example
@@ -154,11 +190,15 @@ your-project/
 # 1. Start infrastructure (first time or after reboot)
 codeagent start
 
-# 2. Initialize your project
+# 2. Initialize your project (creates Letta agent)
 cd /your/project
 codeagent init
+```
 
-# 3. In Claude Code:
+Then in Claude Code:
+
+```
+/init                            # Create project CLAUDE.md (built-in command)
 /scan                            # Build knowledge graph (first time)
 /plan "Add user authentication"  # Research + design
 /implement                       # TDD implementation
