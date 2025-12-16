@@ -343,6 +343,19 @@ setup_api_keys() {
 # For CLI tools, add to your ~/.zshrc or ~/.bashrc:
 #   source ~/.codeagent/.env
 ENVHEADER
+    else
+        # Clean up duplicate keys (keep last occurrence of each)
+        local temp_env=$(mktemp)
+        # Keep header comments
+        grep "^#" "$env_file" > "$temp_env" 2>/dev/null || true
+        # For each unique key, keep only the last value
+        for key in CODEAGENT_OPENAI_API_KEY CODEAGENT_GITHUB_TOKEN CODEAGENT_TAVILY_API_KEY OPENAI_API_KEY; do
+            local value=$(grep "^$key=" "$env_file" 2>/dev/null | tail -1)
+            if [ -n "$value" ]; then
+                echo "$value" >> "$temp_env"
+            fi
+        done
+        mv "$temp_env" "$env_file"
     fi
 
     # Helper to prompt for a key
@@ -356,30 +369,28 @@ ENVHEADER
 
         echo ""
 
-        # Priority 1: Check for CODEAGENT_ prefixed key
-        if [ -n "${!codeagent_key}" ]; then
-            log_success "$codeagent_key found in environment"
-            echo -n "  Use existing value? [Y/n]: "
-            read -r use_existing
-            if [ "$use_existing" = "n" ] || [ "$use_existing" = "N" ]; then
-                echo -n "  Enter new value: "
-                read -r new_value
-                if [ -n "$new_value" ]; then
-                    if grep -q "^$codeagent_key=" "$env_file" 2>/dev/null; then
-                        sed -i "s|^$codeagent_key=.*|$codeagent_key=$new_value|" "$env_file"
-                    else
-                        echo "$codeagent_key=$new_value" >> "$env_file"
-                    fi
-                    export "$codeagent_key=$new_value"
-                    log_success "Updated $codeagent_key"
-                fi
-            else
-                # Make sure it's in .env
-                if ! grep -q "^$codeagent_key=" "$env_file" 2>/dev/null; then
-                    echo "$codeagent_key=${!codeagent_key}" >> "$env_file"
-                fi
-                log_success "Using existing $codeagent_key"
-            fi
+        # Helper to safely set a key (removes duplicates first)
+        set_env_key() {
+            local key="$1"
+            local value="$2"
+            # Remove any existing entries for this key
+            sed -i "/^$key=/d" "$env_file" 2>/dev/null || true
+            # Append the new value
+            echo "$key=$value" >> "$env_file"
+        }
+
+        # Priority 1: Check for CODEAGENT_ prefixed key (in env file OR environment)
+        local existing_value=""
+        if grep -q "^$codeagent_key=" "$env_file" 2>/dev/null; then
+            existing_value=$(grep "^$codeagent_key=" "$env_file" | tail -1 | cut -d= -f2-)
+        elif [ -n "${!codeagent_key}" ]; then
+            existing_value="${!codeagent_key}"
+        fi
+
+        if [ -n "$existing_value" ] && [ "$existing_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
+            log_success "$codeagent_key found"
+            # Ensure it's in the env file (might only be in environment) - uses set_env_key to prevent duplicates
+            set_env_key "$codeagent_key" "$existing_value"
             return
         fi
 
@@ -395,17 +406,17 @@ ENVHEADER
                 echo -n "  Enter new value for $codeagent_key: "
                 read -r new_value
                 if [ -n "$new_value" ]; then
-                    echo "$codeagent_key=$new_value" >> "$env_file"
+                    set_env_key "$codeagent_key" "$new_value"
                     export "$codeagent_key=$new_value"
                     log_success "Saved as $codeagent_key (separate from system $key_name)"
                 else
                     # Use system key as fallback
-                    echo "$codeagent_key=${!key_name}" >> "$env_file"
+                    set_env_key "$codeagent_key" "${!key_name}"
                     log_info "No value entered, using system $key_name"
                 fi
             else
                 # Use existing system key
-                echo "$codeagent_key=${!key_name}" >> "$env_file"
+                set_env_key "$codeagent_key" "${!key_name}"
                 export "$codeagent_key=${!key_name}"
                 log_success "Copied $key_name to $codeagent_key"
             fi
@@ -418,11 +429,11 @@ ENVHEADER
             echo -n "  Enter $key_name (e.g., $example): "
             read -r new_value
             if [ -n "$new_value" ]; then
-                echo "$codeagent_key=$new_value" >> "$env_file"
+                set_env_key "$codeagent_key" "$new_value"
                 export "$codeagent_key=$new_value"
                 log_success "Saved as $codeagent_key"
             else
-                echo "$codeagent_key=CODEAGENT_REPLACE_WITH_YOUR_KEY" >> "$env_file"
+                set_env_key "$codeagent_key" "CODEAGENT_REPLACE_WITH_YOUR_KEY"
                 log_warn "Added placeholder for $codeagent_key - edit $env_file to set it"
             fi
         else
@@ -430,11 +441,11 @@ ENVHEADER
             echo -n "  Enter $key_name or press Enter to skip: "
             read -r new_value
             if [ -n "$new_value" ]; then
-                echo "$codeagent_key=$new_value" >> "$env_file"
+                set_env_key "$codeagent_key" "$new_value"
                 export "$codeagent_key=$new_value"
                 log_success "Saved as $codeagent_key"
             else
-                echo "$codeagent_key=CODEAGENT_REPLACE_WITH_YOUR_KEY" >> "$env_file"
+                set_env_key "$codeagent_key" "CODEAGENT_REPLACE_WITH_YOUR_KEY"
                 log_info "Added placeholder for $codeagent_key - edit $env_file to set it later"
             fi
         fi
