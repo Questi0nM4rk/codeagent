@@ -16,20 +16,23 @@ Research-backed autonomous coding framework for Claude Code. Transforms Claude C
 | **Self-Reflection** | Learn from failures, improve over time |
 | **External Validation** | Never self-review, always use tools |
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh | bash
+```
+
+Or clone manually:
+
+```bash
+git clone https://github.com/Questi0nM4rk/codeagent.git && cd codeagent && ./install.sh
+```
+
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/Questi0nM4rk/codeagent.git
-cd codeagent
-./install.sh
-
-# Start infrastructure
-codeagent start
-
-# Initialize in your project
-cd /your/project
-codeagent init
+codeagent start              # Start infrastructure
+cd /your/project && codeagent init   # Initialize project
 ```
 
 ## Requirements
