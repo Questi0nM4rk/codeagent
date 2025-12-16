@@ -53,10 +53,9 @@ configure_key() {
         existing_value=$(grep "^$codeagent_key=" "$ENV_FILE" | tail -1 | cut -d= -f2-)
     fi
 
-    # If key exists and is not placeholder, show current status
+    # If key exists and is not placeholder, show current status (don't reveal key contents)
     if [ -n "$existing_value" ] && [ "$existing_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
-        local masked_value="${existing_value:0:8}...${existing_value: -4}"
-        echo -e "  ${GREEN}✓${NC} $codeagent_key: $masked_value"
+        echo -e "  ${GREEN}✓${NC} $codeagent_key: configured"
         echo -n "    Replace? [y/N]: "
         read -r replace
         if [ "$replace" != "y" ] && [ "$replace" != "Y" ]; then
