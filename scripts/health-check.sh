@@ -97,18 +97,21 @@ fi
 echo ""
 echo "Letta Stats:"
 
-# Get Letta agents count
-LETTA_AGENTS=$(curl -sf "http://localhost:8283/v1/agents" 2>/dev/null)
-if [ $? -eq 0 ] && [ -n "$LETTA_AGENTS" ]; then
+# Get Letta agents count (use -sL to follow redirects, trailing slash required)
+LETTA_AGENTS=$(curl -sL "http://localhost:8283/v1/agents/" 2>/dev/null)
+if [ $? -eq 0 ]; then
+    # Count agents (handles empty array [] gracefully)
     AGENT_COUNT=$(echo "$LETTA_AGENTS" | grep -o '"id"' | wc -l)
     echo -e "  Agents: $AGENT_COUNT"
 
-    # List agent names
-    for agent in $(echo "$LETTA_AGENTS" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | head -5); do
-        echo -e "  - $agent"
-    done
-    if [ "$AGENT_COUNT" -gt 5 ]; then
-        echo -e "  ... and $((AGENT_COUNT - 5)) more"
+    # List agent names if any exist
+    if [ "$AGENT_COUNT" -gt 0 ]; then
+        for agent in $(echo "$LETTA_AGENTS" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | head -5); do
+            echo -e "  - $agent"
+        done
+        if [ "$AGENT_COUNT" -gt 5 ]; then
+            echo -e "  ... and $((AGENT_COUNT - 5)) more"
+        fi
     fi
 else
     echo -e "  ${YELLOW}○${NC} Could not retrieve Letta stats"
