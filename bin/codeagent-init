@@ -92,7 +92,7 @@ if curl -sf http://localhost:8283/v1/health/ > /dev/null 2>&1; then
     else
         # Create agent via Letta API
         # Letta 0.16+ requires model and embedding parameters
-        local API_ERROR=""
+        API_ERROR=""
         AGENT_RESPONSE=$(curl -sL -X POST "http://localhost:8283/v1/agents/" \
             -H "Content-Type: application/json" \
             -d "{
