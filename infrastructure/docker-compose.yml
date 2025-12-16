@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   # Vector store for embeddings (used by Letta)
-  # Optimized for text-embedding-3-small (1536 dimensions)
+  # Optimized for OpenAI embeddings (1536 dimensions)
   qdrant:
     image: qdrant/qdrant:v1.12.0  # Pinned for reproducibility
     container_name: codeagent-qdrant
@@ -71,8 +71,6 @@ services:
       # Vector store connection
       LETTA_QDRANT_HOST: qdrant
       LETTA_QDRANT_PORT: 6333
-      # Embedding model configuration (~$0.02/1M tokens)
-      LETTA_LLM_EMBEDDING_MODEL: text-embedding-3-small
     volumes:
       - codeagent_letta_data:/root/.letta
     depends_on:

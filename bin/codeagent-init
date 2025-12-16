@@ -91,15 +91,17 @@ if curl -sf http://localhost:8283/v1/health/ > /dev/null 2>&1; then
         fi
     else
         # Create agent via Letta API
+        # Letta v0.6.5 requires llm and embedding parameters
         AGENT_RESPONSE=$(curl -sfL -X POST "http://localhost:8283/v1/agents/" \
             -H "Content-Type: application/json" \
             -d "{
                 \"name\": \"codeagent-$PROJECT_NAME\",
                 \"description\": \"CodeAgent memory for $PROJECT_NAME ($PROJECT_TYPE project)\",
+                \"llm\": \"openai/gpt-4o-mini\",
+                \"embedding\": \"openai/text-embedding-ada-002\",
                 \"memory_blocks\": [
-                    {\"label\": \"persona\", \"value\": \"I am a coding assistant for $PROJECT_NAME. I remember context, patterns, and decisions across sessions. I help with $PROJECT_TYPE development.\", \"limit\": 5000},
-                    {\"label\": \"human\", \"value\": \"Developer working on $PROJECT_NAME\", \"limit\": 3000},
-                    {\"label\": \"project\", \"value\": \"Project: $PROJECT_NAME\\nType: $PROJECT_TYPE\\nPath: $PROJECT_DIR\", \"limit\": 2000}
+                    {\"label\": \"persona\", \"value\": \"I am a coding assistant for $PROJECT_NAME. I remember context, patterns, and decisions across sessions. I help with $PROJECT_TYPE development.\"},
+                    {\"label\": \"human\", \"value\": \"Developer working on $PROJECT_NAME\"}
                 ]
             }" 2>/dev/null)
 
