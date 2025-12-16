@@ -32,6 +32,9 @@ usage() {
     echo -e "${BLUE}Project Commands:${NC}"
     echo "  init          Initialize CodeAgent in current project"
     echo ""
+    echo -e "${BLUE}Configuration Commands:${NC}"
+    echo "  config        Configure API keys (add/update without reinstalling)"
+    echo ""
     echo -e "${BLUE}Maintenance Commands:${NC}"
     echo "  update        Update CodeAgent to latest version"
     echo "  backup        Backup memory (Letta + Neo4j)"
@@ -80,6 +83,10 @@ case "${1:-help}" in
     init)
         check_install
         exec "$INSTALL_DIR/bin/codeagent-init" "${@:2}"
+        ;;
+    config)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-config" "${@:2}"
         ;;
     logs)
         check_install

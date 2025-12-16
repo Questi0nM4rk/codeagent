@@ -1,0 +1,168 @@
+#!/bin/bash
+# ============================================
+# CodeAgent Config
+# Configure API keys without reinstalling
+# ============================================
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
+ENV_FILE="$INSTALL_DIR/.env"
+
+# ============================================
+# Helper Functions
+# ============================================
+
+log_success() { echo -e "${GREEN}✓${NC} $1"; }
+log_info() { echo -e "${BLUE}○${NC} $1"; }
+log_warn() { echo -e "${YELLOW}!${NC} $1"; }
+
+# Helper to safely set a key (removes duplicates first)
+set_env_key() {
+    local key="$1"
+    local value="$2"
+    # Remove any existing entries for this key
+    sed -i "/^$key=/d" "$ENV_FILE" 2>/dev/null || true
+    # Append the new value
+    echo "$key=$value" >> "$ENV_FILE"
+}
+
+# ============================================
+# Configure a single API key
+# ============================================
+configure_key() {
+    local key_name="$1"
+    local description="$2"
+    local required="$3"
+    local example="$4"
+    local codeagent_key="CODEAGENT_$key_name"
+
+    echo ""
+
+    # Check for existing value in env file
+    local existing_value=""
+    if grep -q "^$codeagent_key=" "$ENV_FILE" 2>/dev/null; then
+        existing_value=$(grep "^$codeagent_key=" "$ENV_FILE" | tail -1 | cut -d= -f2-)
+    fi
+
+    # If key exists and is not placeholder, show current status
+    if [ -n "$existing_value" ] && [ "$existing_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
+        local masked_value="${existing_value:0:8}...${existing_value: -4}"
+        echo -e "  ${GREEN}✓${NC} $codeagent_key: $masked_value"
+        echo -n "    Replace? [y/N]: "
+        read -r replace
+        if [ "$replace" != "y" ] && [ "$replace" != "Y" ]; then
+            return
+        fi
+    fi
+
+    # Check for base key in environment
+    if [ -n "${!key_name}" ]; then
+        log_info "Found $key_name in environment (system-wide)"
+        echo -e "  ${CYAN}1)${NC} Use existing $key_name for CodeAgent"
+        echo -e "  ${CYAN}2)${NC} Enter a separate key just for CodeAgent"
+        echo -n "  Choice [1]: "
+        read -r choice
+
+        if [ "$choice" = "2" ]; then
+            echo -n "  Enter new value for $codeagent_key: "
+            read -r new_value
+            if [ -n "$new_value" ]; then
+                set_env_key "$codeagent_key" "$new_value"
+                log_success "Saved as $codeagent_key"
+            else
+                set_env_key "$codeagent_key" "${!key_name}"
+                log_info "No value entered, using system $key_name"
+            fi
+        else
+            set_env_key "$codeagent_key" "${!key_name}"
+            log_success "Copied $key_name to $codeagent_key"
+        fi
+        return
+    fi
+
+    # Prompt for key
+    if [ "$required" = "required" ]; then
+        log_warn "$key_name - $description"
+        echo -n "  Enter $key_name (e.g., $example): "
+    else
+        log_info "$key_name (optional) - $description"
+        echo -n "  Enter $key_name or press Enter to skip: "
+    fi
+
+    read -r new_value
+    if [ -n "$new_value" ]; then
+        set_env_key "$codeagent_key" "$new_value"
+        log_success "Saved as $codeagent_key"
+    elif [ "$required" = "required" ]; then
+        set_env_key "$codeagent_key" "CODEAGENT_REPLACE_WITH_YOUR_KEY"
+        log_warn "Added placeholder - run 'codeagent config' again to set it"
+    else
+        # For optional keys, keep placeholder if exists, otherwise add it
+        if [ -z "$existing_value" ]; then
+            set_env_key "$codeagent_key" "CODEAGENT_REPLACE_WITH_YOUR_KEY"
+        fi
+        log_info "Skipped (not configured)"
+    fi
+}
+
+# ============================================
+# Main
+# ============================================
+
+echo -e "${CYAN}CodeAgent API Configuration${NC}"
+echo "============================"
+echo ""
+echo -e "Keys are stored in: ${BLUE}$ENV_FILE${NC}"
+
+# Ensure .env file exists
+if [ ! -f "$ENV_FILE" ]; then
+    mkdir -p "$INSTALL_DIR"
+    cat > "$ENV_FILE" << 'ENVHEADER'
+# CodeAgent API Keys
+# ===================
+ENVHEADER
+    log_info "Created $ENV_FILE"
+fi
+
+echo ""
+echo -e "${BLUE}Required:${NC}"
+configure_key "OPENAI_API_KEY" "needed for memory embeddings (~\$4/month)" "required" "sk-..."
+
+echo ""
+echo -e "${BLUE}Optional:${NC}"
+configure_key "GITHUB_TOKEN" "enables GitHub MCP integration" "optional" "ghp_..."
+configure_key "TAVILY_API_KEY" "enables web research MCP" "optional" "tvly-..."
+
+# Sync OPENAI_API_KEY for Docker services
+openai_value=$(grep "^CODEAGENT_OPENAI_API_KEY=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+if [ -n "$openai_value" ] && [ "$openai_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
+    sed -i '/^OPENAI_API_KEY=/d' "$ENV_FILE" 2>/dev/null || true
+    echo "OPENAI_API_KEY=$openai_value" >> "$ENV_FILE"
+fi
+
+echo ""
+echo -e "${GREEN}Configuration complete!${NC}"
+echo ""
+
+# Show summary
+echo "Current configuration:"
+for key in CODEAGENT_OPENAI_API_KEY CODEAGENT_GITHUB_TOKEN CODEAGENT_TAVILY_API_KEY; do
+    value=$(grep "^$key=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+    if [ -n "$value" ] && [ "$value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
+        echo -e "  ${GREEN}✓${NC} $key: configured"
+    else
+        echo -e "  ${YELLOW}○${NC} $key: not set"
+    fi
+done
+
+echo ""
+echo -e "${CYAN}Note:${NC} Restart 'codeagent start' to apply changes to MCPs."
