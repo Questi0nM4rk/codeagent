@@ -59,7 +59,7 @@ services:
   # Memory system with 74% LOCOMO accuracy
   # API keys are read from ../.env with CODEAGENT_ prefix, mapped to service expectations
   letta:
-    image: letta/letta:0.6.5  # Pinned for reproducibility
+    image: letta/letta:0.16.0  # Updated from 0.6.5
     container_name: codeagent-letta
     ports:
       - "8283:8283"
