@@ -454,6 +454,16 @@ ENVHEADER
     prompt_for_key "GITHUB_TOKEN" "enables GitHub MCP integration" "optional" "ghp_..."
     prompt_for_key "TAVILY_API_KEY" "enables web research MCP" "optional" "tvly-..."
 
+    # Also write base OPENAI_API_KEY for services that need it (Letta)
+    # Docker Compose env_file injects this directly into containers
+    local openai_value=$(grep "^CODEAGENT_OPENAI_API_KEY=" "$env_file" 2>/dev/null | tail -1 | cut -d= -f2-)
+    if [ -n "$openai_value" ] && [ "$openai_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
+        # Remove any existing OPENAI_API_KEY lines and add fresh one
+        sed -i '/^OPENAI_API_KEY=/d' "$env_file" 2>/dev/null || true
+        echo "OPENAI_API_KEY=$openai_value" >> "$env_file"
+        log_success "Also set OPENAI_API_KEY for Docker services"
+    fi
+
     echo ""
 
     # Remind user to add to shell config for CLI access

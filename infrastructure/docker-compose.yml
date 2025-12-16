@@ -67,9 +67,7 @@ services:
       - path: ../.env  # Reads ~/.codeagent/.env (API keys stored by install.sh)
         required: false  # Don't fail if file doesn't exist yet
     environment:
-      # Map CODEAGENT_ prefixed keys to what Letta expects
-      # Falls back to base key if CODEAGENT_ version not set
-      OPENAI_API_KEY: ${CODEAGENT_OPENAI_API_KEY:-${OPENAI_API_KEY:-}}
+      # OPENAI_API_KEY is set directly in .env file by install.sh
       # Vector store connection
       LETTA_QDRANT_HOST: qdrant
       LETTA_QDRANT_PORT: 6333
