@@ -331,165 +331,92 @@ setup_api_keys() {
     # .env file location (Docker Compose reads this automatically)
     local env_file="$INSTALL_DIR/.env"
 
-    # Create .env if it doesn't exist
+    # Create .env header if file doesn't exist
     if [ ! -f "$env_file" ]; then
         cat > "$env_file" << 'ENVHEADER'
 # CodeAgent API Keys
 # ===================
-# Keys are stored with CODEAGENT_ prefix to avoid conflicts with system-wide keys.
-# Docker Compose maps these to what services expect (e.g., CODEAGENT_OPENAI_API_KEY -> OPENAI_API_KEY)
-#
 # This file is read by Docker Compose automatically.
-# For CLI tools, add to your ~/.zshrc or ~/.bashrc:
+# For CLI tools, add to your shell config:
 #   source ~/.codeagent/.env
 ENVHEADER
-    else
-        # Clean up duplicate keys (keep last occurrence of each)
-        local temp_env=$(mktemp)
-        # Keep header comments
-        grep "^#" "$env_file" > "$temp_env" 2>/dev/null || true
-        # For each unique key, keep only the last value
-        for key in CODEAGENT_OPENAI_API_KEY CODEAGENT_GITHUB_TOKEN CODEAGENT_TAVILY_API_KEY OPENAI_API_KEY; do
-            local value=$(grep "^$key=" "$env_file" 2>/dev/null | tail -1)
-            if [ -n "$value" ]; then
-                echo "$value" >> "$temp_env"
-            fi
-        done
-        mv "$temp_env" "$env_file"
     fi
 
+    # Helper to set a key (removes duplicates, adds new value)
+    set_env_key() {
+        local key="$1"
+        local value="$2"
+        sed -i "/^$key=/d" "$env_file" 2>/dev/null || true
+        echo "$key=$value" >> "$env_file"
+    }
+
     # Helper to prompt for a key
-    # Priority: CODEAGENT_ prefix > base key > prompt user
     prompt_for_key() {
         local key_name="$1"
         local description="$2"
         local required="$3"
         local example="$4"
-        local codeagent_key="CODEAGENT_$key_name"
 
         echo ""
 
-        # Helper to safely set a key (removes duplicates first)
-        set_env_key() {
-            local key="$1"
-            local value="$2"
-            # Remove any existing entries for this key
-            sed -i "/^$key=/d" "$env_file" 2>/dev/null || true
-            # Append the new value
-            echo "$key=$value" >> "$env_file"
-        }
-
-        # Priority 1: Check for CODEAGENT_ prefixed key (in env file OR environment)
+        # Check if key already exists in .env file
         local existing_value=""
-        if grep -q "^$codeagent_key=" "$env_file" 2>/dev/null; then
-            existing_value=$(grep "^$codeagent_key=" "$env_file" | tail -1 | cut -d= -f2-)
-        elif [ -n "${!codeagent_key}" ]; then
-            existing_value="${!codeagent_key}"
+        if grep -q "^$key_name=" "$env_file" 2>/dev/null; then
+            existing_value=$(grep "^$key_name=" "$env_file" | tail -1 | cut -d= -f2-)
         fi
 
-        if [ -n "$existing_value" ] && [ "$existing_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
-            log_success "$codeagent_key found"
-            # Ensure it's in the env file (might only be in environment) - uses set_env_key to prevent duplicates
-            set_env_key "$codeagent_key" "$existing_value"
+        # If key exists and is valid, skip
+        if [ -n "$existing_value" ] && [ "$existing_value" != "REPLACE_WITH_YOUR_KEY" ]; then
+            log_success "$key_name: configured"
             return
         fi
 
-        # Priority 2: Check for base key (without CODEAGENT_ prefix)
+        # Check environment variable
         if [ -n "${!key_name}" ]; then
-            log_info "Found $key_name in environment (system-wide)"
-            echo -e "  ${CYAN}1)${NC} Use existing $key_name for CodeAgent"
-            echo -e "  ${CYAN}2)${NC} Enter a separate key just for CodeAgent"
-            echo -n "  Choice [1]: "
-            read -r choice
-
-            if [ "$choice" = "2" ]; then
-                echo -n "  Enter new value for $codeagent_key: "
-                read -r new_value
-                if [ -n "$new_value" ]; then
-                    set_env_key "$codeagent_key" "$new_value"
-                    export "$codeagent_key=$new_value"
-                    log_success "Saved as $codeagent_key (separate from system $key_name)"
-                else
-                    # Use system key as fallback
-                    set_env_key "$codeagent_key" "${!key_name}"
-                    log_info "No value entered, using system $key_name"
-                fi
-            else
-                # Use existing system key
-                set_env_key "$codeagent_key" "${!key_name}"
-                export "$codeagent_key=${!key_name}"
-                log_success "Copied $key_name to $codeagent_key"
-            fi
+            set_env_key "$key_name" "${!key_name}"
+            log_success "$key_name: copied from environment"
             return
         fi
 
-        # Priority 3: No key found - prompt user
+        # Prompt user
         if [ "$required" = "required" ]; then
             log_warn "$key_name not found - $description"
             echo -n "  Enter $key_name (e.g., $example): "
             read -r new_value
             if [ -n "$new_value" ]; then
-                set_env_key "$codeagent_key" "$new_value"
-                export "$codeagent_key=$new_value"
-                log_success "Saved as $codeagent_key"
+                set_env_key "$key_name" "$new_value"
+                log_success "$key_name: saved"
             else
-                set_env_key "$codeagent_key" "CODEAGENT_REPLACE_WITH_YOUR_KEY"
-                log_warn "Added placeholder for $codeagent_key - edit $env_file to set it"
+                set_env_key "$key_name" "REPLACE_WITH_YOUR_KEY"
+                log_warn "$key_name: placeholder added - edit $env_file to set it"
             fi
         else
-            log_info "$key_name not found (optional) - $description"
+            log_info "$key_name (optional) - $description"
             echo -n "  Enter $key_name or press Enter to skip: "
             read -r new_value
             if [ -n "$new_value" ]; then
-                set_env_key "$codeagent_key" "$new_value"
-                export "$codeagent_key=$new_value"
-                log_success "Saved as $codeagent_key"
-            else
-                set_env_key "$codeagent_key" "CODEAGENT_REPLACE_WITH_YOUR_KEY"
-                log_info "Added placeholder for $codeagent_key - edit $env_file to set it later"
+                set_env_key "$key_name" "$new_value"
+                log_success "$key_name: saved"
             fi
         fi
     }
 
     echo ""
     echo -e "${CYAN}API keys are stored in $env_file${NC}"
-    echo -e "${CYAN}Docker Compose reads this file automatically.${NC}"
     echo ""
 
     # Prompt for each key
     echo -e "${BLUE}Required:${NC}"
-    prompt_for_key "OPENAI_API_KEY" "needed for memory embeddings (~\$4/month)" "required" "sk-..."
+    prompt_for_key "OPENAI_API_KEY" "needed for Letta memory (~\$4/month)" "required" "sk-..."
 
     echo ""
     echo -e "${BLUE}Optional:${NC}"
     prompt_for_key "GITHUB_TOKEN" "enables GitHub MCP integration" "optional" "ghp_..."
     prompt_for_key "TAVILY_API_KEY" "enables web research MCP" "optional" "tvly-..."
 
-    # Also write base OPENAI_API_KEY for services that need it (Letta)
-    # Docker Compose env_file injects this directly into containers
-    local openai_value=$(grep "^CODEAGENT_OPENAI_API_KEY=" "$env_file" 2>/dev/null | tail -1 | cut -d= -f2-)
-    if [ -n "$openai_value" ] && [ "$openai_value" != "CODEAGENT_REPLACE_WITH_YOUR_KEY" ]; then
-        # Remove any existing OPENAI_API_KEY lines and add fresh one
-        sed -i '/^OPENAI_API_KEY=/d' "$env_file" 2>/dev/null || true
-        echo "OPENAI_API_KEY=$openai_value" >> "$env_file"
-        log_success "Also set OPENAI_API_KEY for Docker services"
-    fi
-
     echo ""
-
-    # Remind user to add to shell config for CLI access
-    echo -e "${CYAN}For CLI access outside Docker, source the env file in your shell:${NC}"
-    echo ""
-    echo -e "  ${YELLOW}echo 'source $env_file' >> ~/.zshrc${NC}  # or ~/.bashrc"
-    echo ""
-    echo -e "${CYAN}Or export individual keys (stored with CODEAGENT_ prefix):${NC}"
-    echo ""
-    if [ -f "$env_file" ]; then
-        grep -v "^#" "$env_file" | grep "^CODEAGENT_" | while read -r line; do
-            local key=$(echo "$line" | cut -d= -f1)
-            echo -e "  ${YELLOW}export $key=\"...\"${NC}"
-        done
-    fi
+    echo -e "${CYAN}To use keys in your shell, add to ~/.zshrc or ~/.bashrc:${NC}"
+    echo -e "  ${YELLOW}source $env_file${NC}"
     echo ""
 }
 

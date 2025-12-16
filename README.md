@@ -117,26 +117,19 @@ CodeAgent installs and configures these MCP servers (all in global user scope):
 
 ## Configuration
 
-### API Key Management
+### API Keys
 
-CodeAgent uses namespaced keys (`CODEAGENT_*` prefix) to avoid conflicts with system-wide keys.
-
-**Priority order:**
-1. `CODEAGENT_OPENAI_API_KEY` (CodeAgent-specific)
-2. `OPENAI_API_KEY` (system fallback)
-3. Prompt user (if neither exists)
-
-**During install**, if a system key exists, you choose:
-- Use existing key for CodeAgent
-- Enter a separate key just for CodeAgent
-
-**Storage:** `~/.codeagent/.env`
+Keys are stored in `~/.codeagent/.env`:
 
 ```bash
-# ~/.codeagent/.env
-CODEAGENT_OPENAI_API_KEY=sk-...    # Required - Letta embeddings
-CODEAGENT_GITHUB_TOKEN=ghp-...     # Optional - GitHub MCP
-CODEAGENT_TAVILY_API_KEY=tvly-...  # Optional - Web research
+OPENAI_API_KEY=sk-...    # Required - Letta embeddings
+GITHUB_TOKEN=ghp-...     # Optional - GitHub MCP
+TAVILY_API_KEY=tvly-...  # Optional - Web research
+```
+
+**To configure keys:**
+```bash
+codeagent config
 ```
 
 **For CLI access** (outside Docker):
