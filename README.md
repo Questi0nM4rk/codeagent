@@ -1,17 +1,22 @@
 # CodeAgent
 
-Research-backed autonomous coding framework for Claude Code. Transforms Claude Code into an accuracy-optimized system with memory, structured reasoning, and TDD enforcement.
+Research-backed autonomous coding framework for Claude Code. Transforms Claude Code into an accuracy-optimized system with persistent memory, structured reasoning, and TDD enforcement.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude-Code-orange)](https://claude.ai/code)
 
 ## Features
 
-- **Memory-First Research** - Letta-powered memory system (74% LOCOMO accuracy) for context retention
-- **Tree-of-Thought Planning** - Explore multiple approaches before committing to a solution
-- **TDD Enforcement** - Strict test-first development workflow
-- **External Validation** - Never self-review, always use external tools
-- **Code Knowledge Graph** - AST-based code analysis with Neo4j
-- **Self-Reflection** - Learn from failures and improve over time
+| Feature | Description |
+|---------|-------------|
+| **Memory System** | Letta-powered memory with 74% LOCOMO accuracy |
+| **Tree-of-Thought** | Explore multiple approaches before committing |
+| **TDD Enforcement** | Strict test-first development workflow |
+| **Code Knowledge Graph** | AST-based analysis with Neo4j |
+| **Self-Reflection** | Learn from failures, improve over time |
+| **External Validation** | Never self-review, always use tools |
 
-## Quick Install
+## Quick Start
 
 ```bash
 # Clone and install
@@ -19,63 +24,59 @@ git clone https://github.com/Questi0nM4rk/codeagent.git
 cd codeagent
 ./install.sh
 
-# Or one-liner
-curl -fsSL https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh | bash
+# Start infrastructure
+codeagent start
+
+# Initialize in your project
+cd /your/project
+codeagent init
 ```
-
-### What Gets Installed
-
-- CLI commands (`codeagent`, `codeagent-start`, etc.) in `~/.local/bin/`
-- Framework files in `~/.codeagent/`
-- Claude Code skills and commands in `~/.claude/`
-- MCP servers (global user scope)
-- Docker infrastructure (Neo4j, Qdrant, Letta)
 
 ## Requirements
 
 - **Docker** with Docker Compose v2
-- **Node.js 18+** (for MCP servers)
-- **Python 3.10+** (for custom MCPs)
+- **Node.js 18+** for MCP servers
+- **Python 3.10+** for custom MCPs
 - **Claude Code CLI** (`claude` command)
 
-## Usage
+## Commands
 
-### Start Infrastructure
+### CLI Commands
 
 ```bash
-codeagent start    # Start Neo4j, Qdrant, Letta containers
-codeagent status   # Check health of all services
-codeagent stop     # Stop services
+codeagent start     # Start Neo4j, Qdrant, Letta
+codeagent stop      # Stop services
+codeagent status    # Health check all services
+codeagent config    # Configure API keys
+codeagent init      # Initialize project (creates Letta agent)
 ```
 
 ### Slash Commands
 
-Use these in Claude Code conversations:
+Use in Claude Code conversations:
 
 | Command | Description |
 |---------|-------------|
-| `/scan` | Build knowledge graph of your codebase |
-| `/plan "task"` | Research + design with Tree-of-Thought |
+| `/scan` | Build knowledge graph of codebase |
+| `/plan "task"` | Research and design with Tree-of-Thought |
 | `/implement` | TDD execution with quality gates |
 | `/integrate` | Merge parallel work streams |
-| `/review` | External tool validation |
+| `/review` | Validate with external tools |
 
-### Skills
+## Skills
 
-CodeAgent provides 6 specialized skills that activate automatically based on context:
+Six specialized skills auto-activate based on context:
 
-| Skill | Purpose | Activates When |
-|-------|---------|----------------|
-| `researcher` | Memory-first context gathering | Exploring codebase, gathering info |
-| `architect` | Tree-of-Thought solution design | Planning features, making decisions |
-| `orchestrator` | Parallel execution analysis | Multiple subtasks detected |
-| `implementer` | Strict TDD workflow | Writing code, implementing features |
-| `reviewer` | External tool validation | Reviewing code, validating changes |
-| `learner` | Pattern extraction | After successful implementations |
+| Skill | Purpose |
+|-------|---------|
+| `researcher` | Memory-first context gathering |
+| `architect` | Tree-of-Thought solution design |
+| `orchestrator` | Parallel execution analysis |
+| `implementer` | Strict TDD workflow |
+| `reviewer` | External tool validation |
+| `learner` | Pattern extraction |
 
 ## MCP Servers
-
-CodeAgent installs and configures these MCP servers (all in global user scope):
 
 ### Core MCPs
 
@@ -84,106 +85,100 @@ CodeAgent installs and configures these MCP servers (all in global user scope):
 | `sequential-thinking` | Step-by-step complex reasoning |
 | `context7` | Up-to-date library documentation |
 
-### Custom MCPs (Python)
+### Custom MCPs
 
-| MCP | Purpose |
-|-----|---------|
-| `code-graph` | AST-based code analysis with Neo4j backend |
-| `tot` | Tree-of-Thought structured exploration |
-| `reflection` | Self-reflection and episodic memory for learning |
+| MCP | Backend | Purpose |
+|-----|---------|---------|
+| `code-graph` | Neo4j | AST-based code knowledge graph |
+| `tot` | In-memory | Tree-of-Thought exploration |
+| `reflection` | Qdrant | Self-reflection and episodic memory |
 
 ### Infrastructure MCPs
 
-| MCP | Purpose | Requires |
-|-----|---------|----------|
-| `letta` | Advanced memory system (74% LOCOMO accuracy) | `codeagent start` |
-
-### Optional MCPs (require API keys)
-
-| MCP | Purpose | Environment Variable |
-|-----|---------|---------------------|
-| `github` | GitHub repository integration | `GITHUB_TOKEN` |
-| `tavily` | Web search and research | `TAVILY_API_KEY` |
+| MCP | Purpose |
+|-----|---------|
+| `letta` | Advanced memory system (74% LOCOMO accuracy) |
 
 ## Infrastructure
 
-| Service | Ports | Purpose |
-|---------|-------|---------|
-| Neo4j | 7474 (HTTP), 7687 (Bolt) | Code structure graph database |
-| Qdrant | 6333, 6334 | Vector embeddings storage |
-| Letta | 8283 | Memory system with agents |
+| Service | Version | Ports | Purpose |
+|---------|---------|-------|---------|
+| Neo4j | 5.26.0-community | 7474, 7687 | Code structure graph |
+| Qdrant | v1.16.2 | 6333, 6334 | Vector embeddings |
+| Letta | 0.16.0 | 8283 | Memory system |
 
-**Cost**: ~$4/month for OpenAI embeddings (`text-embedding-3-small`)
+**Embedding Cost**: ~$4/month (OpenAI `text-embedding-3-small`)
 
 ## Configuration
 
 ### API Keys
 
-Keys are stored in `~/.codeagent/.env`:
+Configure with:
 
-```bash
-OPENAI_API_KEY=sk-...    # Required - Letta embeddings
-GITHUB_TOKEN=ghp-...     # Optional - GitHub MCP
-TAVILY_API_KEY=tvly-...  # Optional - Web research
-```
-
-**To configure keys:**
 ```bash
 codeagent config
 ```
 
-**For CLI access** (outside Docker):
-```bash
-echo 'source ~/.codeagent/.env' >> ~/.zshrc
-```
+Keys stored in `~/.codeagent/.env`:
+
+| Key | Required | Purpose |
+|-----|----------|---------|
+| `OPENAI_API_KEY` | Yes | Letta embeddings |
+| `GITHUB_TOKEN` | No | GitHub MCP integration |
+| `TAVILY_API_KEY` | No | Web research |
 
 ### Hooks
 
-CodeAgent configures automatic hooks in `~/.claude/settings.json`:
+CodeAgent configures automatic hooks:
 
-- **Pre-commit/push hooks** - Run custom scripts before git operations
-- **Post-edit hooks** - Auto-format code based on file type (.cs, .rs, .cpp, .lua, .sh)
-- **File indexing** - Update code graph on file changes
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `dangerous-command-check` | Pre-Bash | Block dangerous commands |
+| `pre-commit` | Pre-git commit | Run pre-commit checks |
+| `pre-push` | Pre-git push | Run pre-push checks |
+| `auto-format` | Post-Write/Edit | Format code by file type |
+| `index-file` | Post-Write/Edit | Update code graph |
+| `session-end` | Stop | Cleanup temporary files |
 
 ## Installation Structure
 
-CodeAgent uses a **global-first** architecture - skills, commands, settings, and MCPs are installed globally and work across all projects.
-
-### Global (`install.sh`)
+### Global
 
 ```
-~/.claude/                    # Claude Code reads this globally
-├── CLAUDE.md                 # Personality + CodeAgent instructions
-├── settings.json             # Permissions, hooks, MCPs
-├── skills/                   # 6 skill definitions (auto-activate)
-└── commands/                 # 5 slash commands
+~/.claude/
+├── CLAUDE.md           # Personality + instructions
+├── settings.json       # Permissions, hooks
+├── skills/             # 6 skill definitions
+├── commands/           # 5 slash commands
+└── hooks/              # Hook scripts
 
-~/.codeagent/                 # CodeAgent installation
-├── bin/                      # CLI tools
-├── mcps/                     # Custom MCP servers
-├── templates/                # CLAUDE.md templates by language
-├── infrastructure/           # docker-compose.yml
-└── .env                      # API keys
+~/.codeagent/
+├── bin/                # CLI tools
+├── mcps/               # Custom MCP servers
+├── templates/          # CLAUDE.md templates
+├── infrastructure/     # docker-compose.yml
+└── .env                # API keys
 ```
 
-### Per-Project (`codeagent init`)
+### Per-Project
+
+Created by `codeagent init`:
 
 ```
-your-project/
-├── CLAUDE.md                 # Project instructions (created by /init in Claude Code)
+project/
 ├── .claude/
-│   └── letta-agent           # Letta agent ID (project-specific memory)
+│   └── letta-agent     # Letta agent ID
 └── docs/
-    └── decisions/            # Architecture decision records
+    └── decisions/      # Architecture decision records
 ```
 
-## Workflow Example
+## Workflow
 
 ```bash
-# 1. Start infrastructure (first time or after reboot)
+# 1. Start infrastructure
 codeagent start
 
-# 2. Initialize your project (creates Letta agent)
+# 2. Initialize project
 cd /your/project
 codeagent init
 ```
@@ -191,23 +186,18 @@ codeagent init
 Then in Claude Code:
 
 ```
-/init                            # Create project CLAUDE.md (built-in command)
-/scan                            # Build knowledge graph (first time)
-/plan "Add user authentication"  # Research + design
-/implement                       # TDD implementation
-/review                          # Validate with external tools
+/scan                           # Build knowledge graph
+/plan "Add authentication"      # Research + design
+/implement                      # TDD implementation
+/review                         # Validate
 ```
 
-## Reinstall / Update
+## Update
 
 ```bash
-# Update to latest version
 cd ~/.codeagent
 git pull
 ./install.sh
-
-# Force reinstall (wipes all Claude Code config, backs up first)
-./install.sh --force
 ```
 
 ## Uninstall
@@ -216,87 +206,55 @@ git pull
 ./uninstall.sh
 ```
 
-This removes:
-- CLI commands from `~/.local/bin/`
-- Framework files from `~/.codeagent/`
-- MCP registrations
-
-Optionally removes:
-- Docker containers and volumes
-- Claude Code configurations (`~/.claude/`)
-
 ## Philosophy
 
-### Partner, Not Assistant
+CodeAgent treats Claude as a **thinking partner**, not an assistant:
 
-CodeAgent treats Claude as a **thinking partner**, not a compliant tool:
+| Traditional | CodeAgent |
+|-------------|-----------|
+| "Sure, I'll implement that" | "Have you considered X?" |
+| Guesses when uncertain | "I'm not confident about this" |
+| Accepts all requests | "I'd push back because..." |
 
-> "It's better to say 'I don't know' than to guess and be wrong."
-> "It's better to push back on a bad idea now than to revert it later."
-
-| Traditional Assistant | CodeAgent Partner |
-|----------------------|-------------------|
-| "Sure, I'll implement that" | "Before I implement - have you considered X?" |
-| Guesses when uncertain | "I'm not confident about this approach" |
-| Accepts all requests | "I'd push back on that because..." |
-
-### Core Principles
+### Principles
 
 1. **Partner before tool** - Challenge, discuss, collaborate
 2. **Uncertainty before confidence** - Say "I don't know" when unsure
 3. **Memory-first** - Query memory before external research
-4. **Single-agent implementation** - Multi-agent fragments context
-5. **External validation** - Never self-review code
-6. **TDD always** - Test -> Fail -> Code -> Pass
-7. **Accuracy over speed** - Spend tokens for correctness
+4. **External validation** - Never self-review code
+5. **TDD always** - Test, fail, code, pass
+6. **Accuracy over speed** - Spend tokens for correctness
 
 ## Troubleshooting
+
+### Services not starting
+
+```bash
+codeagent status              # Check health
+docker logs codeagent-letta   # View logs
+codeagent stop && codeagent start
+```
 
 ### MCPs not connecting
 
 ```bash
-# Check MCP status
 claude mcp list
-
-# Reinstall MCPs
 ~/.codeagent/mcps/install-mcps.sh --force
 ```
 
-### Docker services unhealthy
+### Letta connection errors
 
 ```bash
-# Check container status
-codeagent status
+# Verify API key
+grep OPENAI_API_KEY ~/.codeagent/.env
 
-# View logs
-docker logs codeagent-letta
-docker logs codeagent-neo4j
-docker logs codeagent-qdrant
+# Reconfigure if missing
+codeagent config
 
 # Restart services
-codeagent stop && codeagent start
-```
-
-### Python MCP import errors
-
-```bash
-# Reinstall Python dependencies
-~/.codeagent/venv/bin/pip install -e ~/.codeagent/mcps/code-graph-mcp
-~/.codeagent/venv/bin/pip install -e ~/.codeagent/mcps/tot-mcp
-~/.codeagent/venv/bin/pip install -e ~/.codeagent/mcps/reflection-mcp
+cd ~/.codeagent/infrastructure && docker compose restart letta
 ```
 
 ## License
 
 MIT
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Write tests for new functionality
-4. Submit a pull request
-
-For major changes, please open an issue first to discuss the approach.

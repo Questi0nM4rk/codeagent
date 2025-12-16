@@ -1,24 +1,16 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-**CodeAgent** (v0.1.0) is a research-backed autonomous coding framework for Claude Code. It provides skills, commands, MCP servers, and Docker infrastructure to transform Claude Code into an accuracy-optimized system.
-
-## Quick Start
-
-```bash
-./install.sh           # Install everything
-codeagent start        # Start infrastructure
-cd /your/project && codeagent init   # Initialize in any project
-```
+**CodeAgent** is a research-backed autonomous coding framework for Claude Code. It provides skills, commands, MCP servers, and Docker infrastructure to transform Claude Code into an accuracy-optimized system.
 
 ## Development Commands
 
 ```bash
 # Validate shell scripts
-shellcheck install.sh bin/* scripts/*.sh mcps/*.sh
+shellcheck install.sh bin/* framework/hooks/*.sh
 
 # Test custom MCP servers
 ~/.codeagent/venv/bin/python -m pytest mcps/code-graph-mcp/
@@ -29,7 +21,7 @@ shellcheck install.sh bin/* scripts/*.sh mcps/*.sh
 codeagent start        # Start Neo4j, Qdrant, Letta
 codeagent stop         # Stop services
 codeagent status       # Health check
-codeagent logs -f      # Follow logs
+codeagent config       # Configure API keys
 
 # Manual Docker control
 cd infrastructure && docker compose up -d
@@ -57,66 +49,27 @@ docker compose logs -f
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Installation Structure
-
-CodeAgent uses a **global-first** architecture. Everything is installed globally except project-specific memory.
-
-### Global (installed by `install.sh`)
-
-```
-~/.claude/                    # Claude Code global config
-├── CLAUDE.md                 # Personality + CodeAgent instructions
-├── settings.json             # Permissions, hooks, MCPs
-├── skills/                   # 6 auto-activating skills
-└── commands/                 # 5 slash commands
-
-~/.codeagent/                 # CodeAgent installation
-├── bin/                      # CLI tools
-├── mcps/                     # Custom MCP servers
-├── templates/                # CLAUDE.md templates
-├── infrastructure/           # docker-compose.yml
-└── .env                      # API keys
-```
-
-### Per-Project (created by `codeagent init`)
-
-```
-project/
-├── CLAUDE.md                 # Project instructions (created by /init)
-├── .claude/
-│   └── letta-agent           # Letta agent ID (project memory)
-└── docs/
-    └── decisions/            # Architecture decision records
-```
-
 ## Source Directories
 
 | Directory | Purpose |
 |-----------|---------|
 | `bin/` | CLI entry points (codeagent, codeagent-start, etc.) |
-| `framework/skills/` | 6 skill definitions → installed to `~/.claude/skills/` |
-| `framework/commands/` | 5 slash commands → installed to `~/.claude/commands/` |
-| `framework/hooks/` | Git and post-edit hooks |
-| `mcps/` | Custom Python MCP servers + installers |
+| `framework/skills/` | 6 skill definitions |
+| `framework/commands/` | 5 slash commands |
+| `framework/hooks/` | Pre/post tool hooks |
+| `mcps/` | Custom Python MCP servers |
 | `infrastructure/` | Docker Compose for Neo4j, Qdrant, Letta |
-| `templates/` | CLAUDE.md templates by language (dotnet, rust, cpp, lua) |
-| `scripts/` | Maintenance scripts (backup, restore, update, health-check) |
+| `templates/` | CLAUDE.md templates by language |
 
 ## Custom MCPs
 
-Python MCP servers in `mcps/`:
-
 | MCP | Backend | Purpose |
 |-----|---------|---------|
-| `code-graph-mcp` | Neo4j | AST-based code knowledge graph (75% retrieval improvement) |
-| `tot-mcp` | In-memory | Tree-of-Thought reasoning (+70% on complex tasks) |
-| `reflection-mcp` | Qdrant | Self-reflection and episodic memory (+21% on HumanEval) |
-
-Install: `mcps/install-mcps.sh` registers all MCPs in global Claude Code scope.
+| `code-graph-mcp` | Neo4j | AST-based code knowledge graph |
+| `tot-mcp` | In-memory | Tree-of-Thought reasoning |
+| `reflection-mcp` | Qdrant | Self-reflection and episodic memory |
 
 ## Skills System
-
-Skills auto-activate based on context. Each has a thinking level:
 
 | Skill | Thinking | Purpose |
 |-------|----------|---------|
@@ -132,41 +85,72 @@ Skills auto-activate based on context. Each has a thinking level:
 | Command | Description |
 |---------|-------------|
 | `/scan` | Build knowledge graph of codebase |
-| `/plan "task"` | Research → Design (auto-detects parallel) |
-| `/implement` | TDD execution (sequential or parallel) |
-| `/integrate` | Merge parallel work streams |
-| `/review` | Validate with external tools |
+| `/plan "task"` | Research and design |
+| `/implement` | TDD execution |
+| `/integrate` | Merge parallel work |
+| `/review` | External validation |
 
 ## Infrastructure
 
-| Service | Ports | Purpose |
-|---------|-------|---------|
-| Neo4j | 7474, 7687 | Code structure graph |
-| Qdrant | 6333, 6334 | Vector embeddings |
-| Letta | 8283 | Memory system (74% LOCOMO) |
-
-**Embeddings**: OpenAI `text-embedding-3-small` (~$4/month)
+| Service | Version | Ports |
+|---------|---------|-------|
+| Neo4j | 5.26.0-community | 7474, 7687 |
+| Qdrant | v1.16.2 | 6333, 6334 |
+| Letta | 0.16.0 | 8283 |
 
 ## Environment Variables
 
-```bash
-OPENAI_API_KEY      # Required: Letta embeddings
-CODEAGENT_HOME      # Default: ~/.codeagent
-GITHUB_TOKEN        # Optional: GitHub MCP
-TAVILY_API_KEY      # Optional: Web research
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `OPENAI_API_KEY` | Yes | Letta embeddings |
+| `GITHUB_TOKEN` | No | GitHub MCP |
+| `TAVILY_API_KEY` | No | Web research |
+
+## Hooks
+
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `dangerous-command-check` | PreToolUse:Bash | Block dangerous commands |
+| `pre-commit` | PreToolUse:Bash(git commit) | Pre-commit checks |
+| `pre-push` | PreToolUse:Bash(git push) | Pre-push checks |
+| `auto-format` | PostToolUse:Write/Edit | Format code |
+| `index-file` | PostToolUse:Write/Edit | Update code graph |
+| `session-end` | Stop | Cleanup temp files |
+
+## Installation Structure
+
+### Global (install.sh)
+
+```
+~/.claude/
+├── CLAUDE.md           # Personality + instructions
+├── settings.json       # Permissions, hooks
+├── skills/             # 6 skill definitions
+├── commands/           # 5 slash commands
+└── hooks/              # Hook scripts
+
+~/.codeagent/
+├── bin/                # CLI tools
+├── mcps/               # Custom MCP servers
+├── templates/          # CLAUDE.md templates
+├── infrastructure/     # docker-compose.yml
+└── .env                # API keys
 ```
 
-## Design Philosophy
+### Per-Project (codeagent init)
 
-1. **Partner, not assistant** - Challenge assumptions, push back on bad ideas
-2. **Memory-first** - Query Letta/code-graph before external research
-3. **External validation** - Never self-review, use tools (semgrep, linters)
-4. **TDD always** - Test → Fail → Code → Pass
+```
+project/
+├── .claude/
+│   └── letta-agent     # Letta agent ID
+└── docs/
+    └── decisions/      # ADRs
+```
+
+## Design Principles
+
+1. **Partner, not assistant** - Challenge assumptions
+2. **Memory-first** - Query Letta/code-graph before research
+3. **External validation** - Never self-review
+4. **TDD always** - Test, fail, code, pass
 5. **Accuracy over speed** - Spend tokens for correctness
-
-## Detailed Documentation
-
-- `Docs/Implementation.md` - Full technical specification
-- `Docs/ProjectVision.md` - Research backing and design decisions
-- `Docs/McpInstallWorkflow.md` - MCP installation details
-- `README.md` - User-facing documentation
