@@ -79,19 +79,19 @@ PROJECT_NAME=$(basename "$PROJECT_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a
 # Check if Letta is running
 if curl -sf http://localhost:8283/v1/health/ > /dev/null 2>&1; then
     # Check if agent already exists
-    EXISTING_AGENT=$(curl -sf "http://localhost:8283/v1/agents" 2>/dev/null | grep -o "\"name\":\"codeagent-$PROJECT_NAME\"" || true)
+    EXISTING_AGENT=$(curl -sfL "http://localhost:8283/v1/agents/" 2>/dev/null | grep -o "\"name\":\"codeagent-$PROJECT_NAME\"" || true)
 
     if [ -n "$EXISTING_AGENT" ]; then
         echo -e "  ${GREEN}✓${NC} Letta agent already exists: codeagent-$PROJECT_NAME"
 
         # Try to get and store agent ID
-        AGENT_ID=$(curl -sf "http://localhost:8283/v1/agents" 2>/dev/null | grep -o "\"id\":\"[^\"]*\",\"name\":\"codeagent-$PROJECT_NAME\"" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || true)
+        AGENT_ID=$(curl -sfL "http://localhost:8283/v1/agents/" 2>/dev/null | grep -o "\"id\":\"[^\"]*\",\"name\":\"codeagent-$PROJECT_NAME\"" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || true)
         if [ -n "$AGENT_ID" ]; then
             echo "$AGENT_ID" > .claude/letta-agent
         fi
     else
         # Create agent via Letta API
-        AGENT_RESPONSE=$(curl -sf -X POST "http://localhost:8283/v1/agents" \
+        AGENT_RESPONSE=$(curl -sfL -X POST "http://localhost:8283/v1/agents/" \
             -H "Content-Type: application/json" \
             -d "{
                 \"name\": \"codeagent-$PROJECT_NAME\",
