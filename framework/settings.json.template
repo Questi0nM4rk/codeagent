@@ -1,32 +1,40 @@
 {
   "permissions": {
     "defaultMode": "bypassPermissions",
-    "allow": [
-      "Bash(dotnet:*)",
-      "Bash(cargo:*)",
-      "Bash(go:*)",
-      "Bash(npm:*)",
-      "Bash(python:*)",
-      "Bash(git:*)",
-      "Read(**/*)",
-      "Write(**/*)",
-      "Edit(**/*)",
-      "mcp__code-graph__*",
-      "mcp__tot__*",
-      "mcp__reflection__*",
-      "mcp__letta__*",
-      "mcp__context7__*",
-      "mcp__sequential-thinking__*"
-    ],
     "deny": [
-      "Bash(rm -rf:*)",
       "Bash(sudo:*)",
-      "Read(.env)",
-      "Read(**/secrets/**)"
+      "Bash(chmod 777:*)",
+      "Bash(:(){ :|:& };:*)",
+      "Read(**/secrets/**)",
+      "Read(**/.env.local)",
+      "Read(**/*.pem)",
+      "Read(**/*_rsa)",
+      "Write(**/secrets/**)",
+      "Write(**/.env*)"
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/greeter.sh 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/dangerous-command-check.sh \"$CLAUDE_TOOL_INPUT_COMMAND\" 2>/dev/null"
+          }
+        ]
+      },
       {
         "matcher": "Bash",
         "hooks": [
@@ -43,11 +51,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "case \"$CLAUDE_TOOL_INPUT_FILE_PATH\" in *.cs) dotnet format --include \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.rs) cargo fmt 2>/dev/null || true ;; *.cpp|*.c|*.h|*.hpp) clang-format -i \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.lua) stylua \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.sh) shfmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.py) black \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.ts|*.tsx|*.js|*.jsx) prettier --write \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; *.go) gofmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true ;; esac"
+            "command": "~/.claude/hooks/auto-format.sh \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true"
           },
           {
             "type": "command",
-            "command": ".claude/hooks/index-file.sh \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true"
+            "command": "~/.claude/hooks/index-file.sh \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/session-end.sh 2>/dev/null || true"
           }
         ]
       }
@@ -55,8 +74,6 @@
   },
   "env": {
     "CODEAGENT_MODE": "autonomous",
-    "CODEAGENT_THINKING": "enabled",
-    "TDD_STRICT": "true",
-    "EXTERNAL_VALIDATION_ONLY": "true"
+    "CODEAGENT_THINKING": "enabled"
   }
 }
