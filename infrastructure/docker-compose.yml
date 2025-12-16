@@ -79,8 +79,8 @@ services:
       qdrant:
         condition: service_healthy
     healthcheck:
-      # Letta health endpoint is /v1/health/ - no auth required for health check
-      test: ["CMD-SHELL", "curl -sf http://localhost:8283/v1/health/ > /dev/null || exit 1"]
+      # Letta health endpoint - using python since curl not in container
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8283/v1/health/')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
