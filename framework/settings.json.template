@@ -4,7 +4,7 @@
     "deny": [
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
-      "Bash(:(){ :|:& };:*)",
+      "Bash(*fork bomb*)",
       "Read(**/secrets/**)",
       "Read(**/.env.local)",
       "Read(**/*.pem)",
