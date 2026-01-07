@@ -141,6 +141,56 @@ validate_command() {
     return 0
 }
 
+# Validate an agent file
+validate_agent() {
+    local agent_file=$1
+    local errors=()
+
+    # Check file exists
+    if [ ! -f "$agent_file" ]; then
+        errors+=("Agent file not found")
+        echo "${errors[*]}"
+        return 1
+    fi
+
+    # Extract frontmatter
+    local frontmatter=$(sed -n '/^---$/,/^---$/p' "$agent_file" | sed '1d;$d')
+
+    # Check YAML is valid
+    if command -v yq &> /dev/null; then
+        if ! echo "$frontmatter" | yq . > /dev/null 2>&1; then
+            errors+=("Invalid YAML frontmatter")
+        fi
+
+        # Check required fields
+        local name=$(echo "$frontmatter" | yq -r '.name' 2>/dev/null)
+        local desc=$(echo "$frontmatter" | yq -r '.description' 2>/dev/null)
+
+        if [ -z "$name" ] || [ "$name" = "null" ]; then
+            errors+=("Missing required field: name")
+        fi
+
+        if [ -z "$desc" ] || [ "$desc" = "null" ]; then
+            errors+=("Missing required field: description")
+        fi
+    else
+        # Basic validation without yq
+        if ! grep -q "^name:" <<< "$frontmatter"; then
+            errors+=("Missing required field: name")
+        fi
+        if ! grep -q "^description:" <<< "$frontmatter"; then
+            errors+=("Missing required field: description")
+        fi
+    fi
+
+    if [ ${#errors[@]} -gt 0 ]; then
+        echo "${errors[*]}"
+        return 1
+    fi
+
+    return 0
+}
+
 # Validate a hook script
 validate_hook() {
     local hook_file=$1
@@ -242,6 +292,11 @@ check_existing_state() {
         EXISTING_HOOKS=$(ls "$CLAUDE_DIR/hooks"/*.sh 2>/dev/null | wc -l)
     fi
 
+    if [ -d "$CLAUDE_DIR/agents" ] && [ "$(ls -A $CLAUDE_DIR/agents/*.md 2>/dev/null)" ]; then
+        has_config=true
+        EXISTING_AGENTS=$(ls "$CLAUDE_DIR/agents"/*.md 2>/dev/null | wc -l)
+    fi
+
     HAS_EXISTING_CONFIG=$has_config
 }
 
@@ -260,6 +315,7 @@ create_backup() {
     [ -d "$CLAUDE_DIR/skills" ] && cp -r "$CLAUDE_DIR/skills" "$backup_dir/"
     [ -d "$CLAUDE_DIR/commands" ] && cp -r "$CLAUDE_DIR/commands" "$backup_dir/"
     [ -d "$CLAUDE_DIR/hooks" ] && cp -r "$CLAUDE_DIR/hooks" "$backup_dir/"
+    [ -d "$CLAUDE_DIR/agents" ] && cp -r "$CLAUDE_DIR/agents" "$backup_dir/"
 
     log_success "Backup created: $backup_dir"
     BACKUP_DIR="$backup_dir"
@@ -526,6 +582,56 @@ install_hooks() {
     fi
 }
 
+# Install all agents from framework/agents/
+install_agents() {
+    log_info "Installing agents..."
+
+    mkdir -p "$CLAUDE_DIR/agents"
+
+    local installed=0
+    local skipped=0
+    local failed=0
+
+    # Install from directory (agents don't have registry entries yet)
+    for agent_file in "$SOURCE_DIR/agents"/*.md; do
+        if [ -f "$agent_file" ]; then
+            local agent_name=$(basename "$agent_file" .md)
+            local target_path="$CLAUDE_DIR/agents/$agent_name.md"
+
+            if [ -f "$target_path" ] && [ "$FORCE" != "true" ]; then
+                if diff -q "$agent_file" "$target_path" > /dev/null 2>&1; then
+                    ((skipped++)) || true
+                    continue
+                fi
+            fi
+
+            cp "$agent_file" "$target_path" 2>/dev/null || {
+                log_error "Failed to copy agent: $agent_name"
+                ((failed++)) || true
+                continue
+            }
+
+            if ! validate_agent "$target_path" > /dev/null 2>&1; then
+                log_error "Agent validation failed: $agent_name"
+                ((failed++)) || true
+                continue
+            fi
+
+            ((installed++)) || true
+        fi
+    done
+
+    if [ $installed -gt 0 ]; then
+        log_success "Installed $installed agents"
+    fi
+    if [ $skipped -gt 0 ]; then
+        log_info "Skipped $skipped unchanged agents"
+    fi
+    if [ $failed -gt 0 ]; then
+        log_warn "Failed to install $failed agents"
+    fi
+}
+
 # Install settings.json
 install_settings() {
     log_info "Installing settings.json..."
@@ -693,6 +799,7 @@ prompt_user_choice() {
     [ -n "$EXISTING_SKILLS" ] && echo "  - ~/.claude/skills/ ($EXISTING_SKILLS skills)"
     [ -n "$EXISTING_COMMANDS" ] && echo "  - ~/.claude/commands/ ($EXISTING_COMMANDS commands)"
     [ -n "$EXISTING_HOOKS" ] && echo "  - ~/.claude/hooks/ ($EXISTING_HOOKS hooks)"
+    [ -n "$EXISTING_AGENTS" ] && echo "  - ~/.claude/agents/ ($EXISTING_AGENTS agents)"
     echo ""
     echo "Options:"
     echo "  1) Backup existing and install CodeAgent config (recommended)"
@@ -774,6 +881,21 @@ verify_all_configs() {
     done
     log_info "Hooks: $hook_count installed, $hook_errors errors"
 
+    # Verify agents
+    local agent_count=0
+    local agent_errors=0
+    for agent_file in "$CLAUDE_DIR/agents"/*.md; do
+        if [ -f "$agent_file" ]; then
+            ((agent_count++)) || true
+            if ! validate_agent "$agent_file" > /dev/null 2>&1; then
+                log_error "Invalid agent: $(basename "$agent_file")"
+                ((agent_errors++)) || true
+                all_ok=false
+            fi
+        fi
+    done
+    log_info "Agents: $agent_count installed, $agent_errors errors"
+
     # Verify settings
     if [ -f "$CLAUDE_DIR/settings.json" ]; then
         if ! validate_settings "$CLAUDE_DIR/settings.json" > /dev/null 2>&1; then
@@ -812,6 +934,7 @@ report_summary() {
     echo -e "  ${BLUE}Skills:${NC}    $(ls -d "$CLAUDE_DIR/skills"/*/ 2>/dev/null | wc -l)"
     echo -e "  ${BLUE}Commands:${NC}  $(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l)"
     echo -e "  ${BLUE}Hooks:${NC}     $(ls "$CLAUDE_DIR/hooks"/*.sh 2>/dev/null | wc -l)"
+    echo -e "  ${BLUE}Agents:${NC}    $(ls "$CLAUDE_DIR/agents"/*.md 2>/dev/null | wc -l)"
     echo -e "  ${BLUE}Settings:${NC}  $([ -f "$CLAUDE_DIR/settings.json" ] && echo "Yes" || echo "No")"
     echo -e "  ${BLUE}CLAUDE.md:${NC} $([ -f "$CLAUDE_DIR/CLAUDE.md" ] && echo "Yes" || echo "No")"
 
@@ -862,6 +985,7 @@ main() {
     install_skills
     install_commands
     install_hooks
+    install_agents
 
     # Phase 7-8: Install settings and memory
     install_settings

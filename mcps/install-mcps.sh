@@ -9,6 +9,7 @@ set -e
 # Configuration
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 FORCE="${CODEAGENT_FORCE:-false}"
+RESET="${CODEAGENT_RESET:-false}"  # Delete data volumes (agents, memories)
 NO_DOCKER="${CODEAGENT_NO_DOCKER:-false}"
 REGISTRY_FILE="$INSTALL_DIR/mcps/mcp-registry.json"
 INSTALLERS_DIR="$INSTALL_DIR/mcps/installers"
@@ -41,6 +42,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --force|-f)
             FORCE=true
+            shift
+            ;;
+        --reset)
+            RESET=true
             shift
             ;;
         --no-docker)
@@ -128,6 +133,7 @@ run_installer() {
     # Export environment for sub-installer
     export CODEAGENT_HOME="$INSTALL_DIR"
     export CODEAGENT_FORCE="$FORCE"
+    export CODEAGENT_RESET="$RESET"
     export CODEAGENT_NO_DOCKER="$NO_DOCKER"
     export CODEAGENT_REGISTRY="$REGISTRY_FILE"
 

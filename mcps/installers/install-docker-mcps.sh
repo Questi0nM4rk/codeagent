@@ -15,6 +15,7 @@ set -e
 # Configuration (inherited from parent)
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 FORCE="${CODEAGENT_FORCE:-false}"
+RESET="${CODEAGENT_RESET:-false}"  # Delete data volumes (agents, memories)
 NO_DOCKER="${CODEAGENT_NO_DOCKER:-false}"
 REGISTRY_FILE="${CODEAGENT_REGISTRY:-$INSTALL_DIR/mcps/mcp-registry.json}"
 DOCKER_COMPOSE_FILE="$INSTALL_DIR/infrastructure/docker-compose.yml"
@@ -122,6 +123,7 @@ install_letta() {
     # Export environment for sub-installer
     export CODEAGENT_HOME="$INSTALL_DIR"
     export CODEAGENT_FORCE="$FORCE"
+    export CODEAGENT_RESET="$RESET"
 
     # Run Letta installer
     if bash "$letta_installer"; then

@@ -15,6 +15,20 @@ Independent validation using external tools. NEVER relies on self-assessment - e
 /review --stress        # Deep stress testing mode
 ```
 
+## Agent Pipeline
+
+```
+Main Claude (Orchestrator)
+      │
+      └─► reviewer agent (opus)
+              skills: [reviewer, domain skills based on file types]
+              → Runs static analysis tools
+              → Runs security scanners
+              → Executes test suite
+              → Checks pattern consistency
+              → Returns: APPROVED or CHANGES REQUIRED
+```
+
 ## What This Does
 
 1. **Static Analysis**: Linting, formatting, build warnings
@@ -25,70 +39,45 @@ Independent validation using external tools. NEVER relies on self-assessment - e
 
 ## Validation Pipeline
 
-### 1. Static Analysis
+The reviewer agent loads domain skills for language-specific tools:
+
+### Static Analysis (from domain skills)
+
+- **dotnet**: `dotnet format --verify-no-changes`, `dotnet build --warnaserror`
+- **rust**: `cargo fmt --check`, `cargo clippy -- -D warnings`
+- **cpp**: `clang-format --dry-run --Werror`, `clang-tidy`
+- **python**: `ruff check`, `mypy`
+- **frontend**: `eslint`, `tsc --noEmit`
+- **lua**: `luacheck`, `stylua --check`
+- **bash**: `shellcheck`, `shfmt -d`
+
+### Security Scan
 
 ```bash
-# .NET
-dotnet format --verify-no-changes
-dotnet build --warnaserror
-
-# Rust
-cargo fmt --check
-cargo clippy -- -D warnings
-
-# C/C++
-clang-format --dry-run --Werror src/*.cpp
-clang-tidy src/*.cpp -- -std=c++23
-
-# Lua
-luacheck . --codes
-stylua --check .
-```
-
-### 2. Security Scan
-
-```bash
-# Universal security scan
+# Universal
 semgrep --config auto --error .
 
 # Language-specific
 dotnet list package --vulnerable    # .NET
 cargo audit                         # Rust
-
-# Secrets detection
-grep -r "password\|secret\|api_key" --include="*.cs" | grep -v test
+npm audit                           # JavaScript
+bandit -r src/                      # Python
 ```
 
-### 3. Test Execution
+### Pattern Consistency
 
-```bash
-# Full test suite
-dotnet test --verbosity normal      # .NET
-cargo test                          # Rust
-ctest --test-dir build              # C/C++
-busted                              # Lua
+Uses MCPs to verify:
 ```
+mcp__reflection__retrieve_episodes
+    → Get established patterns
 
-### 4. Memory Consistency
-
-Query Letta:
-- Does this code match established project patterns?
-- Any conflicting conventions?
-
-Query code-graph:
-- Any broken dependencies?
-- Any orphaned code?
-- Any circular dependencies?
-
-### 5. Requirements Verification
-
-Load original /plan output:
-- [ ] All acceptance criteria met
-- [ ] All specified files modified
-- [ ] All specified tests added
-- [ ] No scope creep
+mcp__code-graph__query_dependencies
+    → Check for circular deps, broken refs
+```
 
 ## Output Format
+
+### Approved
 
 ```markdown
 ## Review Results
@@ -96,24 +85,14 @@ Load original /plan output:
 ### Summary
 | Category | Status | Issues |
 |----------|--------|--------|
-| Static Analysis | ✅ PASS | 0 issues |
-| Security | ✅ PASS | 0 findings |
-| Tests | ✅ PASS | 52/52 passing |
-| Patterns | ✅ PASS | 0 deviations |
-| Requirements | ✅ PASS | 5/5 met |
+| Static Analysis | PASS | 0 issues |
+| Security | PASS | 0 findings |
+| Tests | PASS | 52/52 passing |
+| Patterns | PASS | 0 deviations |
+| Requirements | PASS | 5/5 met |
 
-### Static Analysis
-```
-[tool output]
-```
-
-### Security Scan
-| Severity | Count | Details |
-|----------|-------|---------|
-| Critical | 0 | - |
-| High | 0 | - |
-| Medium | 0 | - |
-| Low | 0 | - |
+### Tool Results
+[Actual tool output for each category]
 
 ### Test Results
 | Metric | Value |
@@ -123,29 +102,15 @@ Load original /plan output:
 | Failed | 0 |
 | Coverage | 84% |
 
-### Pattern Consistency
-- Error handling: ✓ Matches project standard (Result<T>)
-- Naming: ✓ Follows conventions
-- Structure: ✓ Consistent with existing code
-
-### Requirements
-- [x] JWT validation implemented
-- [x] Token refresh working
-- [x] Tests added for all paths
-- [x] Error handling complete
-- [x] Documentation updated
-
 ---
 
-## VERDICT: ✅ APPROVED
+## VERDICT: APPROVED
 
-### Notes
-- All checks passed
-- Code is ready for commit/PR
-- @learner will extract patterns automatically
+Code is ready for commit/PR.
+Learner agent will extract patterns automatically.
 ```
 
-## Failure Output
+### Changes Required
 
 ```markdown
 ## Review Results
@@ -153,23 +118,22 @@ Load original /plan output:
 ### Summary
 | Category | Status | Issues |
 |----------|--------|--------|
-| Static Analysis | ❌ FAIL | 2 issues |
-| Security | ⚠️ WARN | 1 medium finding |
-| Tests | ✅ PASS | 52/52 passing |
-| Patterns | ❌ FAIL | 1 deviation |
-| Requirements | ✅ PASS | 5/5 met |
+| Static Analysis | FAIL | 2 issues |
+| Security | WARN | 1 medium finding |
+| Tests | PASS | 52/52 passing |
+| Patterns | FAIL | 1 deviation |
+| Requirements | PASS | 5/5 met |
 
 ---
 
-## VERDICT: ❌ CHANGES REQUIRED
+## VERDICT: CHANGES REQUIRED
 
 ### Required Changes
 
 | Priority | Location | Issue | Fix |
 |----------|----------|-------|-----|
-| HIGH | src/Auth/JwtService.cs:45 | Hardcoded secret in code | Move to configuration |
+| HIGH | src/Auth/JwtService.cs:45 | Hardcoded secret | Move to configuration |
 | MEDIUM | src/Auth/TokenValidator.cs:23 | Missing null check | Add validation |
-| MEDIUM | src/Auth/JwtService.cs | Uses exceptions, project uses Result<T> | Refactor to Result pattern |
 
 ### Security Findings
 
@@ -186,7 +150,7 @@ Run `/review` again to verify all issues resolved.
 
 ## Stress Test Mode (--stress)
 
-Additional checks when stress testing:
+Additional deep checks:
 
 ### Edge Cases
 - [ ] Null inputs handled
@@ -212,10 +176,21 @@ Additional checks when stress testing:
 - [ ] Auth bypass attempts
 - [ ] Input validation complete
 
+## Post-Review
+
+On APPROVED:
+- Learner agent automatically extracts patterns
+- Stores success episode in reflection memory
+- Updates Letta with new patterns
+
+On CHANGES REQUIRED:
+- Fix listed issues
+- Run `/review` again
+- Repeat until APPROVED
+
 ## Notes
 
 - Run /review after /implement (sequential) or /integrate (parallel)
 - Security findings are NEVER "low priority"
 - Missing tests for new code = automatic FAIL
-- @learner triggers automatically on APPROVED verdict
-- If CHANGES REQUIRED, fix and run /review again
+- All tool output is real - not paraphrased or summarized

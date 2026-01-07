@@ -16,80 +16,68 @@ Implements the plan using Test-Driven Development. Automatically uses parallel e
 /implement --task=A         # Re-run specific parallel task
 ```
 
-## What This Does
+## Agent Pipeline
 
-1. Loads the plan from previous /plan command
-2. Checks execution mode (SEQUENTIAL or PARALLEL)
-3. Executes TDD loop for each step/task
-4. Commits on success, checkpoints on failure
-5. Triggers /integrate automatically after parallel completion
+### Sequential Mode
+
+```
+Main Claude (Orchestrator)
+      │
+      └─► implementer agent (opus)
+              skills: [tdd, domain skills based on file types]
+              → Executes TDD loop for each step
+              → Uses reflection MCP for failure learning
+              → Returns: implementation results, commits made
+```
+
+### Parallel Mode
+
+```
+Main Claude (Orchestrator)
+      │
+      ├─► implementer agent (Task A)
+      │       skills: [tdd, relevant domain skills]
+      │       exclusive files: [list]
+      │       → TDD loop for Task A
+      │
+      ├─► implementer agent (Task B)
+      │       skills: [tdd, relevant domain skills]
+      │       exclusive files: [list]
+      │       → TDD loop for Task B
+      │
+      └─► (auto-triggers /integrate when all complete)
+```
 
 ## TDD Loop (Every Step)
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  1. Write test for the behavior                     │
-│  2. Run test → MUST FAIL                            │
-│  3. Commit test                                     │
-│  4. Write minimal implementation                    │
-│  5. Run test → MUST PASS (max 3 attempts)          │
-│  6. Commit implementation                           │
-│  7. Run full test suite → check for regressions    │
-│  8. Refactor if needed (tests must still pass)     │
-│  9. Next step                                       │
-└─────────────────────────────────────────────────────┘
+1. Write test for the behavior
+2. Run test → MUST FAIL
+3. Commit test
+4. Write minimal implementation
+5. Run test → MUST PASS (max 3 attempts)
+6. Commit implementation
+7. Run full test suite → check for regressions
+8. Refactor if needed (tests must still pass)
+9. Update code-graph index
+10. Next step
 ```
 
-## Sequential Mode
+## Failure Handling
 
-Single @implementer agent executes all steps in order:
-
-```markdown
-Step 1: [description]
-├── Write test
-├── Run test (fail) ✓
-├── Commit: test(scope): add test for [behavior]
-├── Write code
-├── Run test (pass) ✓
-├── Commit: feat(scope): implement [behavior]
-└── Full suite: 47/47 passing ✓
-
-Step 2: [description]
-├── ...
-```
-
-## Parallel Mode
-
-Spawns separate agents for isolated tasks:
+The implementer agent uses reflection MCP on failures:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                 @orchestrator                        │
-│          Load plan, verify boundaries               │
-└─────────────────────────────────────────────────────┘
-                        │
-         ┌──────────────┼──────────────┐
-         ▼              ▼              ▼
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  Subagent A │ │  Subagent B │ │  Subagent C │
-│  Task A     │ │  Task B     │ │  Task C     │
-│  Exclusive: │ │  Exclusive: │ │  Exclusive: │
-│  [files]    │ │  [files]    │ │  [files]    │
-└─────────────┘ └─────────────┘ └─────────────┘
-         │              │              │
-         └──────────────┼──────────────┘
-                        ▼
-┌─────────────────────────────────────────────────────┐
-│               /integrate (auto)                      │
-│     Merge, validate, full test suite                │
-└─────────────────────────────────────────────────────┘
-```
+mcp__reflection__reflect_on_failure
+    → Analyze what went wrong
+    → Check similar past failures
+    → Generate improved attempt
 
-Each subagent:
-- Has exclusive file ownership (can only modify their files)
-- Follows same TDD loop
-- Reports boundary violations immediately
-- Works independently (no cross-communication)
+After 3 failures:
+    → Create checkpoint branch
+    → Output BLOCKED status
+    → Store episode in reflection memory
+```
 
 ## Output Format
 
@@ -124,7 +112,7 @@ Each subagent:
 
 ### Test Results
 - Total: 52
-- Passed: 52 ✓
+- Passed: 52
 - Coverage: 84%
 
 Ready for /review
@@ -135,34 +123,34 @@ Ready for /review
 ```markdown
 ## Implementation Complete
 
-### Mode: PARALLEL ⚡
+### Mode: PARALLEL
 Duration: 5m 23s (vs ~12m sequential)
 
 ### Task Results
 
-#### Task A: User Management ✅
+#### Task A: User Management
+- Status: Complete
 - Files modified: 4
 - Tests added: 12
 - Boundary violations: None
 - Commits: 4
 
-#### Task B: Product Catalog ✅
+#### Task B: Product Catalog
+- Status: Complete
 - Files modified: 5
 - Tests added: 15
 - Boundary violations: None
 - Commits: 5
 
-### Integration
-- Merge conflicts: None ✓
-- Full test suite: 67/67 passing ✓
-- Interface consistency: ✓
+### Integration (auto-triggered)
+- Merge conflicts: None
+- Full test suite: 67/67 passing
+- Interface consistency: Verified
 
 Ready for /review
 ```
 
-## Failure Handling
-
-### Test Won't Pass (3 attempts)
+### Blocked
 
 ```markdown
 ## BLOCKED: Test Failure
@@ -174,6 +162,12 @@ Ready for /review
 1. [approach] → [error]
 2. [approach] → [error]
 3. [approach] → [error]
+
+### Reflection Analysis
+[From mcp__reflection__reflect_on_failure]
+
+### Similar Past Issues
+[From mcp__reflection__retrieve_episodes]
 
 ### Checkpoint Created
 Branch: checkpoint/[task]-[timestamp]
@@ -187,28 +181,6 @@ Branch: checkpoint/[task]-[timestamp]
 [Specific information or help needed]
 ```
 
-### Parallel Boundary Violation
-
-```markdown
-## STOPPED: Boundary Violation
-
-### Task: [which task]
-### Attempted: Modify [file]
-### Reason: File is in [read-only/forbidden] list
-
-### Resolution
-This file is owned by [other task / shared].
-Options:
-1. Wait for other task to complete
-2. Redesign to not need this file
-3. Move to sequential mode
-
-### Status
-- Task A: Stopped (violation)
-- Task B: Continuing
-- Task C: Continuing
-```
-
 ## Notes
 
 - Always run /plan before /implement
@@ -216,3 +188,4 @@ Options:
 - Commits are automatic but push is NEVER automatic
 - Use --continue to resume after fixing issues
 - Parallel mode requires all tasks to complete before /integrate
+- Learner agent triggers automatically after successful implementation

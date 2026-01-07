@@ -39,6 +39,7 @@ usage() {
     echo "  update        Update CodeAgent to latest version"
     echo "  backup        Backup memory (Letta + Neo4j)"
     echo "  restore       Restore memory from backup"
+    echo "  tools         Install/check development tools (linters, formatters)"
     echo "  uninstall     Remove CodeAgent completely"
     echo ""
     echo -e "${BLUE}Claude Code Commands:${NC} (use in Claude Code)"
@@ -146,6 +147,10 @@ case "${1:-help}" in
     restore)
         check_install
         exec "$INSTALL_DIR/scripts/restore-memory.sh" "${@:2}"
+        ;;
+    tools)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-tools" "${@:2}"
         ;;
     uninstall)
         check_install

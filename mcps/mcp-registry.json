@@ -70,6 +70,22 @@
       "args": ["-y", "tavily-mcp"],
       "env_key": "TAVILY_API_KEY",
       "env_var": "TAVILY_API_KEY"
+    },
+    {
+      "name": "figma",
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp"],
+      "env_key": "FIGMA_API_KEY",
+      "env_var": "FIGMA_API_KEY",
+      "description": "Figma design integration for extracting design tokens, layouts, and styles"
+    },
+    {
+      "name": "supabase",
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest"],
+      "env_key": "SUPABASE_ACCESS_TOKEN",
+      "env_var": "SUPABASE_ACCESS_TOKEN",
+      "description": "Supabase project integration for database, auth, and edge functions"
     }
   ],
   "python": [

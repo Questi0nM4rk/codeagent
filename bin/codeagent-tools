@@ -1,0 +1,10 @@
+#!/bin/bash
+# ============================================
+# CodeAgent Tools
+# Install and check development tools
+# ============================================
+
+INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
+
+# Forward to the tools installer script
+exec "$INSTALL_DIR/scripts/install-tools.sh" "$@"

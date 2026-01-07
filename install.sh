@@ -290,7 +290,7 @@ setup_global_config() {
 
 # Fallback if sub-script is missing (shouldn't happen)
 fallback_claude_config() {
-    mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/hooks"
+    mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/hooks" "$HOME/.claude/agents"
 
     # Copy skills
     if [ -d "$INSTALL_DIR/framework/skills" ]; then
@@ -306,6 +306,11 @@ fallback_claude_config() {
     if [ -d "$INSTALL_DIR/framework/hooks" ]; then
         cp "$INSTALL_DIR/framework/hooks/"*.sh "$HOME/.claude/hooks/" 2>/dev/null || true
         chmod +x "$HOME/.claude/hooks/"*.sh 2>/dev/null || true
+    fi
+
+    # Copy agents
+    if [ -d "$INSTALL_DIR/framework/agents" ]; then
+        cp "$INSTALL_DIR/framework/agents/"*.md "$HOME/.claude/agents/" 2>/dev/null || true
     fi
 
     # Copy settings from template
@@ -440,6 +445,8 @@ install_mcps() {
         export CODEAGENT_FORCE="false"
     fi
 
+    # CODEAGENT_RESET is already exported from main()
+
     if [ -f "$INSTALL_DIR/mcps/install-mcps.sh" ]; then
         bash "$INSTALL_DIR/mcps/install-mcps.sh"
     else
@@ -548,6 +555,14 @@ verify_installation() {
         all_ok=false
     fi
 
+    # Check agents
+    if [ -d "$HOME/.claude/agents" ] && [ "$(ls -A $HOME/.claude/agents/*.md 2>/dev/null)" ]; then
+        log_success "Agents installed ($(ls $HOME/.claude/agents/*.md 2>/dev/null | wc -l) agents)"
+    else
+        log_warn "Agents not found"
+        all_ok=false
+    fi
+
     # Check Docker containers
     if docker ps | grep -q "codeagent-neo4j"; then
         log_success "Neo4j container running"
@@ -626,6 +641,7 @@ main() {
     # Parse arguments
     local skip_docker=false
     local force_reinstall=false
+    local reset_data=false
     local auto_yes=false
 
     while [[ $# -gt 0 ]]; do
@@ -636,6 +652,11 @@ main() {
                 ;;
             --force|-f)
                 force_reinstall=true
+                shift
+                ;;
+            --reset)
+                reset_data=true
+                force_reinstall=true  # Reset implies force
                 shift
                 ;;
             -y|--yes)
@@ -649,9 +670,14 @@ main() {
                 echo ""
                 echo "Options:"
                 echo "  --no-docker    Skip Docker container setup"
-                echo "  --force, -f    Force reinstall MCPs and recreate unhealthy containers"
+                echo "  --force, -f    Force reinstall MCPs and recreate containers (preserves data)"
+                echo "  --reset        Delete ALL data (Letta agents, memories, Neo4j graph)"
                 echo "  -y, --yes      Auto-accept prompts (not fully implemented)"
                 echo "  -h, --help     Show this help message"
+                echo ""
+                echo "Data Preservation:"
+                echo "  --force        Keeps Letta agents and memories intact"
+                echo "  --reset        DELETES all Letta agents, memories, and code graph"
                 echo ""
                 exit 0
                 ;;
@@ -661,10 +687,32 @@ main() {
         esac
     done
 
-    # Export force flag for sub-scripts
+    # Export flags for sub-scripts
     export CODEAGENT_FORCE_REINSTALL="$force_reinstall"
+    export CODEAGENT_RESET="$reset_data"
 
     print_banner
+
+    # Warn about data deletion
+    if [ "$reset_data" = "true" ]; then
+        echo ""
+        log_warn "=========================================="
+        log_warn "  RESET MODE: All data will be deleted!"
+        log_warn "  - Letta agents and memories"
+        log_warn "  - Neo4j code graph"
+        log_warn "  - Qdrant vector embeddings"
+        log_warn "=========================================="
+        echo ""
+        if [ "$auto_yes" != "true" ]; then
+            read -p "Continue? [y/N]: " -n 1 -r
+            echo ""
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Aborted."
+                exit 0
+            fi
+        fi
+    fi
+
     check_requirements
     install_codeagent
     configure_shell

@@ -27,6 +27,7 @@ set -e
 # ============================================
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 FORCE="${CODEAGENT_FORCE:-false}"
+RESET="${CODEAGENT_RESET:-false}"  # Delete data volumes (agents, memories)
 ENV_FILE="$INSTALL_DIR/.env"
 DOCKER_COMPOSE_FILE="$INSTALL_DIR/infrastructure/docker-compose.yml"
 
@@ -211,20 +212,27 @@ start_infrastructure() {
 
     local compose_dir=$(dirname "$DOCKER_COMPOSE_FILE")
 
-    # Force mode: stop and remove containers + volumes
+    # Force mode: stop and remove containers (but preserve volumes unless RESET)
     if [ "$FORCE" = "true" ]; then
-        log_warn "Force mode: removing existing containers and data..."
+        log_warn "Force mode: recreating containers..."
 
         cd "$compose_dir"
         docker compose stop qdrant letta 2>/dev/null || true
         docker compose rm -f qdrant letta 2>/dev/null || true
 
-        # Remove volumes for clean state
-        docker volume rm codeagent_qdrant_data 2>/dev/null || true
-        docker volume rm codeagent_letta_data 2>/dev/null || true
+        # Only remove volumes if explicitly requested with RESET flag
+        # This preserves Letta agents and memories during normal --force
+        if [ "$RESET" = "true" ]; then
+            log_warn "Reset mode: deleting all Letta data (agents, memories)..."
+            docker volume rm codeagent_qdrant_data 2>/dev/null || true
+            docker volume rm codeagent_letta_data 2>/dev/null || true
+            log_success "Removed Letta data volumes"
+        else
+            log_info "Preserving Letta data (use --reset to delete)"
+        fi
 
         cd - > /dev/null
-        log_success "Removed existing Letta infrastructure"
+        log_success "Removed existing Letta containers"
     fi
 
     # Start containers

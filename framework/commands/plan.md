@@ -15,16 +15,31 @@ Gathers context, designs solution, and automatically determines if parallel exec
 /plan --deep "Investigate performance"      # Extra research phase
 ```
 
-## What This Does
+## Agent Pipeline
 
-1. **@researcher** gathers all context (memory-first)
-2. **@architect** designs solution using Tree-of-Thought
-3. **@orchestrator** analyzes for parallel execution potential
-4. Outputs execution plan with mode: SEQUENTIAL or PARALLEL
+This command spawns three agents:
+
+```
+Main Claude (Orchestrator)
+      │
+      ├─► researcher agent (opus)
+      │       skills: [domain skills based on file types]
+      │       → Queries Letta, code-graph, context7
+      │       → Returns: context summary, confidence score
+      │
+      ├─► architect agent (opus)
+      │       skills: [spec-driven, relevant domain skills]
+      │       → Uses ToT MCP for structured exploration
+      │       → Returns: 3+ approaches with evaluation
+      │
+      └─► orchestrator agent (opus)
+              → Analyzes file/dependency conflicts
+              → Returns: PARALLEL or SEQUENTIAL decision
+```
 
 ## Process
 
-### Phase 1: Research (@researcher) [think hard]
+### Phase 1: Research (researcher agent)
 
 ```markdown
 Research Priority:
@@ -36,7 +51,7 @@ Research Priority:
 Output: Context summary with confidence score
 ```
 
-### Phase 2: Design (@architect) [ultrathink]
+### Phase 2: Design (architect agent)
 
 ```markdown
 Tree-of-Thought Process:
@@ -48,7 +63,7 @@ Tree-of-Thought Process:
 Output: Architecture decision with explored alternatives
 ```
 
-### Phase 3: Parallelization Analysis (@orchestrator) [think harder]
+### Phase 3: Parallelization Analysis (orchestrator agent)
 
 **Automatically runs if task has multiple subtasks.**
 
@@ -77,10 +92,10 @@ For each pair of subtasks (A, B):
 Reason: [single task / conflicts in X files / user requested]
 
 ### Research Summary
-[From @researcher - context gathered, confidence score]
+[From researcher agent - context gathered, confidence score]
 
 ### Architecture Decision
-[From @architect - chosen approach, alternatives explored]
+[From architect agent - chosen approach, alternatives explored]
 
 ### Implementation Steps
 1. [ ] Step 1 - [description] - [files]
@@ -107,18 +122,18 @@ Ready for /implement
 ```markdown
 ## Plan: [Task Name]
 
-### Execution Mode: PARALLEL ⚡
+### Execution Mode: PARALLEL
 Reason: X independent subtasks, no file conflicts
-Estimated speedup: Y% (X min vs Y min)
+Estimated speedup: Y%
 
 ### Research Summary
-[From @researcher]
+[From researcher agent]
 
 ### Architecture Decision
-[From @architect]
+[From architect agent]
 
 ### Parallelization Analysis
-[From @orchestrator - isolation boundaries]
+[From orchestrator agent - isolation boundaries]
 
 #### Task A: [name]
 Exclusive files: [list - can modify]
@@ -132,10 +147,6 @@ Forbidden: [list]
 
 ### Shared Code (LOCKED - no task may modify)
 - [files that are read-only for all tasks]
-
-### Pre-Implementation Requirements
-- [ ] Shared interfaces defined (if any)
-- [ ] Shared DTOs defined (if any)
 
 ### Confidence: X/10
 
@@ -159,4 +170,4 @@ Ready for /implement (will auto-parallelize)
 - /plan stores its output in memory for /implement to use
 - Use `--deep` for complex investigative tasks
 - If confidence < 7, the plan will recommend human review
-- Architecture decisions are stored for future reference
+- Architecture decisions are stored in Letta for future reference

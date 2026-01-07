@@ -4,7 +4,7 @@ description: Build complete knowledge graph of your codebase
 
 # /scan - Build Knowledge Base
 
-Scans entire codebase and builds knowledge graph + memory store.
+Scans entire codebase and builds knowledge graph + memory store using multiple specialized agents.
 
 ## Usage
 
@@ -14,6 +14,27 @@ Scans entire codebase and builds knowledge graph + memory store.
 /scan --full           # Force full rescan (ignore cache)
 ```
 
+## Agent Pipeline
+
+This command spawns three agents in sequence:
+
+```
+Main Claude (Orchestrator)
+      │
+      ├─► indexer agent
+      │       → Parses AST, builds Neo4j graph
+      │       → Returns: files indexed, symbols found
+      │
+      ├─► memory-writer agent
+      │       → Stores patterns and architecture in Letta
+      │       → Returns: memories created
+      │
+      └─► validator agent
+              → Verifies accuracy against actual code
+              → Corrects errors if found
+              → Returns: validation report
+```
+
 ## What This Does
 
 1. **Discovery**: Find all source files matching your language stack
@@ -21,15 +42,12 @@ Scans entire codebase and builds knowledge graph + memory store.
 3. **Pattern Extraction**: Identify coding conventions and patterns
 4. **Memory Storage**: Store in Letta for semantic retrieval
 5. **Graph Storage**: Store in Neo4j for structural queries
+6. **Validation**: Verify stored data matches actual code
 
-## Process
-
-### Step 1: File Discovery
-
-Find all relevant source files:
+## Supported Languages
 
 ```bash
-# Languages we scan (9 supported by code-graph MCP)
+# 9 languages supported by code-graph MCP
 .cs, .csproj, .sln     # .NET (C#)
 .cpp, .c, .h, .hpp     # C/C++
 .rs, Cargo.toml        # Rust
@@ -39,8 +57,11 @@ Find all relevant source files:
 .ts, .tsx              # TypeScript
 .js, .jsx              # JavaScript
 .go, go.mod            # Go
+```
 
-# Exclude patterns
+## Exclude Patterns
+
+```bash
 */bin/*, */obj/*       # Build outputs
 */node_modules/*       # Dependencies
 */target/*             # Rust target
@@ -50,30 +71,6 @@ Find all relevant source files:
 *.min.js, *.bundle.js  # Bundled JS
 */vendor/*             # Go vendor
 ```
-
-### Step 2: Structure Extraction
-
-For each file, extract:
-- Namespaces/modules
-- Classes/structs/interfaces
-- Functions/methods with signatures
-- Import/dependency relationships
-- Call relationships (what calls what)
-
-### Step 3: Pattern Detection
-
-Identify project conventions:
-- Error handling patterns (exceptions vs Result<T>)
-- Naming conventions
-- Test organization
-- Architecture patterns (layers, modules)
-- Common idioms
-
-### Step 4: Storage
-
-Store extracted data:
-- **Neo4j**: Structural relationships (calls, imports, inherits)
-- **Letta**: Semantic patterns and conventions
 
 ## Output Format
 
@@ -92,14 +89,8 @@ Store extracted data:
 | Language | Files | Functions | Classes |
 |----------|-------|-----------|---------|
 | C# | X | X | X |
-| C++ | X | X | X |
-| Rust | X | X | X |
-| Lua | X | X | X |
-| Python | X | X | X |
 | TypeScript | X | X | X |
-| JavaScript | X | X | X |
-| Go | X | X | X |
-| Bash | X | X | - |
+| ... | ... | ... | ... |
 
 ### Patterns Detected
 | Pattern | Occurrences | Files |
@@ -109,9 +100,10 @@ Store extracted data:
 ### Architecture Summary
 [Brief description of detected architecture]
 
-### Knowledge Gaps
-- [Areas with sparse coverage]
-- [Files that couldn't be parsed]
+### Validation Results
+- Symbols verified: X
+- Accuracy: Y%
+- Corrections made: Z
 
 ### Completeness: X%
 ```
@@ -129,3 +121,4 @@ Store extracted data:
 - Subsequent scans are incremental (only changed files)
 - Use `--full` to force complete rescan
 - Knowledge persists across Claude Code sessions
+- Validator agent corrects errors automatically
