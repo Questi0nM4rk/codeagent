@@ -164,9 +164,10 @@ install_uvx_mcps() {
         fi
 
         # Register MCP (user scope for global)
+        # Note: name must come before flags for claude mcp add
         log_info "Registering: $name"
         local add_output
-        add_output=$(claude mcp add --scope user $env_args "$name" -- $command $args 2>&1) || true
+        add_output=$(claude mcp add "$name" --scope user $env_args -- $command $args 2>&1) || true
 
         # Check if registration succeeded
         if mcp_exists "$name"; then
