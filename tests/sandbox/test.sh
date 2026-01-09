@@ -32,17 +32,22 @@ usage() {
     echo "  force       Test force reinstall"
     echo "  uninstall   Test uninstall script"
     echo ""
+    echo -e "${BLUE}Test Modes:${NC}"
+    echo "  --github    Test actual curl one-liner from GitHub (requires SSH keys)"
+    echo "  --local     Test using local source files (default, no network needed)"
+    echo ""
     echo -e "${BLUE}Options:${NC}"
-    echo "  --shell     Open interactive shell in container"
+    echo "  --shell     Open interactive shell in container (with SSH keys)"
     echo "  --rebuild   Force rebuild Docker image"
     echo "  --verbose   Show verbose output"
     echo "  --help      Show this help"
     echo ""
     echo -e "${BLUE}Examples:${NC}"
-    echo "  ./test.sh              # Run all tests"
-    echo "  ./test.sh source       # Quick lint check"
-    echo "  ./test.sh clean        # Test installation"
-    echo "  ./test.sh --shell      # Debug in container"
+    echo "  ./test.sh                    # Run all tests (local mode)"
+    echo "  ./test.sh --github           # Test real GitHub install"
+    echo "  ./test.sh source             # Quick lint check"
+    echo "  ./test.sh clean --github     # Test GitHub install only"
+    echo "  ./test.sh --shell            # Debug in container"
     echo ""
 }
 
@@ -51,6 +56,7 @@ main() {
     local shell_mode=false
     local rebuild=false
     local verbose=false
+    local test_mode="local"  # default to local
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -65,6 +71,14 @@ main() {
                 ;;
             --verbose|-v)
                 verbose=true
+                shift
+                ;;
+            --github)
+                test_mode="github"
+                shift
+                ;;
+            --local)
+                test_mode="local"
                 shift
                 ;;
             --help|-h)
@@ -87,6 +101,22 @@ main() {
     echo -e "${CYAN}║              CodeAgent Test Sandbox                        ║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
+
+    # Select service based on test mode
+    local service="test-local"
+    if [ "$test_mode" = "github" ]; then
+        service="test"
+        echo -e "${BLUE}[INFO]${NC} Test mode: ${YELLOW}github${NC} (curl one-liner, needs SSH keys)"
+
+        # Check if SSH keys exist
+        if [ ! -f "$HOME/.ssh/id_ed25519" ] && [ ! -f "$HOME/.ssh/id_rsa" ]; then
+            echo -e "${RED}[ERROR]${NC} No SSH keys found in ~/.ssh/"
+            echo -e "${YELLOW}GitHub test mode requires SSH keys for cloning${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${BLUE}[INFO]${NC} Test mode: ${GREEN}local${NC} (--local flag, no network)"
+    fi
 
     # Build image
     if [ "$rebuild" = true ]; then
@@ -112,7 +142,7 @@ main() {
         export VERBOSE="$verbose"
 
         # Run tests
-        if docker compose run --rm test; then
+        if docker compose run --rm "$service"; then
             echo ""
             echo -e "${GREEN}Tests completed successfully!${NC}"
             exit 0

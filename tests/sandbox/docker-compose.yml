@@ -3,34 +3,52 @@
 # Or:  ./test.sh [scenario]
 
 services:
+  # Full integration test - clones from GitHub using real SSH keys
   test:
     build:
       context: ../..
       dockerfile: tests/sandbox/Dockerfile
     container_name: codeagent-test-sandbox
-    # Use mock docker (no actual daemon needed)
     environment:
       - HOME=/home/testuser
       - TERM=xterm-256color
       - VERBOSE=${VERBOSE:-false}
-      # Use local copy mode (don't try to clone from GitHub)
-      - CODEAGENT_REPO=https://github.com/YOUR_USERNAME/codeagent.git
+      - TEST_MODE=github
       # Fake API keys to skip interactive prompts during testing
       - OPENAI_API_KEY=sk-test-fake-key-for-testing
       - GITHUB_TOKEN=ghp_test_fake_token
       - TAVILY_API_KEY=tvly-test-fake-key
-    # Mount source as read-only for live testing during development
-    # Comment out to use COPY in Dockerfile for isolated tests
+    volumes:
+      # Mount SSH keys read-only for GitHub access
+      - ~/.ssh:/home/testuser/.ssh:ro
+      # Mount source for test scripts only
+      - ../..:/home/testuser/codeagent-source:ro
+    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "${TEST_SCENARIO:-all}"]
+    mem_limit: 2g
+    # Network needed for GitHub clone
+    network_mode: bridge
+
+  # Local development test - uses local source files (no network)
+  test-local:
+    build:
+      context: ../..
+      dockerfile: tests/sandbox/Dockerfile
+    container_name: codeagent-test-local
+    environment:
+      - HOME=/home/testuser
+      - TERM=xterm-256color
+      - VERBOSE=${VERBOSE:-false}
+      - TEST_MODE=local
+      - OPENAI_API_KEY=sk-test-fake-key-for-testing
+      - GITHUB_TOKEN=ghp_test_fake_token
+      - TAVILY_API_KEY=tvly-test-fake-key
     volumes:
       - ../..:/home/testuser/codeagent-source:ro
-    # Default: run all tests
     command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "${TEST_SCENARIO:-all}"]
-    # Prevent OOM on large test suites
     mem_limit: 2g
-    # No network needed for most tests
     network_mode: none
 
-  # Interactive shell for debugging
+  # Interactive shell for debugging (with SSH keys)
   shell:
     build:
       context: ../..
@@ -40,14 +58,15 @@ services:
       - HOME=/home/testuser
       - TERM=xterm-256color
     volumes:
+      - ~/.ssh:/home/testuser/.ssh:ro
       - ../..:/home/testuser/codeagent-source:ro
     command: ["/bin/bash"]
     stdin_open: true
     tty: true
     mem_limit: 2g
-    network_mode: none
+    network_mode: bridge
 
-  # Source validation only (fast)
+  # Source validation only (fast, no network)
   lint:
     build:
       context: ../..

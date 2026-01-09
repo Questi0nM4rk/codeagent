@@ -20,6 +20,10 @@ INSTALL_DIR="$HOME/.codeagent"
 TEST_RESULTS_DIR="${SCRIPT_DIR}/results"
 VERBOSE="${VERBOSE:-false}"
 
+# Test mode: "github" = curl one-liner, "local" = --local flag
+TEST_MODE="${TEST_MODE:-local}"
+GITHUB_RAW_URL="https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh"
+
 # Counters
 TESTS_PASSED=0
 TESTS_FAILED=0
@@ -40,6 +44,35 @@ log_header() {
     echo -e "${CYAN}  $1${NC}"
     echo -e "${CYAN}════════════════════════════════════════════════════════════${NC}"
     echo ""
+}
+
+# ============================================
+# Install Helper
+# ============================================
+# Runs install.sh using either curl one-liner (github mode) or local source
+# Usage: run_install [extra_flags...]
+# Example: run_install --force
+run_install() {
+    local extra_flags="$*"
+    local log_file="/tmp/install-$$.log"
+
+    if [ "$TEST_MODE" = "github" ]; then
+        log_info "Installing via curl one-liner (TEST_MODE=github)..."
+        # Use the actual one-liner that users would run
+        if curl -fsSL "$GITHUB_RAW_URL" | bash -s -- --no-docker -y $extra_flags 2>&1 | tee "$log_file"; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        log_info "Installing from local source (TEST_MODE=local)..."
+        cd "$SOURCE_DIR"
+        if ./install.sh --local --no-docker -y $extra_flags 2>&1 | tee "$log_file"; then
+            return 0
+        else
+            return 1
+        fi
+    fi
 }
 
 # ============================================
@@ -247,17 +280,14 @@ test_clean_install() {
 
     cleanup_installation
 
-    log_info "Running install.sh --no-docker..."
-    cd "$SOURCE_DIR"
-
     # Run installation (skip Docker for sandbox)
-    if ./install.sh --local --no-docker -y 2>&1 | tee /tmp/install.log; then
+    if run_install; then
         log_success "Installation completed without errors"
         ((++TESTS_PASSED)) || true
     else
         log_fail "Installation script failed"
         ((++TESTS_FAILED)) || true
-        [ "$VERBOSE" = "true" ] && cat /tmp/install.log
+        [ "$VERBOSE" = "true" ] && cat /tmp/install-*.log 2>/dev/null
     fi
 
     # Verify installation results
@@ -370,15 +400,14 @@ test_upgrade_install() {
 
     # Don't cleanup - run over existing installation
     log_info "Running install.sh over existing installation..."
-    cd "$SOURCE_DIR"
 
-    if ./install.sh --local --no-docker -y 2>&1 | tee /tmp/upgrade.log; then
+    if run_install; then
         log_success "Upgrade completed without errors"
         ((++TESTS_PASSED)) || true
     else
         log_fail "Upgrade script failed"
         ((++TESTS_FAILED)) || true
-        [ "$VERBOSE" = "true" ] && cat /tmp/upgrade.log
+        [ "$VERBOSE" = "true" ] && cat /tmp/install-*.log 2>/dev/null
     fi
 
     # Verify everything still works
@@ -391,16 +420,15 @@ test_upgrade_install() {
 test_force_reinstall() {
     log_header "Scenario 7: Force Reinstall"
 
-    log_info "Running install.sh --force --no-docker..."
-    cd "$SOURCE_DIR"
+    log_info "Running install.sh --force..."
 
-    if ./install.sh --local --force --no-docker -y 2>&1 | tee /tmp/force.log; then
+    if run_install --force; then
         log_success "Force reinstall completed"
         ((++TESTS_PASSED)) || true
     else
         log_fail "Force reinstall failed"
         ((++TESTS_FAILED)) || true
-        [ "$VERBOSE" = "true" ] && cat /tmp/force.log
+        [ "$VERBOSE" = "true" ] && cat /tmp/install-*.log 2>/dev/null
     fi
 }
 
@@ -476,6 +504,7 @@ main() {
     log_info "Source directory: $SOURCE_DIR"
     log_info "Install directory: $INSTALL_DIR"
     log_info "Test scenario: $scenario"
+    log_info "Test mode: $TEST_MODE (github=curl one-liner, local=--local flag)"
 
     # Create results dir (use /tmp if source is read-only)
     mkdir -p "$TEST_RESULTS_DIR" 2>/dev/null || TEST_RESULTS_DIR="/tmp/codeagent-test-results"

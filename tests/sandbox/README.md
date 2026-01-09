@@ -7,16 +7,34 @@ Isolated Docker-based testing environment for CodeAgent installation scripts.
 ```bash
 cd tests/sandbox
 
-# Run all tests
+# Run all tests (local mode - uses local source files)
 ./test.sh
 
+# Test actual curl one-liner from GitHub (requires SSH keys)
+./test.sh --github
+
 # Run specific scenario
-./test.sh clean      # Test clean installation
-./test.sh source     # Quick lint check (fastest)
+./test.sh clean           # Test clean installation (local)
+./test.sh clean --github  # Test clean installation (GitHub)
+./test.sh source          # Quick lint check (fastest)
 
 # Debug in container
 ./test.sh --shell
 ```
+
+## Test Modes
+
+| Mode | Description | Network | SSH Keys |
+|------|-------------|---------|----------|
+| `--local` | Uses local source files with `--local` flag (default) | None | Not needed |
+| `--github` | Tests actual curl one-liner from GitHub | Required | Mounted read-only |
+
+**GitHub mode** tests the real user experience:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh | bash
+```
+
+Your SSH keys are mounted **read-only** - no risk of committing secrets.
 
 ## Test Scenarios
 

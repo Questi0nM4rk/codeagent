@@ -117,11 +117,19 @@ WORKDIR /home/testuser
 # Create expected directories
 RUN mkdir -p /home/testuser/.local/bin \
     /home/testuser/.claude \
-    /home/testuser/.config
+    /home/testuser/.config \
+    /home/testuser/.ssh
+
+# Set up SSH for GitHub access (keys will be mounted read-only at runtime)
+# Add GitHub to known_hosts to avoid interactive prompt
+RUN ssh-keyscan -t ed25519,rsa github.com >> /home/testuser/.ssh/known_hosts 2>/dev/null || true && \
+    chmod 700 /home/testuser/.ssh && \
+    chmod 644 /home/testuser/.ssh/known_hosts 2>/dev/null || true
 
 # Add local bin to PATH and set up shell
 RUN echo 'export PATH="/home/testuser/.local/bin:/usr/local/bin/mocks:$PATH"' >> ~/.bashrc && \
-    echo 'export HOME=/home/testuser' >> ~/.bashrc
+    echo 'export HOME=/home/testuser' >> ~/.bashrc && \
+    echo 'export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"' >> ~/.bashrc
 
 # Copy source code (done at runtime via volume mount or COPY)
 # For isolated testing, we copy at build time:
