@@ -159,7 +159,7 @@ install_uvx_mcps() {
         if [ "$env_count" -gt 0 ]; then
             while IFS= read -r key; do
                 local value=$(jq -r ".uvx[$i].env[\"$key\"]" "$REGISTRY_FILE")
-                env_args="$env_args --env $key=$value"
+                env_args="$env_args -e $key=$value"
             done < <(jq -r ".uvx[$i].env | keys[]" "$REGISTRY_FILE")
         fi
 
