@@ -1,81 +1,105 @@
-# CodeAgent Test Sandbox
-# Run: docker compose run --rm test
-# Or:  ./test.sh [scenario]
+# CodeAgent Test Sandbox with Docker-in-Docker
+# All containers created during tests run INSIDE dind, not on host
+# Usage: ./test.sh (from host)
 
 services:
-  # Full integration test - clones from GitHub using real SSH keys
+  # Docker-in-Docker daemon - isolated Docker environment
+  dind:
+    image: docker:dind
+    container_name: codeagent-dind
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=  # Disable TLS for internal communication
+    volumes:
+      - dind-storage:/var/lib/docker
+    networks:
+      - testnet
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  # Full integration test - uses dind for real Docker
   test:
     build:
       context: ../..
       dockerfile: tests/sandbox/Dockerfile
-    container_name: codeagent-test-sandbox
+    container_name: codeagent-test
     environment:
       - HOME=/home/testuser
       - TERM=xterm-256color
       - VERBOSE=${VERBOSE:-false}
-      - TEST_MODE=github
-      # Fake API keys to skip interactive prompts during testing
-      - OPENAI_API_KEY=sk-test-fake-key-for-testing
-      - GITHUB_TOKEN=ghp_test_fake_token
-      - TAVILY_API_KEY=tvly-test-fake-key
+      - TEST_SCENARIO=${TEST_SCENARIO:-all}
+      # Connect to dind's Docker daemon
+      - DOCKER_HOST=tcp://dind:2375
+      # Fake API keys for ALL optional MCPs (install testing only)
+      - OPENAI_API_KEY=sk-test-fake-key-for-testing-only
+      - ANTHROPIC_API_KEY=sk-ant-test-fake-key-for-testing
+      - GITHUB_TOKEN=ghp_test_fake_token_for_testing
+      - TAVILY_API_KEY=tvly-test-fake-key-for-testing
+      - FIGMA_API_KEY=figd_test_fake_key_for_testing
+      - SUPABASE_ACCESS_TOKEN=sbp_test_fake_token_for_testing
     volumes:
       # Mount SSH keys read-only for GitHub access
       - ~/.ssh:/home/testuser/.ssh:ro
-      # Mount source for test scripts only
+      # Mount source read-only
       - ../..:/home/testuser/codeagent-source:ro
-    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "${TEST_SCENARIO:-all}"]
-    mem_limit: 2g
-    # Network needed for GitHub clone
-    network_mode: bridge
+    depends_on:
+      dind:
+        condition: service_healthy
+    networks:
+      - testnet
+    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh"]
+    mem_limit: 4g
 
-  # Local development test - uses local source files (no network)
-  test-local:
-    build:
-      context: ../..
-      dockerfile: tests/sandbox/Dockerfile
-    container_name: codeagent-test-local
-    environment:
-      - HOME=/home/testuser
-      - TERM=xterm-256color
-      - VERBOSE=${VERBOSE:-false}
-      - TEST_MODE=local
-      - OPENAI_API_KEY=sk-test-fake-key-for-testing
-      - GITHUB_TOKEN=ghp_test_fake_token
-      - TAVILY_API_KEY=tvly-test-fake-key
-    volumes:
-      - ../..:/home/testuser/codeagent-source:ro
-    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "${TEST_SCENARIO:-all}"]
-    mem_limit: 2g
-    network_mode: none
-
-  # Interactive shell for debugging (with SSH keys)
+  # Interactive shell for debugging
   shell:
     build:
       context: ../..
       dockerfile: tests/sandbox/Dockerfile
-    container_name: codeagent-test-shell
+    container_name: codeagent-shell
+    stdin_open: true
+    tty: true
     environment:
       - HOME=/home/testuser
       - TERM=xterm-256color
+      - DOCKER_HOST=tcp://dind:2375
+      - OPENAI_API_KEY=sk-test-fake-key-for-testing-only
+      - ANTHROPIC_API_KEY=sk-ant-test-fake-key-for-testing
+      - GITHUB_TOKEN=ghp_test_fake_token_for_testing
+      - TAVILY_API_KEY=tvly-test-fake-key-for-testing
+      - FIGMA_API_KEY=figd_test_fake_key_for_testing
+      - SUPABASE_ACCESS_TOKEN=sbp_test_fake_token_for_testing
     volumes:
       - ~/.ssh:/home/testuser/.ssh:ro
       - ../..:/home/testuser/codeagent-source:ro
+    depends_on:
+      dind:
+        condition: service_healthy
+    networks:
+      - testnet
     command: ["/bin/bash"]
-    stdin_open: true
-    tty: true
-    mem_limit: 2g
-    network_mode: bridge
 
-  # Source validation only (fast, no network)
+  # Source validation only (fast, no Docker needed)
   lint:
     build:
       context: ../..
       dockerfile: tests/sandbox/Dockerfile
-    container_name: codeagent-test-lint
+    container_name: codeagent-lint
     environment:
       - HOME=/home/testuser
+      - TEST_SCENARIO=source
     volumes:
       - ../..:/home/testuser/codeagent-source:ro
-    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "source"]
+    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh"]
     mem_limit: 1g
     network_mode: none
+
+networks:
+  testnet:
+    driver: bridge
+
+volumes:
+  dind-storage:

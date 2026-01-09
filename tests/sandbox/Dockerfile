@@ -1,7 +1,8 @@
 # CodeAgent Test Sandbox
 # Arch Linux base with all dependencies for testing install.sh
+# Uses Docker-in-Docker (dind) for real Docker operations
 # Build: docker build -t codeagent-sandbox .
-# Run:   docker run --rm -it codeagent-sandbox
+# Run:   docker compose run --rm test
 
 FROM archlinux:latest
 
@@ -28,7 +29,7 @@ RUN for i in 1 2 3; do \
         && break || sleep 5; \
     done
 
-# Install Docker (separate layer for better caching)
+# Install Docker CLI (connects to dind, not local daemon)
 RUN for i in 1 2 3; do \
         pacman -S --noconfirm --needed \
             docker \
@@ -47,6 +48,7 @@ RUN for i in 1 2 3; do \
             tree \
             which \
             sudo \
+            openssh \
         && break || sleep 5; \
     done
 
@@ -58,61 +60,18 @@ RUN pacman -Scc --noconfirm || true
 
 # Create test user (non-root for realistic testing)
 RUN useradd -m -s /bin/bash testuser && \
-    echo "testuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+    echo "testuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    usermod -aG docker testuser
 
-# Install Claude Code CLI as testuser (from Anthropic's official installer)
-# https://claude.ai/code
-USER testuser
-RUN curl -fsSL https://claude.ai/install.sh | bash || echo "Claude CLI install attempted"
-USER root
-
-# Create mock docker socket (for testing without actual Docker daemon)
-RUN mkdir -p /var/run && \
-    touch /var/run/docker.sock
-
-# Create mock docker commands that simulate success
-RUN mkdir -p /usr/local/bin/mocks
-
-# Mock docker command
-RUN cat > /usr/local/bin/mocks/docker << 'MOCK_DOCKER'
-#!/bin/bash
-# Mock docker for testing (no actual Docker daemon)
-case "$1" in
-    compose)
-        case "$2" in
-            version) echo "Docker Compose version v2.24.0" ;;
-            up) echo "Creating containers... done" ;;
-            down) echo "Stopping containers... done" ;;
-            ps) echo "NAME STATUS" ;;
-            *) echo "mock: docker compose $*" ;;
-        esac
-        ;;
-    ps)
-        # Return empty or mock container list
-        echo "CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS   NAMES"
-        ;;
-    inspect)
-        # Mock healthy container
-        if [[ "$*" == *"Health"* ]]; then
-            echo "healthy"
-        else
-            echo "{}"
-        fi
-        ;;
-    *)
-        echo "mock: docker $*"
-        ;;
-esac
-exit 0
-MOCK_DOCKER
-RUN chmod +x /usr/local/bin/mocks/docker
-
-# Mock docker-compose command
-RUN ln -s /usr/local/bin/mocks/docker /usr/local/bin/mocks/docker-compose
-
-# Switch to test user
+# Switch to testuser for remaining setup
 USER testuser
 WORKDIR /home/testuser
+
+# Install Claude Code CLI (from Anthropic's official installer)
+RUN curl -fsSL https://claude.ai/install.sh | bash || echo "Claude CLI install attempted"
+
+# Install uv (Python package manager - required for code-execution MCP)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh || echo "uv install attempted"
 
 # Create expected directories
 RUN mkdir -p /home/testuser/.local/bin \
@@ -126,18 +85,17 @@ RUN ssh-keyscan -t ed25519,rsa github.com >> /home/testuser/.ssh/known_hosts 2>/
     chmod 700 /home/testuser/.ssh && \
     chmod 644 /home/testuser/.ssh/known_hosts 2>/dev/null || true
 
-# Add local bin to PATH and set up shell
-RUN echo 'export PATH="/home/testuser/.local/bin:/usr/local/bin/mocks:$PATH"' >> ~/.bashrc && \
+# Add tools to PATH
+RUN echo 'export PATH="/home/testuser/.local/bin:/home/testuser/.cargo/bin:$PATH"' >> ~/.bashrc && \
     echo 'export HOME=/home/testuser' >> ~/.bashrc && \
     echo 'export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"' >> ~/.bashrc
 
-# Copy source code (done at runtime via volume mount or COPY)
-# For isolated testing, we copy at build time:
+# Copy source code (for build context, runtime uses volume mount)
 COPY --chown=testuser:testuser . /home/testuser/codeagent-source
 
 # Set environment
 ENV HOME=/home/testuser
-ENV PATH="/home/testuser/.local/bin:/usr/local/bin/mocks:$PATH"
+ENV PATH="/home/testuser/.local/bin:/home/testuser/.cargo/bin:$PATH"
 ENV TERM=xterm-256color
 
 # Default command runs test suite

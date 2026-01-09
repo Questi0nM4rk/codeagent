@@ -1,72 +1,102 @@
 # CodeAgent Test Sandbox
 
-Isolated Docker-based testing environment for CodeAgent installation scripts.
+Isolated Docker-in-Docker (dind) testing environment for CodeAgent installation.
+
+## Key Feature: Complete Isolation
+
+All tests run inside Docker-in-Docker. This means:
+- **Your host Docker is never touched**
+- Infrastructure containers (Neo4j, Qdrant, Letta) run inside dind
+- When tests finish, `./test.sh --clean` removes everything
+- No leftover containers, volumes, or configuration on your system
 
 ## Quick Start
 
 ```bash
 cd tests/sandbox
 
-# Run all tests (local mode - uses local source files)
+# Run all tests (full integration)
 ./test.sh
 
-# Test actual curl one-liner from GitHub (requires SSH keys)
-./test.sh --github
-
 # Run specific scenario
-./test.sh clean           # Test clean installation (local)
-./test.sh clean --github  # Test clean installation (GitHub)
-./test.sh source          # Quick lint check (fastest)
+./test.sh source      # Quick lint check (fast)
+./test.sh install     # Test installation only
+./test.sh mcp         # Test MCP installation
+./test.sh infra       # Test infrastructure
 
 # Debug in container
 ./test.sh --shell
+
+# Clean up everything
+./test.sh --clean
 ```
-
-## Test Modes
-
-| Mode | Description | Network | SSH Keys |
-|------|-------------|---------|----------|
-| `--local` | Uses local source files with `--local` flag (default) | None | Not needed |
-| `--github` | Tests actual curl one-liner from GitHub | Required | Mounted read-only |
-
-**GitHub mode** tests the real user experience:
-```bash
-curl -fsSL https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh | bash
-```
-
-Your SSH keys are mounted **read-only** - no risk of committing secrets.
 
 ## Test Scenarios
 
-| Scenario | Description | Speed |
-|----------|-------------|-------|
-| `source` | Validate source files, shellcheck | Fast |
-| `clean` | Full clean installation test | Medium |
-| `cli` | Test CLI commands (--help, etc.) | Medium |
-| `config` | Test config/keyring helpers | Medium |
-| `marketplace` | Test marketplace commands | Medium |
-| `upgrade` | Test upgrade over existing install | Medium |
-| `force` | Test --force reinstall | Medium |
-| `uninstall` | Test uninstall script | Medium |
-| `all` | Run all scenarios | Slow |
+| Scenario | Description | Time |
+|----------|-------------|------|
+| `source` | Shellcheck, file validation | ~30s |
+| `install` | Full installation from GitHub | ~3min |
+| `mcp` | MCP registration verification | ~4min |
+| `infra` | Infrastructure startup/shutdown | ~5min |
+| `cli` | CLI command testing | ~4min |
+| `config` | Config store/get operations | ~4min |
+| `all` | All scenarios (default) | ~10min |
 
 ## How It Works
 
-1. **Dockerfile** creates an Arch Linux container with all dependencies
-2. **Mock docker** commands simulate Docker (no daemon needed)
-3. **run-tests.sh** executes test scenarios inside the container
-4. **test.sh** provides a convenient host interface
-
-## Architecture
-
 ```
-tests/sandbox/
-├── Dockerfile           # Arch Linux + deps + mock docker
-├── docker-compose.yml   # Service definitions
-├── test.sh              # Host convenience script
-├── run-tests.sh         # Test runner (runs inside container)
-└── README.md            # This file
+┌─────────────────────────────────────────────────────┐
+│  Your Host System (completely untouched)            │
+│                                                      │
+│  ┌─────────────────────────────────────────────────┐│
+│  │  Docker-in-Docker (dind)                        ││
+│  │  - Has its own isolated Docker daemon           ││
+│  │                                                 ││
+│  │  ┌─────────────────────────────────────────┐   ││
+│  │  │  Test Container                         │   ││
+│  │  │  - Runs install.sh from GitHub          │   ││
+│  │  │  - codeagent start → creates containers │   ││
+│  │  │    inside dind, NOT on host             │   ││
+│  │  └─────────────────────────────────────────┘   ││
+│  │                                                 ││
+│  │  ┌───────┐ ┌───────┐ ┌───────┐                ││
+│  │  │ Neo4j │ │Qdrant │ │ Letta │  ← Inside dind ││
+│  │  └───────┘ └───────┘ └───────┘                ││
+│  └─────────────────────────────────────────────────┘│
+│                                                      │
+│  docker compose down -v → Everything gone            │
+└─────────────────────────────────────────────────────┘
 ```
+
+## What Gets Tested
+
+1. **Source Validation**
+   - All shell scripts pass shellcheck
+   - Required files exist and are executable
+   - Skills, commands, agents are present
+
+2. **Full Installation**
+   - Curl one-liner from GitHub works
+   - Directories created correctly
+   - Symlinks in place
+   - Python venv created
+
+3. **MCP Installation**
+   - All required MCPs registered (sequential-thinking, context7, code-graph, tot, reflection)
+   - All optional MCPs registered (tavily, figma, supabase)
+   - code-execution MCP registered
+   - Python MCPs importable
+
+4. **Infrastructure**
+   - Neo4j, Qdrant, Letta containers start
+   - Services become healthy
+   - Letta MCP registered after startup
+   - Clean shutdown
+
+5. **CLI Commands**
+   - All --help commands work
+   - Config store/get round-trip
 
 ## Options
 
@@ -76,61 +106,43 @@ tests/sandbox/
 Options:
   --shell     Open interactive shell in container
   --rebuild   Force rebuild Docker image
+  --clean     Clean up all test containers and volumes
   --verbose   Show verbose output
   --help      Show help
 ```
 
-## Example Output
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║           CodeAgent Installation Test Suite                ║
-╚═══════════════════════════════════════════════════════════╝
-
-════════════════════════════════════════════════════════════
-  Scenario 1: Source Code Validation
-════════════════════════════════════════════════════════════
-
-[PASS] install.sh exists
-[PASS] install.sh is executable
-[PASS] bin/codeagent exists
-[PASS] shellcheck: install.sh
-...
-
-════════════════════════════════════════════════════════════
-  Test Summary
-════════════════════════════════════════════════════════════
-
-  Passed:  42
-  Failed:  0
-  Skipped: 2
-  Total:   44
-
-╔═══════════════════════════════════════════════════════════╗
-║                    ALL TESTS PASSED!                       ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
 ## Debugging
 
-Open a shell in the container:
-
 ```bash
+# Open shell in test environment
 ./test.sh --shell
 
 # Inside container:
 cd /home/testuser/codeagent-source
-./install.sh --no-docker -y
+curl -fsSL https://raw.githubusercontent.com/.../install.sh | bash -s -- -y
 
 # Check results
 ls -la ~/.codeagent
 ls -la ~/.claude
-codeagent --help
+cat ~/.claude.json | jq .
+docker ps  # Shows containers inside dind
+
+# When done
+exit
+./test.sh --clean
 ```
 
-## CI Integration
+## Fake API Keys
 
-For GitHub Actions:
+Tests use fake API keys to ensure all optional MCPs get installed:
+- `OPENAI_API_KEY=sk-test-fake-key-for-testing-only`
+- `TAVILY_API_KEY=tvly-test-fake-key-for-testing`
+- `FIGMA_API_KEY=figd_test_fake_key_for_testing`
+- `SUPABASE_ACCESS_TOKEN=sbp_test_fake_token_for_testing`
+
+MCPs will register (which is what we test) but won't work at runtime (expected).
+
+## CI Integration
 
 ```yaml
 jobs:
@@ -142,11 +154,20 @@ jobs:
         run: |
           cd tests/sandbox
           ./test.sh all
+      - name: Cleanup
+        if: always()
+        run: |
+          cd tests/sandbox
+          ./test.sh --clean
 ```
 
-## Notes
+## Architecture
 
-- Tests use mock Docker commands (no actual containers started)
-- Network is disabled for isolation
-- Source is mounted read-only to prevent accidental changes
-- Uses non-root user for realistic testing
+```
+tests/sandbox/
+├── docker-compose.yml   # dind + test services
+├── Dockerfile           # Arch Linux test container
+├── run-tests.sh         # Test runner (inside container)
+├── test.sh              # Host convenience script
+└── README.md            # This file
+```
