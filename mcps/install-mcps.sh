@@ -378,9 +378,12 @@ main() {
         run_installer "$INSTALLERS_DIR/install-docker-mcps.sh" "Docker"
     fi
 
-    # Code execution MCP (requires uv + docker)
-    if command -v uv &> /dev/null && [ "$NO_DOCKER" != "true" ]; then
+    # Code execution MCP (requires uv + docker available)
+    # Note: --no-docker skips infrastructure, but code-execution only needs Docker CLI
+    if command -v uv &> /dev/null && command -v docker &> /dev/null && docker info &>/dev/null; then
         run_installer "$INSTALLERS_DIR/install-code-execution.sh" "Code Execution"
+    elif command -v uv &> /dev/null; then
+        log_warn "Skipping code-execution MCP (Docker not available)"
     fi
 
     # Verify
