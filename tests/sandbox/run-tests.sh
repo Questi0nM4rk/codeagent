@@ -23,6 +23,12 @@ TEST_SCENARIO="${TEST_SCENARIO:-all}"
 # GitHub install URL
 GITHUB_RAW_URL="https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/install.sh"
 
+# Note: Infrastructure tests are skipped in dind because:
+# - Services started inside dind are only accessible from within dind
+# - Test container can't reach localhost:6333 (Qdrant) or localhost:8283 (Letta)
+# - Use ./test.sh --shell to manually test infrastructure if needed
+SKIP_INFRA="${SKIP_INFRA:-true}"
+
 # Counters
 TESTS_PASSED=0
 TESTS_FAILED=0
@@ -240,10 +246,17 @@ test_full_install() {
     fi
 
     # Run full installation from GitHub
+    # Note: --no-docker because infrastructure inside dind isn't accessible from test container
     log_info "Installing via curl one-liner from GitHub..."
     local log_file="/tmp/install-$$.log"
+    local install_flags="-y"
 
-    if curl -fsSL "$GITHUB_RAW_URL" | bash -s -- -y 2>&1 | tee "$log_file"; then
+    if [ "$SKIP_INFRA" = "true" ]; then
+        install_flags="-y --no-docker"
+        log_info "Using --no-docker flag (infrastructure tests skipped in dind)"
+    fi
+
+    if curl -fsSL "$GITHUB_RAW_URL" | bash -s -- $install_flags 2>&1 | tee "$log_file"; then
         assert_pass "Installation completed without errors"
     else
         assert_fail "Installation script failed"
@@ -346,6 +359,14 @@ test_mcp_installation() {
 test_infrastructure() {
     log_header "Scenario 4: Infrastructure Startup"
 
+    if [ "$SKIP_INFRA" = "true" ]; then
+        log_warn "Infrastructure tests SKIPPED (dind limitation)"
+        log_info "Services inside dind aren't accessible from test container"
+        log_info "To test infrastructure manually: ./test.sh --shell"
+        ((++TESTS_SKIPPED)) || true
+        return 0
+    fi
+
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
     # Start infrastructure
@@ -443,6 +464,12 @@ test_config_operations() {
 # Scenario 7: Infrastructure Shutdown
 test_infrastructure_stop() {
     log_header "Scenario 7: Infrastructure Shutdown"
+
+    if [ "$SKIP_INFRA" = "true" ]; then
+        log_warn "Infrastructure stop test SKIPPED (dind limitation)"
+        ((++TESTS_SKIPPED)) || true
+        return 0
+    fi
 
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
