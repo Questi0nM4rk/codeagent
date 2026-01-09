@@ -1,386 +1,361 @@
 ---
 name: spec-driven
-description: Spec-Driven Development methodology for large projects. Activates when designing architecture, creating specifications, or orchestrating complex multi-component implementations.
+description: Spec-Driven Development for complex projects. Activates when designing architecture, creating specifications, or implementing from requirements. Specs are the prompt.
 ---
 
 # Spec-Driven Development Skill
 
-A development paradigm using well-crafted software requirement specifications as prompts for AI-assisted code generation.
+Development methodology using structured specifications as AI prompts. Specs define what to build, tests verify it.
 
-## Evolution of Development Paradigms
+## The Iron Law
 
 ```
-Prompt Engineering (2022-23)
-    ↓ Craft individual prompts
-
-Context Engineering (2024)
-    ↓ RAG, feed documents to models
-
-Spec-Driven Development (2025)
-    → Use specifications as structured prompts
-    → AI generates code from specs
-    → Human reviews and iterates
+NO IMPLEMENTATION WITHOUT A SPECIFICATION FIRST
+Specifications are the prompt. PRD → Tech Spec → Component Spec → Code.
 ```
 
-## Core Concept
+## Core Principle
 
-**Specifications are the prompt.** Instead of ad-hoc prompts, create structured documents that:
-- Define requirements precisely
-- Serve as implementation guide
-- Enable deterministic code generation
-- Provide verification criteria
+> "Specifications are the prompt. If it's not in the spec, don't build it."
 
-## Spec Document Types
+## When to Use
 
-### 1. Product Requirements Document (PRD)
+**Always:**
+- Multi-component systems (3+ components)
+- API design (endpoints, contracts)
+- Database schema design
+- Architectural decisions
+- Features with business requirements
+
+**Exceptions (ask human partner):**
+- Single-file utilities (just use TDD)
+- Exploratory prototypes
+- Bug fixes (use systematic-debugging instead)
+
+## Spec Hierarchy
+
+```
+PRD (What & Why)
+    ↓
+Technical Spec (How - Architecture)
+    ↓
+Component Spec (How - Implementation)
+    ↓
+Code (TDD from Component Spec)
+```
+
+| Document | Owner | Focus | AI Role |
+|----------|-------|-------|---------|
+| PRD | Product | Requirements | Review, suggest gaps |
+| Tech Spec | Architect | Architecture | Generate from PRD |
+| Component Spec | Developer | Interfaces | Generate from Tech Spec |
+| Code | Developer | Implementation | Generate from Component Spec |
+
+## Workflow
+
+### Step 1: Write PRD (or receive from human)
+
+Define: Problem, Solution, Success Metrics, Requirements.
+
+### Step 2: Generate Technical Spec
+
+From PRD, generate architecture: components, data model, API contracts.
+
+### Step 3: Generate Component Specs
+
+For each component: interfaces, methods, test cases.
+
+### Step 4: TDD Implementation
+
+For each component spec:
+1. Generate tests from spec
+2. RED - tests fail
+3. Generate implementation
+4. GREEN - tests pass
+5. Verify against spec
+
+## Spec Formats
+
+### PRD Structure
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
 <prd version="1.0">
   <metadata>
-    <title>User Authentication System</title>
-    <author>Product Team</author>
+    <title>Feature Name</title>
     <version>1.0.0</version>
-    <date>2025-01-06</date>
     <status>draft|review|approved</status>
   </metadata>
 
   <overview>
-    <problem>
-      Users need secure, frictionless authentication across web and mobile.
-    </problem>
-    <solution>
-      Multi-provider auth system with MFA support.
-    </solution>
+    <problem>Why this is needed</problem>
+    <solution>High-level approach</solution>
     <success-metrics>
-      <metric name="login-success-rate" target="99.5%" />
-      <metric name="avg-login-time" target="&lt;3s" />
+      <metric name="metric-name" target="value" />
     </success-metrics>
   </overview>
 
   <requirements>
     <functional>
-      <requirement id="F001" priority="must">
-        <title>Email/Password Authentication</title>
-        <description>Users can register and login with email/password</description>
+      <requirement id="F001" priority="must|should|could">
+        <title>Requirement Title</title>
+        <description>What it does</description>
         <acceptance-criteria>
-          <criterion>Valid email format enforced</criterion>
-          <criterion>Password minimum 8 characters</criterion>
-          <criterion>Password hashed with bcrypt</criterion>
-        </acceptance-criteria>
-      </requirement>
-
-      <requirement id="F002" priority="should">
-        <title>OAuth Integration</title>
-        <description>Users can login via Google, GitHub</description>
-        <acceptance-criteria>
-          <criterion>OAuth 2.0 flow implemented</criterion>
-          <criterion>Account linking supported</criterion>
+          <criterion>Testable condition</criterion>
         </acceptance-criteria>
       </requirement>
     </functional>
-
     <non-functional>
-      <requirement id="NF001" category="security">
-        <title>Token Security</title>
-        <specification>JWT with RS256, 15min access, 7d refresh</specification>
-      </requirement>
-
-      <requirement id="NF002" category="performance">
-        <title>Authentication Latency</title>
-        <specification>p99 &lt; 500ms for login operations</specification>
+      <requirement id="NF001" category="security|performance|scalability">
+        <title>NFR Title</title>
+        <specification>Measurable target</specification>
       </requirement>
     </non-functional>
   </requirements>
 
   <constraints>
-    <technical>PostgreSQL database, Node.js backend</technical>
-    <regulatory>GDPR compliance required</regulatory>
-    <timeline>MVP in 4 weeks</timeline>
+    <technical>Technology constraints</technical>
+    <regulatory>Compliance requirements</regulatory>
   </constraints>
 </prd>
 ```
 
-### 2. Technical Specification
+### Technical Spec Structure
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
 <technical-spec version="1.0">
   <metadata>
-    <title>Auth Service Technical Specification</title>
-    <prd-ref>PRD-AUTH-001</prd-ref>
-    <version>1.0.0</version>
+    <title>System Technical Specification</title>
+    <prd-ref>PRD-XXX-001</prd-ref>
   </metadata>
 
   <architecture>
-    <overview>
-      Microservice handling authentication, token management, and session storage.
-    </overview>
-
     <components>
-      <component name="AuthController">
-        <responsibility>HTTP endpoints for auth operations</responsibility>
-        <endpoints>
-          <endpoint method="POST" path="/auth/register" />
-          <endpoint method="POST" path="/auth/login" />
-          <endpoint method="POST" path="/auth/refresh" />
-          <endpoint method="POST" path="/auth/logout" />
-        </endpoints>
-      </component>
-
-      <component name="AuthService">
-        <responsibility>Business logic for authentication</responsibility>
+      <component name="ComponentName">
+        <responsibility>What it does</responsibility>
         <dependencies>
-          <dependency>UserRepository</dependency>
-          <dependency>TokenService</dependency>
-          <dependency>PasswordService</dependency>
+          <dependency>OtherComponent</dependency>
         </dependencies>
-      </component>
-
-      <component name="TokenService">
-        <responsibility>JWT generation and validation</responsibility>
-        <configuration>
-          <param name="algorithm">RS256</param>
-          <param name="access-ttl">900</param>
-          <param name="refresh-ttl">604800</param>
-        </configuration>
       </component>
     </components>
   </architecture>
 
   <data-model>
-    <entity name="User">
+    <entity name="EntityName">
       <field name="id" type="uuid" primary="true" />
-      <field name="email" type="string" unique="true" />
-      <field name="password_hash" type="string" />
-      <field name="created_at" type="timestamp" />
-      <field name="updated_at" type="timestamp" />
-    </entity>
-
-    <entity name="RefreshToken">
-      <field name="id" type="uuid" primary="true" />
-      <field name="user_id" type="uuid" foreign="User.id" />
-      <field name="token_hash" type="string" />
-      <field name="expires_at" type="timestamp" />
-      <field name="revoked" type="boolean" default="false" />
+      <field name="name" type="string" />
     </entity>
   </data-model>
 
   <api-contracts>
-    <endpoint path="/auth/register" method="POST">
-      <request>
-        <body type="json">
-          <field name="email" type="string" required="true" />
-          <field name="password" type="string" required="true" />
-        </body>
-      </request>
-      <response status="201">
-        <body type="json">
-          <field name="user" type="User" />
-          <field name="access_token" type="string" />
-          <field name="refresh_token" type="string" />
-        </body>
-      </response>
+    <endpoint path="/api/resource" method="POST">
+      <request><body type="json">...</body></request>
+      <response status="201"><body>...</body></response>
       <errors>
-        <error status="400" code="INVALID_EMAIL" />
-        <error status="400" code="WEAK_PASSWORD" />
-        <error status="409" code="EMAIL_EXISTS" />
+        <error status="400" code="ERROR_CODE" />
       </errors>
     </endpoint>
   </api-contracts>
-
-  <security>
-    <authentication>Bearer JWT in Authorization header</authentication>
-    <password-policy>
-      <min-length>8</min-length>
-      <require-uppercase>true</require-uppercase>
-      <require-number>true</require-number>
-    </password-policy>
-    <rate-limiting>
-      <rule path="/auth/login" limit="5/minute" />
-      <rule path="/auth/register" limit="3/minute" />
-    </rate-limiting>
-  </security>
-
-  <testing>
-    <unit-tests>
-      <coverage-target>80%</coverage-target>
-      <critical-paths>
-        <path>Password hashing</path>
-        <path>Token generation</path>
-        <path>Token validation</path>
-      </critical-paths>
-    </unit-tests>
-    <integration-tests>
-      <scenarios>
-        <scenario>Full registration flow</scenario>
-        <scenario>Login with valid credentials</scenario>
-        <scenario>Token refresh</scenario>
-        <scenario>Invalid credential handling</scenario>
-      </scenarios>
-    </integration-tests>
-  </testing>
 </technical-spec>
 ```
 
-### 3. Component Spec (Implementation-Ready)
+### Component Spec Structure
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
 <component-spec version="1.0">
   <metadata>
-    <name>TokenService</name>
-    <tech-spec-ref>TECH-AUTH-001</tech-spec-ref>
+    <name>ComponentName</name>
+    <tech-spec-ref>TECH-XXX-001</tech-spec-ref>
     <language>typescript</language>
   </metadata>
 
   <interface>
-    <method name="generateAccessToken">
-      <param name="userId" type="string" />
-      <param name="claims" type="Record&lt;string, unknown&gt;" optional="true" />
-      <returns type="string" description="JWT access token" />
-    </method>
-
-    <method name="generateRefreshToken">
-      <param name="userId" type="string" />
-      <returns type="string" description="Opaque refresh token" />
-    </method>
-
-    <method name="verifyAccessToken">
-      <param name="token" type="string" />
-      <returns type="TokenPayload | null" />
-      <throws type="TokenExpiredError" />
-      <throws type="InvalidTokenError" />
-    </method>
-
-    <method name="revokeRefreshToken">
-      <param name="token" type="string" />
-      <returns type="void" />
+    <method name="methodName">
+      <param name="paramName" type="ParamType" />
+      <returns type="ReturnType" />
+      <throws type="ErrorType" />
     </method>
   </interface>
 
-  <implementation-notes>
-    <note>Use jose library for JWT operations</note>
-    <note>Store refresh token hash, not plain token</note>
-    <note>Include 'iat', 'exp', 'sub' standard claims</note>
-  </implementation-notes>
-
   <test-cases>
-    <test name="generates valid JWT with correct claims">
-      <given>Valid user ID</given>
-      <when>generateAccessToken called</when>
-      <then>Returns JWT with sub=userId, exp in 15min</then>
-    </test>
-
-    <test name="rejects expired token">
-      <given>Token generated 16 minutes ago</given>
-      <when>verifyAccessToken called</when>
-      <then>Throws TokenExpiredError</then>
-    </test>
-
-    <test name="rejects tampered token">
-      <given>Token with modified payload</given>
-      <when>verifyAccessToken called</when>
-      <then>Throws InvalidTokenError</then>
+    <test name="describes expected behavior">
+      <given>Initial state</given>
+      <when>Action taken</when>
+      <then>Expected result</then>
     </test>
   </test-cases>
 </component-spec>
 ```
 
-## Workflow
+## Examples
 
-### Phase 1: Requirements Gathering
-```
-1. Stakeholder interviews
-2. Write PRD
-3. Review with stakeholders
-4. Approval gate
-```
+<Good>
+```xml
+<component-spec version="1.0">
+  <metadata>
+    <name>PasswordService</name>
+    <language>typescript</language>
+  </metadata>
 
-### Phase 2: Technical Design
-```
-1. Architect reviews PRD
-2. Write Technical Spec
-3. Peer review
-4. Approval gate
-```
+  <interface>
+    <method name="hash">
+      <param name="password" type="string" />
+      <returns type="Promise&lt;string&gt;" description="bcrypt hash" />
+    </method>
+    <method name="verify">
+      <param name="password" type="string" />
+      <param name="hash" type="string" />
+      <returns type="Promise&lt;boolean&gt;" />
+    </method>
+  </interface>
 
-### Phase 3: Component Breakdown
+  <test-cases>
+    <test name="hash returns different output for same input">
+      <given>Same password</given>
+      <when>hash called twice</when>
+      <then>Returns different hashes (salt)</then>
+    </test>
+    <test name="verify returns true for correct password">
+      <given>Password and its hash</given>
+      <when>verify called</when>
+      <then>Returns true</then>
+    </test>
+    <test name="verify returns false for wrong password">
+      <given>Wrong password and hash</given>
+      <when>verify called</when>
+      <then>Returns false</then>
+    </test>
+  </test-cases>
+</component-spec>
 ```
-1. Identify components from Tech Spec
-2. Write Component Specs
-3. Define interfaces and contracts
-4. TDD test cases
-```
+- Complete interface definition
+- Test cases in Given/When/Then format
+- Covers success and failure cases
+- Clear types and return values
+</Good>
 
-### Phase 4: Implementation
-```
-For each Component Spec:
-1. Generate tests from spec
-2. Run tests (RED)
-3. Generate implementation
-4. Run tests (GREEN)
-5. Review against spec
-6. Refactor if needed
-```
+<Bad>
+```markdown
+## PasswordService
 
-### Phase 5: Integration
+This service handles password hashing. It should:
+- Hash passwords
+- Verify passwords
+- Be secure
+
+Just use bcrypt or something similar.
 ```
-1. Integrate components
-2. Run integration tests
-3. Verify against Tech Spec
-4. Validate against PRD
-```
+- No interface definition
+- No test cases
+- Vague requirements ("be secure")
+- No acceptance criteria
+- Implementation suggestion without spec
+</Bad>
+
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Too small for a spec" | If it has requirements, it needs a spec. Use simpler format. |
+| "Requirements will change" | Specs are versioned. Update them, don't abandon them. |
+| "I know what to build" | Write it down. Memory fails. Specs document decisions. |
+| "Specs slow me down" | Ambiguous requirements slow you down more. Spec once, build right. |
+| "AI will figure it out" | AI generates from its training, not your requirements. Spec is the prompt. |
+| "We'll document after" | After never comes. Spec-first or no spec at all. |
+
+## Red Flags - STOP and Start Over
+
+These indicate you're building without spec:
+
+- Writing code before defining interfaces
+- Implementing features not in requirements
+- "I'll add this while I'm here"
+- No test cases before implementation
+- Changing behavior without updating spec
+- "The spec is in my head"
+- Building based on verbal description only
+
+**If you catch yourself doing these, STOP. Write the spec first.**
+
+## Verification Checklist
+
+Before implementing from a spec:
+
+- [ ] PRD has clear problem statement and success metrics
+- [ ] All requirements have acceptance criteria
+- [ ] Tech spec traces back to PRD requirements
+- [ ] Component specs have interface definitions
+- [ ] Every method has parameter and return types
+- [ ] Test cases cover success and failure paths
+- [ ] Test cases are in Given/When/Then format
+- [ ] Spec is approved before implementation starts
+
+## Spec Quality Checks
+
+| Check | Pass Criteria |
+|-------|---------------|
+| Completeness | All requirements have acceptance criteria |
+| Testability | Every criterion can be verified with a test |
+| Traceability | PRD → Tech → Component chain is clear |
+| Consistency | No conflicting requirements |
+| Clarity | No ambiguous language ("should", "might", "etc.") |
+
+## When Stuck
+
+| Problem | Solution |
+|---------|----------|
+| Requirements unclear | Ask stakeholder. Don't assume. |
+| Conflicting requirements | Escalate to PRD owner for resolution. |
+| Can't define interface | Break component into smaller parts. |
+| Too many test cases | Group related cases. Prioritize must-haves. |
+| Spec too long | Split into sub-components with own specs. |
+| Implementation deviates | Update spec first, then implement. |
+
+## Anti-Patterns
+
+| Anti-Pattern | Problem | Solution |
+|--------------|---------|----------|
+| Incomplete spec | Missing edge cases | Add acceptance criteria for all paths |
+| Spec drift | Code diverges from spec | Update spec when requirements change |
+| Over-specification | Specifying implementation | Specify behavior, not code |
+| Under-specification | Ambiguous requirements | Add specific acceptance criteria |
+| Spec without tests | No verification | Write test cases in spec |
 
 ## Using Specs with AI
 
-### Spec as Prompt
+### Generation Prompt
 
 ```markdown
-## Implementation Request
-
-Using the following component specification, implement the TokenService:
+Using this component specification, implement [ComponentName]:
 
 [paste component-spec XML]
 
 Requirements:
-1. Follow TDD - write tests first
-2. Use TypeScript
-3. Follow the interface exactly
-4. Implement all test cases from spec
+1. Follow TDD - write tests first from <test-cases>
+2. Implement interface exactly as specified
+3. Use [language] with [framework]
+4. Do not add methods not in spec
 ```
 
 ### Verification Prompt
 
 ```markdown
-## Verification Request
+Verify this implementation against spec:
 
-Given this implementation:
+**Implementation:**
 [paste code]
 
-And this specification:
+**Specification:**
 [paste spec]
 
-Verify:
-1. All interface methods implemented
-2. All test cases covered
-3. All implementation notes followed
-4. No deviations from spec
+Check:
+1. All interface methods implemented correctly
+2. All test cases from spec covered
+3. No extra functionality added
+4. Types match spec exactly
 ```
 
-## Benefits
+## Related Skills
 
-1. **Deterministic** - Same spec → Same code
-2. **Reviewable** - Specs are human-readable
-3. **Traceable** - PRD → Tech Spec → Component → Code
-4. **Testable** - Test cases in spec
-5. **Versionable** - Specs in version control
-6. **AI-friendly** - Structured input for generation
-
-## Anti-Patterns
-
-❌ **Incomplete specs** - Missing edge cases, error handling
-❌ **Spec drift** - Code diverges from spec without updating
-❌ **Over-specification** - Specifying implementation details
-❌ **Under-specification** - Ambiguous requirements
-❌ **Spec without tests** - No verification criteria
+- `tdd` - Implements code from component specs using test-first
+- `architect` - Generates technical specs from PRDs
+- `researcher` - Gathers context for writing specs

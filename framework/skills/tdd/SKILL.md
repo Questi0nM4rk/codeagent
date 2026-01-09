@@ -1,43 +1,60 @@
 ---
 name: tdd
-description: Test-Driven Development methodology. Activates when implementing features, fixing bugs, or discussing testing strategies. Enforces strict test-first development workflow.
+description: Test-Driven Development methodology. Activates when implementing features, fixing bugs, or writing any production code. Enforces strict test-first development workflow.
 ---
 
 # Test-Driven Development Skill
 
-Methodology for writing tests before implementation.
+Methodology for writing tests before implementation. Every line of production code must be justified by a failing test.
 
-## Core Cycle
+## The Iron Law
+
+```
+NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+No exceptions. No "just this once." No "it's too simple."
+```
+
+## Core Principle
+
+> "Never write a line of production code without a failing test."
+
+## The TDD Cycle
 
 ```
 RED → GREEN → REFACTOR
 
-1. RED: Write a failing test
-2. GREEN: Write minimal code to pass
-3. REFACTOR: Improve without changing behavior
+1. RED: Write a failing test (must fail for right reason)
+2. GREEN: Write MINIMAL code to pass (nothing more)
+3. REFACTOR: Improve without changing behavior (tests stay green)
 ```
 
-## The TDD Mantra
+## When to Use
 
-> "Never write a line of production code without a failing test."
+**Always:**
+- Implementing any new feature
+- Fixing any bug (test reproduces bug first)
+- Adding any new function/method/class
+- Modifying existing behavior
 
-## Detailed Workflow
+**Exceptions (ask human partner):**
+- Exploratory prototypes explicitly marked as throwaway
+- Learning/experimentation code not intended for production
+
+## Workflow
 
 ### 1. RED: Write Failing Test
 
-```markdown
-### Requirements
+Requirements:
 - Test ONE specific behavior
 - Test name describes the requirement
-- Test MUST fail initially
+- Test MUST fail initially (if it passes, something is wrong)
 - Failure message should be meaningful
 
-### Test Structure (AAA)
-1. **Arrange**: Set up preconditions
-2. **Act**: Execute the behavior
-3. **Assert**: Verify the outcome
+```
+Arrange → Act → Assert
+```
 
-### Example
+<Good>
 ```typescript
 describe('Calculator', () => {
   it('should add two positive numbers', () => {
@@ -52,175 +69,151 @@ describe('Calculator', () => {
   });
 });
 ```
+- Clear test name describes behavior
+- Single assertion
+- AAA structure
+- Tests behavior, not implementation
+</Good>
 
-### Run Test
-- Verify it FAILS
-- If it passes: test is wrong OR feature already exists
-- Check failure message makes sense
+<Bad>
+```typescript
+it('test calculator', () => {
+  const calc = new Calculator();
+  expect(calc.add(2, 3)).toBe(5);
+  expect(calc.subtract(5, 3)).toBe(2);
+  expect(calc.multiply(2, 3)).toBe(6);
+  expect(calc.divide(6, 2)).toBe(3);
+});
 ```
+- Vague test name
+- Multiple unrelated assertions
+- Tests multiple behaviors
+- If one fails, hard to know which
+</Bad>
 
 ### 2. GREEN: Make It Pass
 
-```markdown
-### Requirements
+Requirements:
 - Write MINIMAL code to pass
 - Don't optimize
 - Don't handle edge cases yet
 - "Make it work" not "make it perfect"
 
-### Process
-1. Run test → see it fail
-2. Write simplest code that could work
-3. Run test → see it pass
-4. Resist urge to add more
-
-### Anti-patterns
-❌ Writing more than needed
-❌ Handling cases not tested
-❌ Optimizing prematurely
-❌ Adding "just in case" code
+<Good>
+```typescript
+// Test expects add(2, 3) = 5
+// Minimal implementation:
+add(a: number, b: number): number {
+  return a + b;
+}
 ```
+Minimal code that passes the test.
+</Good>
+
+<Bad>
+```typescript
+// Test only expects add(2, 3) = 5
+// Over-engineered implementation:
+add(a: number, b: number): number {
+  if (typeof a !== 'number' || typeof b !== 'number') {
+    throw new Error('Invalid input');
+  }
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    throw new Error('Must be finite');
+  }
+  const result = a + b;
+  if (!Number.isFinite(result)) {
+    throw new Error('Overflow');
+  }
+  return result;
+}
+```
+- Adds untested error handling
+- Handles cases no test requires
+- "Just in case" code
+</Bad>
 
 ### 3. REFACTOR: Clean Up
 
-```markdown
-### Requirements
+Requirements:
 - Tests MUST still pass
 - No new functionality
 - Improve structure/readability
 - Remove duplication
 
-### Safe Refactorings
+Safe refactorings:
 - Rename for clarity
 - Extract methods/functions
 - Remove duplication
 - Simplify conditionals
-- Improve naming
 
-### Process
-1. Identify code smell
-2. Run tests (green)
-3. Make small change
-4. Run tests (must stay green)
-5. Repeat
+## Test Types
 
-### Commit After
-- Separate commit for refactoring
-- `refactor(scope): [description]`
-```
+| Type | What | When | Speed | Mocking |
+|------|------|------|-------|---------|
+| Unit | Single unit | Business logic, algorithms | ms | External deps |
+| Integration | Multiple units | DB, API, services | sec | External services |
+| E2E | Full user flow | Critical paths | min | Nothing |
 
-## Test Types and When to Use
+**Pyramid Ratio**: ~70% Unit, ~20% Integration, ~10% E2E
 
-### Unit Tests
-**What**: Test single unit in isolation
-**When**: Business logic, pure functions, algorithms
-**Speed**: Milliseconds
-**Mocking**: External dependencies mocked
+## Common Rationalizations
 
-```typescript
-// Unit test - isolated, fast
-it('should calculate discount for premium user', () => {
-  const pricing = new PricingService();
-  const discount = pricing.calculateDiscount({ tier: 'premium' });
-  expect(discount).toBe(0.2);
-});
-```
+| Excuse | Reality |
+|--------|---------|
+| "It's too simple to test" | Simple code breaks. Test takes 30 seconds to write. |
+| "I'll write tests after" | Tests after are biased by implementation. You won't. |
+| "I'm just exploring" | Mark it as prototype. If it ships, it needs tests. |
+| "Tests slow me down" | Debugging untested code slows you down more. |
+| "I know it works" | You know it works NOW. What about after refactoring? |
+| "It's just a small change" | Small changes cause big bugs. Test first. |
+| "Deadline pressure" | Bugs cost more time than tests save. |
 
-### Integration Tests
-**What**: Test multiple units together
-**When**: Database operations, API endpoints, service interactions
-**Speed**: Seconds
-**Mocking**: External services, not internal components
+## Red Flags - STOP and Start Over
 
-```typescript
-// Integration test - real database
-it('should create user and retrieve by email', async () => {
-  const repo = new UserRepository(testDb);
-  await repo.create({ email: 'test@example.com' });
+These indicate you've violated TDD:
 
-  const user = await repo.findByEmail('test@example.com');
+- Test passes without writing implementation (test is wrong)
+- Wrote implementation before test
+- Test requires multiple assertions for different behaviors
+- Test verifies implementation details instead of behavior
+- Making "just one more change" before running tests
+- Tests pass but you're not confident in the code
+- Adding "obvious" code without a failing test first
 
-  expect(user).toBeDefined();
-  expect(user.email).toBe('test@example.com');
-});
-```
+**If you see these, delete the untested code and start with RED.**
 
-### E2E Tests
-**What**: Test full user flows
-**When**: Critical paths, authentication, checkout
-**Speed**: Minutes
-**Mocking**: Nothing (maybe external APIs)
+## Verification Checklist
 
-```typescript
-// E2E test - browser automation
-it('should complete checkout flow', async () => {
-  await page.goto('/products');
-  await page.click('[data-testid="add-to-cart"]');
-  await page.click('[data-testid="checkout"]');
-  await page.fill('#email', 'user@example.com');
-  await page.click('[data-testid="place-order"]');
+Before considering any code complete:
 
-  await expect(page.locator('.order-confirmation')).toBeVisible();
-});
-```
+- [ ] Every line of production code was written to make a test pass
+- [ ] Each test fails before implementation, passes after
+- [ ] Tests are independent (can run in any order)
+- [ ] Tests verify behavior, not implementation details
+- [ ] No test has multiple unrelated assertions
+- [ ] Refactoring didn't change test behavior (only production code)
+- [ ] Test names describe the requirement, not the implementation
 
-## Test Pyramid
+## When Stuck
 
-```
-        /\
-       /  \  E2E (few)
-      /----\
-     /      \  Integration (some)
-    /--------\
-   /          \  Unit (many)
-  --------------
-```
+| Problem | Solution |
+|---------|----------|
+| Test won't fail | Test is wrong or feature exists. Check test logic. |
+| Can't write minimal code | Test may be too complex. Split into smaller tests. |
+| Tests depend on each other | Each test must set up own state. Isolate them. |
+| Test is too complex | You're testing too much. One behavior per test. |
+| 3 failed attempts | Stop. Document attempts. Ask for help or simplify. |
 
-**Ratio**: ~70% Unit, ~20% Integration, ~10% E2E
+## Failure Protocol
 
-## TDD Patterns
-
-### Test First for Bug Fixes
-
-```markdown
-1. Write test that reproduces the bug
-2. Run test → RED (proves bug exists)
-3. Fix the bug
-4. Run test → GREEN (proves bug fixed)
-5. Commit test and fix together
-```
-
-### Test First for Features
-
-```markdown
-1. Write test for simplest behavior
-2. Make it pass
-3. Write test for next behavior
-4. Make it pass
-5. Continue until feature complete
-```
-
-### Test First for Refactoring
-
-```markdown
-1. Ensure comprehensive tests exist
-2. Run tests → GREEN
-3. Make small refactoring change
-4. Run tests → must stay GREEN
-5. Repeat
-```
-
-## Failure Handling
-
-### After 3 Failed Attempts
+After 3 failed attempts, STOP and report:
 
 ```markdown
 ## STUCK: Test Won't Pass
 
 ### Test
-```language
 [test code]
-```
 
 ### Attempts
 1. [what tried] → [error]
@@ -230,67 +223,12 @@ it('should complete checkout flow', async () => {
 ### Analysis
 [Why I think it's failing]
 
-### Options
-- [ ] Simplify the test
-- [ ] Question the requirement
-- [ ] Ask for help
-- [ ] Try different approach
+### Request
+Simplify test OR question requirement OR different approach
 ```
 
-### When to Question the Test
+## Related Skills
 
-- Test is too complex
-- Can't write minimal code to pass
-- Test seems to test implementation details
-- Multiple assertions testing different things
-
-## Anti-Patterns
-
-### Test After
-❌ Writing implementation first, tests after
-- Tests become biased by implementation
-- Harder to achieve good coverage
-- Tests verify code, not behavior
-
-### Testing Implementation
-❌ Testing HOW instead of WHAT
-```typescript
-// Bad: testing implementation
-expect(user.hashedPassword).toMatch(/^\\$2b\\$/);
-
-// Good: testing behavior
-expect(await user.verifyPassword('secret')).toBe(true);
-```
-
-### Over-Mocking
-❌ Mocking everything
-- Tests become brittle
-- Don't test real behavior
-- False confidence
-
-### Test Pollution
-❌ Tests depending on each other
-- Run in isolation
-- Each test sets up own state
-- Clean up after
-
-## Commit Strategy
-
-```bash
-# Test commit
-git commit -m "test(auth): add test for password validation"
-
-# Implementation commit
-git commit -m "feat(auth): implement password validation"
-
-# Refactor commit
-git commit -m "refactor(auth): extract validation to separate function"
-```
-
-## TDD Benefits
-
-1. **Design feedback** - Hard to test = bad design
-2. **Documentation** - Tests show how to use code
-3. **Confidence** - Refactor without fear
-4. **Focus** - One thing at a time
-5. **Coverage** - Tests exist by default
+- `reviewer` - Validates test quality during review
+- `systematic-debugging` - When tests reveal bugs to investigate
+- `spec-driven` - Specs inform what tests to write

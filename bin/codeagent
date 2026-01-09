@@ -34,6 +34,7 @@ usage() {
     echo ""
     echo -e "${BLUE}Configuration Commands:${NC}"
     echo "  config        Configure API keys (add/update without reinstalling)"
+    echo "  marketplace   Search and install MCP packages from Smithery"
     echo ""
     echo -e "${BLUE}Maintenance Commands:${NC}"
     echo "  update        Update CodeAgent to latest version"
@@ -88,6 +89,10 @@ case "${1:-help}" in
     config)
         check_install
         exec "$INSTALL_DIR/bin/codeagent-config" "${@:2}"
+        ;;
+    marketplace)
+        check_install
+        exec "$INSTALL_DIR/bin/codeagent-marketplace" "${@:2}"
         ;;
     logs)
         check_install

@@ -7,85 +7,70 @@ description: Bash and shell scripting expertise. Activates when working with .sh
 
 Domain knowledge for shell scripting and CLI development.
 
+## The Iron Law
+
+```
+SET -EUO PIPEFAIL + SHELLCHECK CLEAN + QUOTE EVERYTHING
+Every script starts with strict mode. shellcheck passes. All variables quoted.
+```
+
+## Core Principle
+
+> "Shell scripts fail silently. Strict mode and shellcheck make failures loud."
+
+## When to Use
+
+**Always:**
+- Writing shell scripts (.sh, .bash)
+- Creating CLI tools and wrappers
+- Automating system tasks
+- Writing installation scripts
+
+**Exceptions (ask human partner):**
+- POSIX-only environments (use `sh` not `bash`)
+- Performance-critical scripts (consider Python/Go)
+
 ## Stack
 
-- **Shells**: Bash 5+, Zsh
-- **Linting**: shellcheck
-- **Formatting**: shfmt
-- **Testing**: bats-core
+| Component | Technology |
+|-----------|------------|
+| Shells | Bash 5+, Zsh |
+| Linting | shellcheck |
+| Formatting | shfmt |
+| Testing | bats-core |
 
-## Commands
-
-### Running
-
-```bash
-# Run script
-bash script.sh
-./script.sh  # requires chmod +x
-
-# Debug mode
-bash -x script.sh      # Print commands
-bash -v script.sh      # Print input lines
-bash -n script.sh      # Syntax check only
-
-# Strict mode
-set -euo pipefail
-```
-
-### Linting and Formatting
+## Essential Commands
 
 ```bash
-# shellcheck
+# Lint
 shellcheck script.sh
 shellcheck -x script.sh  # Follow sources
-shellcheck -f gcc script.sh
-shellcheck -s bash script.sh
 
-# shfmt
+# Format
 shfmt -w script.sh
-shfmt -d script.sh      # Diff mode
-shfmt -i 4 script.sh    # 4 space indent
-shfmt -l .              # List files that differ
-```
+shfmt -d script.sh  # Diff mode
 
-### Testing
-
-```bash
-# bats
+# Test
 bats tests/
 bats tests/test_script.bats
-bats --tap tests/
 ```
 
 ## Patterns
 
 ### Script Template
 
+<Good>
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
 
-# Script description
-# Usage: script.sh [options] <args>
-
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
-# Colors
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[0;33m'
-readonly NC='\033[0m' # No Color
-
-log_info() { echo -e "${GREEN}[INFO]${NC} $*"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $*" >&2; }
-log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
-
-die() {
-    log_error "$@"
-    exit 1
-}
+log_info() { echo "[INFO] $*"; }
+log_error() { echo "[ERROR] $*" >&2; }
+die() { log_error "$@"; exit 1; }
 
 usage() {
     cat << EOF
@@ -98,21 +83,11 @@ EOF
 }
 
 main() {
-    local verbose=false
-
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            -v|--verbose)
-                verbose=true
-                shift
-                ;;
-            *)
-                break
-                ;;
+            -h|--help) usage; exit 0 ;;
+            -v|--verbose) VERBOSE=true; shift ;;
+            *) break ;;
         esac
     done
 
@@ -121,9 +96,29 @@ main() {
 
 main "$@"
 ```
+- Strict mode enabled
+- Proper quoting throughout
+- Clear structure with main function
+- Error handling built-in
+</Good>
+
+<Bad>
+```bash
+#!/bin/bash
+
+for file in $(ls *.txt); do
+    cat $file
+done
+```
+- No strict mode
+- Parsing `ls` output (breaks on spaces)
+- Unquoted variables
+- No error handling
+</Bad>
 
 ### Error Handling
 
+<Good>
 ```bash
 # Trap for cleanup
 cleanup() {
@@ -142,24 +137,24 @@ fi
 
 # Retry with backoff
 retry() {
-    local max_attempts=$1
-    local delay=$2
+    local max_attempts=$1 delay=$2
     shift 2
     local attempt=1
 
     while [[ $attempt -le $max_attempts ]]; do
-        if "$@"; then
-            return 0
-        fi
-        log_warn "Attempt $attempt failed. Retrying in ${delay}s..."
+        if "$@"; then return 0; fi
+        log_info "Attempt $attempt failed. Retrying in ${delay}s..."
         sleep "$delay"
         ((attempt++))
         delay=$((delay * 2))
     done
-
     return 1
 }
 ```
+- Cleanup trap for temp files
+- Command existence check
+- Retry logic for flaky operations
+</Good>
 
 ### Input Validation
 
@@ -182,57 +177,30 @@ retry() {
 
 ### Arrays and Loops
 
+<Good>
 ```bash
 # Array declaration
-declare -a files=("file1.txt" "file2.txt" "file3.txt")
+declare -a files=("file1.txt" "file2.txt")
 
-# Iterate array
+# Iterate array (quoted!)
 for file in "${files[@]}"; do
     echo "Processing: $file"
 done
 
-# Read file lines
+# Read file lines safely
 while IFS= read -r line; do
     echo "$line"
 done < "$file"
 
-# Find and iterate
+# Find and iterate (null-safe)
 while IFS= read -r -d '' file; do
     echo "Found: $file"
 done < <(find . -name "*.sh" -print0)
 ```
-
-### Functions
-
-```bash
-# Function with local variables
-process_file() {
-    local file="$1"
-    local -r readonly_var="constant"
-
-    [[ -f "$file" ]] || return 1
-
-    # Process file
-    echo "Processing: $file"
-}
-
-# Return values
-get_value() {
-    local result="computed value"
-    echo "$result"
-}
-value=$(get_value)
-
-# Multiple return values
-get_stats() {
-    local -n _count=$1
-    local -n _size=$2
-    _count=10
-    _size=1024
-}
-get_stats count size
-echo "Count: $count, Size: $size"
-```
+- Proper array quoting
+- Safe file iteration
+- Null-terminated find
+</Good>
 
 ### String Operations
 
@@ -247,9 +215,8 @@ name="${file%.*}"           # name without extension
 value="${VAR:-default}"     # Use default if unset/empty
 value="${VAR:=default}"     # Set and use default
 
-# String comparison
+# Comparison
 [[ "$str" == "value" ]]     # Equal
-[[ "$str" != "value" ]]     # Not equal
 [[ "$str" =~ ^[0-9]+$ ]]    # Regex match
 [[ -z "$str" ]]             # Is empty
 [[ -n "$str" ]]             # Is not empty
@@ -259,6 +226,7 @@ value="${VAR:=default}"     # Set and use default
 
 ### bats-core
 
+<Good>
 ```bash
 #!/usr/bin/env bats
 
@@ -285,45 +253,65 @@ teardown() {
     echo "test content" > "$TEMP_DIR/test.txt"
     run ./script.sh "$TEMP_DIR/test.txt"
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Processing:" ]]
 }
 ```
+- Setup/teardown for isolation
+- Status code verification
+- Output pattern matching
+</Good>
+
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "set -e is too strict" | It catches real errors. Handle expected failures explicitly. |
+| "Quoting is ugly" | Unquoted vars break on spaces. Always quote. |
+| "shellcheck is pedantic" | It prevents real bugs. Fix the warnings. |
+| "It works on my machine" | It won't work with different filenames. Quote everything. |
+
+## Red Flags - STOP
+
+- Missing `set -euo pipefail`
+- Unquoted variables: `$var` instead of `"$var"`
+- Parsing `ls` output: `for f in $(ls)`
+- Using backticks instead of `$()`
+- `[ ]` instead of `[[ ]]`
+- Missing `local` in functions
+- `cd` without `|| exit`
+- `rm -rf $VAR/` (unquoted, could delete root)
+
+If you see these, stop and fix before continuing.
+
+## Verification Checklist
+
+- [ ] Script starts with `set -euo pipefail`
+- [ ] `shellcheck script.sh` passes clean
+- [ ] `shfmt -d script.sh` shows no diff
+- [ ] All variables are quoted: `"$var"`
+- [ ] Functions use `local` for variables
+- [ ] Temp files cleaned up via trap
+- [ ] Tests pass with `bats`
 
 ## Review Tools
 
 ```bash
-# Lint
-shellcheck -x script.sh
-
-# Format check
-shfmt -d script.sh
-
-# Security scan (basic)
-grep -n 'eval\|exec' script.sh
+shellcheck -x script.sh           # Lint (follow sources)
+shfmt -d script.sh                # Format check
+bats tests/                       # Run tests
+bash -n script.sh                 # Syntax check only
 ```
 
-## File Organization
+## When Stuck
 
-```
-scripts/
-├── bin/
-│   ├── main-script.sh
-│   └── helper.sh
-├── lib/
-│   ├── common.sh
-│   └── logging.sh
-├── tests/
-│   └── test_main.bats
-└── README.md
-```
+| Problem | Solution |
+|---------|----------|
+| shellcheck false positive | Add `# shellcheck disable=SCXXXX` with comment explaining why |
+| Need to continue on error | Use `command \|\| true` or `set +e` temporarily |
+| Complex argument parsing | Use `getopts` or switch to Python |
+| Associative arrays | Require Bash 4+, check version first |
 
-## Common Conventions
+## Related Skills
 
-- Always use `set -euo pipefail`
-- Quote all variables: `"$var"`
-- Use `[[ ]]` instead of `[ ]`
-- Use `$(command)` instead of backticks
-- Prefer `local` for function variables
-- Use `readonly` for constants
-- Check exit codes explicitly when needed
-- Use `shellcheck` directives for false positives
+- `tdd` - Test-first development workflow
+- `reviewer` - Uses shellcheck/shfmt for validation
+- `python` - For complex scripts beyond shell capabilities

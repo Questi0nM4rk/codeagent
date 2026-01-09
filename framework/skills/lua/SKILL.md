@@ -7,86 +7,77 @@ description: Lua development expertise. Activates when working with .lua files o
 
 Domain knowledge for Lua scripting and Neovim plugin development.
 
+## The Iron Law
+
+```
+LOCAL EVERYTHING + LUACHECK CLEAN + STYLUA FORMATTED
+All variables are local. luacheck passes. stylua --check passes.
+```
+
+## Core Principle
+
+> "Global is evil. Local is fast. Type annotations catch bugs before runtime."
+
+## When to Use
+
+**Always:**
+- Writing Lua scripts or modules
+- Developing Neovim plugins
+- Working with game scripting (Love2D, Defold)
+- Creating Lua-based configurations
+
+**Exceptions (ask human partner):**
+- Legacy codebases without luacheck
+- Embedded Lua with constrained environments
+
 ## Stack
 
-- **Version**: Lua 5.4, LuaJIT
-- **Testing**: busted, luaunit
-- **Linting**: luacheck
-- **Formatting**: stylua
-- **Package Manager**: luarocks
-- **LSP**: lua-language-server
+| Component | Technology |
+|-----------|------------|
+| Version | Lua 5.4, LuaJIT |
+| Testing | busted, luaunit |
+| Linting | luacheck |
+| Formatting | stylua |
+| Package Manager | luarocks |
+| LSP | lua-language-server |
 
-## Commands
-
-### Running
+## Essential Commands
 
 ```bash
-# Run script
+# Run scripts
 lua script.lua
 luajit script.lua
 
-# Interactive REPL
-lua
-luajit
-
-# With arguments
-lua script.lua arg1 arg2
-```
-
-### Testing
-
-```bash
-# busted
+# Test
 busted
 busted --filter="test name"
-busted spec/
-busted -o TAP
 
-# luaunit
-lua tests/test_module.lua
-```
-
-### Linting and Formatting
-
-```bash
-# luacheck
-luacheck .
-luacheck src/ --no-unused-args
+# Lint + format
 luacheck . --config .luacheckrc
-
-# stylua
-stylua .
-stylua --check .
-stylua lua/ --config-path stylua.toml
-```
-
-### Package Management
-
-```bash
-# luarocks
-luarocks install package
-luarocks install --local package
-luarocks list
-luarocks make rockspec
+stylua . && stylua --check .
 ```
 
 ## Patterns
 
 ### Module Pattern
 
+<Good>
 ```lua
 local M = {}
 
--- Private
+--- Private helper (local function)
 local function helper(x)
     return x * 2
 end
 
--- Public
+--- Process data with transformation
+---@param data number
+---@return number
 function M.process(data)
     return helper(data)
 end
 
+---@param opts table|nil
 function M.setup(opts)
     opts = opts or {}
     M.config = vim.tbl_deep_extend("force", M.defaults, opts)
@@ -94,13 +85,37 @@ end
 
 return M
 ```
+- All functions local or namespaced to M
+- LuaLS annotations for types
+- Explicit nil handling with `or {}`
+</Good>
+
+<Bad>
+```lua
+function process(data)
+    return data * 2
+end
+
+helper = function(x) return x end
+```
+- Global functions pollute namespace
+- No type annotations
+- Hard to test and maintain
+</Bad>
 
 ### Class-like Pattern
 
+<Good>
 ```lua
+---@class User
+---@field name string
+---@field email string
 local User = {}
 User.__index = User
 
+---@param name string
+---@param email string
+---@return User
 function User.new(name, email)
     local self = setmetatable({}, User)
     self.name = name
@@ -108,12 +123,17 @@ function User.new(name, email)
     return self
 end
 
+---@return string
 function User:greet()
     return string.format("Hello, %s!", self.name)
 end
 
 return User
 ```
+- LuaLS class annotations
+- Proper metatable usage
+- Method uses `:` (implicit self)
+</Good>
 
 ### Error Handling
 
@@ -124,11 +144,11 @@ local ok, result = pcall(function()
 end)
 
 if not ok then
-    print("Error:", result)
+    vim.notify("Error: " .. result, vim.log.levels.ERROR)
     return nil
 end
 
--- xpcall with traceback
+-- xpcall with traceback for debugging
 local ok, result = xpcall(risky_operation, debug.traceback)
 ```
 
@@ -142,12 +162,11 @@ M.defaults = {
     keymaps = true,
 }
 
+---@param opts table|nil
 function M.setup(opts)
     opts = vim.tbl_deep_extend("force", M.defaults, opts or {})
 
-    if not opts.enabled then
-        return
-    end
+    if not opts.enabled then return end
 
     if opts.keymaps then
         M.setup_keymaps()
@@ -158,48 +177,14 @@ function M.setup(opts)
     })
 end
 
-function M.setup_keymaps()
-    vim.keymap.set("n", "<leader>x", M.action, { desc = "Plugin action" })
-end
-
-function M.action()
-    -- plugin functionality
-end
-
 return M
-```
-
-### Iterators
-
-```lua
--- pairs for tables with keys
-for key, value in pairs(tbl) do
-    print(key, value)
-end
-
--- ipairs for arrays
-for index, value in ipairs(arr) do
-    print(index, value)
-end
-
--- Custom iterator
-local function range(from, to)
-    local i = from - 1
-    return function()
-        i = i + 1
-        if i <= to then return i end
-    end
-end
-
-for i in range(1, 10) do
-    print(i)
-end
 ```
 
 ## Testing Patterns
 
 ### busted
 
+<Good>
 ```lua
 describe("User", function()
     local User
@@ -223,8 +208,12 @@ describe("User", function()
     end)
 end)
 ```
+- Descriptive nested structure
+- Setup in before_each
+- Clear assertion messages
+</Good>
 
-### Mocking with busted
+### Mocking
 
 ```lua
 describe("Service", function()
@@ -241,83 +230,56 @@ describe("Service", function()
 end)
 ```
 
-## Neovim-Specific
+## Common Rationalizations
 
-### API Patterns
+| Excuse | Reality |
+|--------|---------|
+| "Globals are easier" | They cause bugs. Local is 30% faster. |
+| "luacheck is too strict" | It catches real bugs. Configure it properly. |
+| "Types are optional" | Annotations prevent runtime errors. Add them. |
+| "It's just a small script" | Small scripts become big scripts. Do it right. |
 
-```lua
--- Buffer operations
-local buf = vim.api.nvim_get_current_buf()
-local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "new content" })
+## Red Flags - STOP
 
--- Window operations
-local win = vim.api.nvim_get_current_win()
-local cursor = vim.api.nvim_win_get_cursor(win)
+- Global variables (missing `local`)
+- No `return M` at module end
+- `function M.method(self, ...)` instead of `function M:method(...)`
+- Missing nil checks before table access
+- `require` inside loops
+- No LuaLS annotations on public functions
 
--- Create floating window
-local buf = vim.api.nvim_create_buf(false, true)
-local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = 50,
-    height = 10,
-    row = 5,
-    col = 5,
-    style = "minimal",
-    border = "rounded",
-})
-```
+If you see these, stop and fix before continuing.
 
-### vim.fn and vim.cmd
+## Verification Checklist
 
-```lua
--- Call Vim functions
-local filename = vim.fn.expand("%:t")
-local exists = vim.fn.filereadable(path) == 1
-
--- Execute Vim commands
-vim.cmd("write")
-vim.cmd([[
-    highlight Normal guibg=none
-    set number
-]])
-```
+- [ ] `luacheck .` passes clean
+- [ ] `stylua --check .` passes
+- [ ] All variables/functions are local
+- [ ] Module returns table at end
+- [ ] Public functions have LuaLS annotations
+- [ ] Tests pass with `busted`
+- [ ] No global namespace pollution
 
 ## Review Tools
 
 ```bash
-# Lint
-luacheck . --no-color
-
-# Format check
-stylua --check .
-
-# Type checking (with lua-language-server annotations)
-# Configured via .luarc.json
+luacheck . --no-color              # Lint
+stylua --check .                   # Format check
+lua-language-server --check .      # Type check (configured via .luarc.json)
+busted --coverage                  # Tests with coverage
 ```
 
-## File Organization
+## When Stuck
 
-```
-plugin/
-├── lua/
-│   └── plugin-name/
-│       ├── init.lua
-│       ├── config.lua
-│       └── utils.lua
-├── plugin/
-│   └── plugin-name.lua
-├── doc/
-│   └── plugin-name.txt
-└── spec/
-    └── plugin_spec.lua
-```
+| Problem | Solution |
+|---------|----------|
+| "undefined global" warning | Add `local` or configure `.luacheckrc` for vim globals |
+| Circular require | Move shared code to separate module |
+| Metatable confusion | Use `__index = ClassName` pattern consistently |
+| vim API not found | Ensure running in Neovim context, mock for tests |
 
-## Common Conventions
+## Related Skills
 
-- Use local for all variables
-- Prefer `and`/`or` for conditionals
-- Use metatables for OOP patterns
-- Check nil explicitly: `if x ~= nil then`
-- Use `vim.tbl_extend` for table merging in Neovim
-- Document with LuaLS annotations
+- `neovim` - Neovim-specific APIs and patterns
+- `tdd` - Test-first development workflow
+- `reviewer` - Uses luacheck/stylua for validation

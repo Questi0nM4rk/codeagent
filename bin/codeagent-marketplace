@@ -1,0 +1,184 @@
+#!/bin/bash
+# ============================================
+# CodeAgent Marketplace
+# Smithery MCP marketplace wrapper
+# ============================================
+#
+# Wraps npx @smithery/cli for MCP discovery
+# Automatically adds --client claude flag
+#
+# Usage:
+#   codeagent marketplace search <query>
+#   codeagent marketplace install <package>
+#   codeagent marketplace list
+#   codeagent marketplace info <package>
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# ============================================
+# Helper Functions
+# ============================================
+
+log_success() { echo -e "${GREEN}✓${NC} $1"; }
+log_info() { echo -e "${BLUE}○${NC} $1"; }
+log_warn() { echo -e "${YELLOW}!${NC} $1"; }
+log_error() { echo -e "${RED}✗${NC} $1"; }
+
+usage() {
+    echo -e "${CYAN}CodeAgent Marketplace${NC} - MCP Package Discovery"
+    echo ""
+    echo "Usage: codeagent marketplace <command> [options]"
+    echo ""
+    echo -e "${BLUE}Commands:${NC}"
+    echo "  search <query>    Search for MCP packages"
+    echo "  install <pkg>     Install an MCP package"
+    echo "  list              List installed MCPs"
+    echo "  info <pkg>        Show package details"
+    echo ""
+    echo -e "${BLUE}Options:${NC}"
+    echo "  -h, --help        Show this help message"
+    echo ""
+    echo -e "${BLUE}Examples:${NC}"
+    echo "  codeagent marketplace search github"
+    echo "  codeagent marketplace install @anthropic/mcp-server-github"
+    echo "  codeagent marketplace info context7"
+    echo ""
+    echo -e "${CYAN}Note:${NC} Uses Smithery CLI (npx @smithery/cli) under the hood"
+    echo ""
+}
+
+# Check if npm/npx is available
+check_npm() {
+    if ! command -v npx &> /dev/null; then
+        log_error "npx not found. Please install Node.js and npm first:"
+        echo ""
+        echo "  # Arch Linux"
+        echo "  sudo pacman -S nodejs npm"
+        echo ""
+        echo "  # Or use nvm"
+        echo "  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
+        echo "  nvm install --lts"
+        echo ""
+        exit 1
+    fi
+}
+
+# Check if @smithery/cli is available, offer to install if not
+check_smithery() {
+    # Try running smithery --help to see if it's available
+    if ! npx --yes @smithery/cli --help &> /dev/null 2>&1; then
+        log_warn "@smithery/cli not cached. It will be downloaded on first use."
+        echo ""
+        echo "To install globally for faster access:"
+        echo "  npm install -g @smithery/cli"
+        echo ""
+    fi
+}
+
+# Run smithery command with --client claude
+run_smithery() {
+    local cmd="$1"
+    shift
+
+    log_info "Running: smithery $cmd $*"
+    echo ""
+
+    # Use npx to run smithery, always add --client claude for install
+    if [ "$cmd" = "install" ]; then
+        npx --yes @smithery/cli "$cmd" --client claude "$@"
+    else
+        npx --yes @smithery/cli "$cmd" "$@"
+    fi
+}
+
+# ============================================
+# Commands
+# ============================================
+
+cmd_search() {
+    if [ -z "$1" ]; then
+        log_error "Missing search query"
+        echo "Usage: codeagent marketplace search <query>"
+        exit 1
+    fi
+
+    run_smithery search "$@"
+}
+
+cmd_install() {
+    if [ -z "$1" ]; then
+        log_error "Missing package name"
+        echo "Usage: codeagent marketplace install <package>"
+        exit 1
+    fi
+
+    run_smithery install "$@"
+
+    echo ""
+    log_success "Package installed"
+    log_info "Restart Claude Code to load the new MCP server"
+}
+
+cmd_list() {
+    run_smithery list "$@"
+}
+
+cmd_info() {
+    if [ -z "$1" ]; then
+        log_error "Missing package name"
+        echo "Usage: codeagent marketplace info <package>"
+        exit 1
+    fi
+
+    run_smithery info "$@"
+}
+
+# ============================================
+# Main
+# ============================================
+
+main() {
+    local command="${1:-help}"
+
+    case "$command" in
+        search)
+            check_npm
+            shift
+            cmd_search "$@"
+            ;;
+        install)
+            check_npm
+            shift
+            cmd_install "$@"
+            ;;
+        list)
+            check_npm
+            shift
+            cmd_list "$@"
+            ;;
+        info)
+            check_npm
+            shift
+            cmd_info "$@"
+            ;;
+        help|-h|--help)
+            usage
+            ;;
+        *)
+            log_error "Unknown command: $command"
+            echo ""
+            usage
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

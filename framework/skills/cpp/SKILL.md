@@ -5,108 +5,48 @@ description: C and C++ development expertise. Activates when working with .c, .c
 
 # C/C++ Development Skill
 
-Domain knowledge for C and C++23 systems programming.
+Domain knowledge for C++23 and C17 systems programming with modern practices.
+
+## The Iron Law
+
+```
+NO RAW NEW/DELETE - USE SMART POINTERS AND RAII
+Memory is managed by constructors/destructors, not manual allocation.
+```
+
+## Core Principle
+
+> "Resource Acquisition Is Initialization. If you type `new`, you're probably wrong."
 
 ## Stack
 
-- **Standard**: C++23, C17
-- **Build**: CMake, Make, Ninja
-- **Compiler**: GCC, Clang
-- **Testing**: GoogleTest, Catch2
-- **Analysis**: clang-tidy, cppcheck, valgrind
-- **Formatting**: clang-format
+| Component | Technology |
+|-----------|------------|
+| Standard | C++23, C17 |
+| Build | CMake, Ninja |
+| Compiler | GCC 13+, Clang 17+ |
+| Testing | GoogleTest, Catch2 |
+| Analysis | clang-tidy, cppcheck, valgrind |
+| Formatting | clang-format |
 
-## Commands
-
-### Build with CMake
+## Essential Commands
 
 ```bash
-# Configure
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake -B build -G Ninja
-
 # Build
-cmake --build build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
-cmake --build build --target target_name
 
-# Clean
-cmake --build build --target clean
-rm -rf build
-
-# Install
-cmake --install build --prefix /usr/local
-```
-
-### Build with Make
-
-```bash
-make
-make -j$(nproc)
-make clean
-make install
-```
-
-### Testing
-
-```bash
-# CTest
-ctest --test-dir build
-ctest --test-dir build -R test_name
+# Test
 ctest --test-dir build --output-on-failure
-ctest --test-dir build -j$(nproc)
 
-# GoogleTest direct
-./build/tests/unit_tests
-./build/tests/unit_tests --gtest_filter=TestSuite.TestName
-
-# With coverage
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON
-cmake --build build
-ctest --test-dir build
-gcovr --root . --html coverage.html
-```
-
-### Static Analysis
-
-```bash
-# clang-tidy
-clang-tidy src/*.cpp -- -Iinclude
+# Static analysis
 clang-tidy -p build src/*.cpp
+cppcheck --enable=all src/
 
-# cppcheck
-cppcheck --enable=all --inconclusive src/
-cppcheck --enable=all --xml 2>report.xml src/
-
-# clang static analyzer
-scan-build cmake --build build
-```
-
-### Memory Analysis
-
-```bash
-# Valgrind memcheck
+# Memory check
 valgrind --leak-check=full ./build/program
-valgrind --leak-check=full --show-leak-kinds=all ./build/program
 
-# AddressSanitizer (compile with -fsanitize=address)
-cmake -B build -DCMAKE_CXX_FLAGS="-fsanitize=address -g"
-cmake --build build
-./build/program
-
-# ThreadSanitizer
-cmake -B build -DCMAKE_CXX_FLAGS="-fsanitize=thread -g"
-```
-
-### Formatting
-
-```bash
-# Format files
-clang-format -i src/*.cpp include/*.h
-clang-format -i --style=file src/**/*.cpp
-
-# Check format
+# Format
 clang-format --dry-run --Werror src/*.cpp
 ```
 
@@ -114,34 +54,68 @@ clang-format --dry-run --Werror src/*.cpp
 
 ### RAII and Smart Pointers
 
+<Good>
 ```cpp
-// Prefer smart pointers over raw pointers
-auto ptr = std::make_unique<Resource>();
-auto shared = std::make_shared<Resource>();
-
-// RAII for resource management
-class FileHandle {
+class Connection {
 public:
-    explicit FileHandle(const std::string& path)
-        : handle_(std::fopen(path.c_str(), "r")) {
-        if (!handle_) throw std::runtime_error("Failed to open file");
+    explicit Connection(std::string host)
+        : socket_(std::make_unique<Socket>(std::move(host))) {
+        if (!socket_->connect()) {
+            throw std::runtime_error("Connection failed");
+        }
     }
 
-    ~FileHandle() {
-        if (handle_) std::fclose(handle_);
-    }
+    // Destructor automatically closes socket via unique_ptr
+    ~Connection() = default;
 
-    // Delete copy, allow move
-    FileHandle(const FileHandle&) = delete;
-    FileHandle& operator=(const FileHandle&) = delete;
-    FileHandle(FileHandle&& other) noexcept : handle_(std::exchange(other.handle_, nullptr)) {}
+    // Rule of 5: delete copy, default move
+    Connection(const Connection&) = delete;
+    Connection& operator=(const Connection&) = delete;
+    Connection(Connection&&) noexcept = default;
+    Connection& operator=(Connection&&) noexcept = default;
+
+    void send(std::string_view data) {
+        socket_->write(data);
+    }
 
 private:
-    FILE* handle_;
+    std::unique_ptr<Socket> socket_;
 };
 ```
+- unique_ptr manages lifetime
+- Explicit constructor prevents implicit conversion
+- Rule of 5 properly implemented
+- string_view for read-only strings
+</Good>
 
-### Modern C++ Features
+<Bad>
+```cpp
+class Connection {
+public:
+    Connection(const char* host) {
+        socket_ = new Socket(host);
+        socket_->connect();
+    }
+
+    ~Connection() {
+        delete socket_;
+    }
+
+    void send(std::string data) {
+        socket_->write(data.c_str());
+    }
+
+private:
+    Socket* socket_;
+};
+```
+- Raw pointer with manual delete
+- Missing copy/move operations (Rule of 5 violation)
+- Implicit conversion from const char*
+- Unnecessary string copy
+</Bad>
+
+### Modern C++ Features (C++20/23)
 
 ```cpp
 // Concepts (C++20)
@@ -152,43 +126,45 @@ template<Numeric T>
 T add(T a, T b) { return a + b; }
 
 // std::expected (C++23)
-std::expected<int, std::string> parse(const std::string& s) {
+std::expected<int, std::string> parse(std::string_view s) {
     try {
-        return std::stoi(s);
+        return std::stoi(std::string(s));
     } catch (...) {
         return std::unexpected("Invalid number");
     }
 }
 
 // Ranges
-auto result = numbers
+auto evens = numbers
     | std::views::filter([](int n) { return n % 2 == 0; })
     | std::views::transform([](int n) { return n * 2; });
 ```
 
 ### Error Handling
 
+<Good>
 ```cpp
-// Use std::expected or custom Result type
+// Use std::expected (C++23) or custom Result
 template<typename T, typename E = std::string>
 class Result {
 public:
-    static Result Ok(T value) { return Result(std::move(value)); }
-    static Result Err(E error) { return Result(std::unexpected(std::move(error))); }
+    static Result Ok(T value) { return Result{std::move(value)}; }
+    static Result Err(E error) { return Result{std::unexpected(std::move(error))}; }
 
-    bool is_ok() const { return value_.has_value(); }
-    const T& value() const { return *value_; }
-    const E& error() const { return value_.error(); }
+    [[nodiscard]] bool is_ok() const { return value_.has_value(); }
+    [[nodiscard]] const T& value() const { return *value_; }
+    [[nodiscard]] const E& error() const { return value_.error(); }
 
 private:
+    explicit Result(std::expected<T, E> v) : value_(std::move(v)) {}
     std::expected<T, E> value_;
 };
 ```
+</Good>
 
-## Testing Patterns
+## Testing
 
-### GoogleTest
-
+<Good>
 ```cpp
 #include <gtest/gtest.h>
 
@@ -201,32 +177,47 @@ protected:
     std::unique_ptr<Calculator> calc_;
 };
 
-TEST_F(CalculatorTest, AddReturnsSum) {
+TEST_F(CalculatorTest, AddReturnsSumOfTwoNumbers) {
     EXPECT_EQ(calc_->add(2, 3), 5);
 }
 
-TEST_F(CalculatorTest, DivideByZeroThrows) {
+TEST_F(CalculatorTest, DivideByZeroThrowsInvalidArgument) {
     EXPECT_THROW(calc_->divide(1, 0), std::invalid_argument);
 }
 ```
+- Fixture with SetUp for common state
+- Descriptive test names
+- EXPECT vs ASSERT (continue vs stop)
+</Good>
 
-### Catch2
+## Common Rationalizations
 
-```cpp
-#include <catch2/catch_test_macros.hpp>
+| Excuse | Reality |
+|--------|---------|
+| "Raw pointers are faster" | Smart pointers have zero overhead. Use them. |
+| "My code doesn't leak" | Valgrind/ASan will prove otherwise. Run them. |
+| "C++23 is too new" | GCC 13 and Clang 17 support it. Use it. |
+| "RAII is overkill" | Manual resource management is bug-prone. RAII always. |
 
-TEST_CASE("Calculator", "[math]") {
-    Calculator calc;
+## Red Flags - STOP
 
-    SECTION("addition") {
-        REQUIRE(calc.add(2, 3) == 5);
-    }
+- `new` without corresponding smart pointer
+- Raw pointer member without clear ownership semantics
+- Missing virtual destructor in base class
+- `using namespace std;` in headers
+- C-style casts instead of `static_cast`/`dynamic_cast`
+- Missing `[[nodiscard]]` on functions returning important values
+- Non-explicit single-argument constructors
 
-    SECTION("division by zero") {
-        REQUIRE_THROWS_AS(calc.divide(1, 0), std::invalid_argument);
-    }
-}
-```
+## Verification Checklist
+
+- [ ] No raw `new`/`delete` (grep for them)
+- [ ] All classes follow Rule of 5 (or Rule of 0)
+- [ ] `clang-tidy` passes with no warnings
+- [ ] `valgrind --leak-check=full` shows no leaks
+- [ ] `cppcheck --enable=all` clean
+- [ ] Compiled with `-Wall -Wextra -Wpedantic -Werror`
+- [ ] Single-arg constructors are `explicit`
 
 ## Review Tools
 
@@ -235,42 +226,29 @@ TEST_CASE("Calculator", "[math]") {
 cppcheck --enable=all --error-exitcode=1 src/
 clang-tidy -p build src/*.cpp
 
-# Memory check
+# Memory
 valgrind --leak-check=full --error-exitcode=1 ./build/tests
+# Or with sanitizers:
+cmake -B build -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -g"
 
-# Format check
+# Format
 clang-format --dry-run --Werror src/*.cpp include/*.h
 
-# Compiler warnings
+# Compile warnings
 g++ -Wall -Wextra -Wpedantic -Werror src/*.cpp
 ```
 
-## File Organization
+## When Stuck
 
-```
-project/
-├── CMakeLists.txt
-├── include/
-│   └── project/
-│       ├── public_header.h
-│       └── types.h
-├── src/
-│   ├── CMakeLists.txt
-│   ├── main.cpp
-│   └── module.cpp
-├── tests/
-│   ├── CMakeLists.txt
-│   └── test_module.cpp
-└── cmake/
-    └── modules/
-```
+| Problem | Solution |
+|---------|----------|
+| Memory leak | Run valgrind. Use RAII. Check all code paths. |
+| Segfault | Run with ASan. Check pointer validity before use. |
+| Linker errors | Check include guards. Ensure definitions exist. |
+| CMake issues | Clean build dir. Check target_link_libraries. |
 
-## Common Conventions
+## Related Skills
 
-- Use `#pragma once` for include guards
-- Prefer `std::string_view` for string parameters
-- Use `[[nodiscard]]` for functions with important return values
-- Mark single-arg constructors `explicit`
-- Prefer `enum class` over plain `enum`
-- Use `constexpr` where possible
-- Avoid raw `new`/`delete` - use smart pointers
+- `tdd` - Test-first development workflow
+- `reviewer` - Uses cppcheck/valgrind for validation
+- `rust` - Similar systems programming, safer by default

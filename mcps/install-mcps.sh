@@ -113,6 +113,14 @@ preflight_checks() {
     else
         log_success "Python 3 available"
     fi
+
+    # Check uv (for uvx)
+    if ! command -v uv &> /dev/null; then
+        log_warn "uv not found - Code execution MCP will be skipped"
+        log_info "Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    else
+        log_success "uv available"
+    fi
 }
 
 # ============================================
@@ -236,6 +244,18 @@ remove_all_codeagent_mcps() {
         fi
     done
 
+    # UVX MCPs (code execution)
+    if jq -e '.uvx' "$REGISTRY_FILE" &>/dev/null; then
+        local uvx_count=$(jq '.uvx | length' "$REGISTRY_FILE")
+        for ((i=0; i<uvx_count; i++)); do
+            local name=$(jq -r ".uvx[$i].name" "$REGISTRY_FILE")
+            if claude mcp list 2>/dev/null | grep -q "^$name:"; then
+                claude mcp remove "$name" 2>/dev/null || true
+                log_info "  Removed: $name"
+            fi
+        done
+    fi
+
     log_success "Removed all CodeAgent MCPs"
 }
 
@@ -287,6 +307,20 @@ verify_all_mcps() {
             fi
         fi
     done
+
+    # UVX MCPs
+    if jq -e '.uvx' "$REGISTRY_FILE" &>/dev/null; then
+        local uvx_count=$(jq '.uvx | length' "$REGISTRY_FILE")
+        for ((i=0; i<uvx_count; i++)); do
+            local name=$(jq -r ".uvx[$i].name" "$REGISTRY_FILE")
+            if echo "$mcp_list" | grep -q "^$name:"; then
+                log_success "  $name"
+            else
+                log_warn "  $name (not registered)"
+                all_ok=false
+            fi
+        done
+    fi
 
     echo ""
     if [ "$all_ok" = "true" ]; then
@@ -342,6 +376,11 @@ main() {
 
     if [ "$NO_DOCKER" != "true" ]; then
         run_installer "$INSTALLERS_DIR/install-docker-mcps.sh" "Docker"
+    fi
+
+    # Code execution MCP (requires uv + docker)
+    if command -v uv &> /dev/null && [ "$NO_DOCKER" != "true" ]; then
+        run_installer "$INSTALLERS_DIR/install-code-execution.sh" "Code Execution"
     fi
 
     # Verify

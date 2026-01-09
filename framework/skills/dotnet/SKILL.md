@@ -5,96 +5,101 @@ description: .NET and C# development expertise. Activates when working with .cs,
 
 # .NET Development Skill
 
-Domain knowledge for .NET 8/9/10 and C# development.
+Domain knowledge for .NET 8/9/10 and C# 12/13 development.
+
+## The Iron Law
+
+```
+NULLABLE REFERENCE TYPES + PRIMARY CONSTRUCTORS + RESULT PATTERN
+Enable nullable, use primary constructors for DI, return Result<T> not exceptions.
+```
+
+## Core Principle
+
+> "Make invalid states unrepresentable. Let the compiler catch errors, not runtime."
 
 ## Stack
 
-- **Runtime**: .NET 8/9/10
-- **Language**: C# 12/13
-- **Web**: ASP.NET Core, Minimal APIs
-- **ORM**: Entity Framework Core
-- **Testing**: xUnit, NUnit, FluentAssertions
-- **DI**: Built-in Microsoft.Extensions.DependencyInjection
+| Component | Technology |
+|-----------|------------|
+| Runtime | .NET 8/9/10 |
+| Language | C# 12/13 |
+| Web | ASP.NET Core, Minimal APIs |
+| ORM | Entity Framework Core |
+| Testing | xUnit, FluentAssertions |
+| DI | Microsoft.Extensions.DependencyInjection |
 
-## Commands
-
-### Development
+## Essential Commands
 
 ```bash
 # Build
-dotnet build
-dotnet build --configuration Release
 dotnet build --warnaserror
 
-# Run
-dotnet run --project src/Api
-dotnet watch --project src/Api
-
-# Test
-dotnet test
-dotnet test --verbosity normal
-dotnet test --filter "FullyQualifiedName~ClassName.MethodName"
-dotnet test --filter "Category=Unit"
+# Test with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
 # Format
-dotnet format
 dotnet format --verify-no-changes
 
-# Clean
-dotnet clean
-```
-
-### Database (EF Core)
-
-```bash
-# Migrations
+# EF Migrations
 dotnet ef migrations add MigrationName
-dotnet ef migrations add MigrationName --project src/Infrastructure --startup-project src/Api
-
-# Update database
 dotnet ef database update
-dotnet ef database update --connection "ConnectionString"
 
-# Generate SQL script
-dotnet ef migrations script
-
-# Revert migration
-dotnet ef database update PreviousMigration
-dotnet ef migrations remove
-```
-
-### Packages
-
-```bash
-# Add package
-dotnet add package PackageName
-dotnet add package PackageName --version 1.0.0
-
-# List packages
-dotnet list package
-dotnet list package --outdated
-
-# Restore
-dotnet restore
+# Security check
+dotnet list package --vulnerable
 ```
 
 ## Patterns
 
 ### Primary Constructor DI (C# 12+)
 
+<Good>
 ```csharp
 public class UserService(
     IUserRepository repository,
     ILogger<UserService> logger)
 {
-    public async Task<User?> GetUserAsync(Guid id)
+    public async Task<Result<User>> GetUserAsync(Guid id, CancellationToken ct = default)
     {
         logger.LogInformation("Getting user {UserId}", id);
-        return await repository.GetByIdAsync(id);
+        var user = await repository.GetByIdAsync(id, ct);
+        return user is not null
+            ? Result<User>.Success(user)
+            : Result<User>.Failure("User not found");
     }
 }
 ```
+- Primary constructor for clean DI
+- CancellationToken on async methods
+- Result pattern for expected failures
+- Structured logging with template
+</Good>
+
+<Bad>
+```csharp
+public class UserService
+{
+    private readonly IUserRepository _repository;
+
+    public UserService(IUserRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<User> GetUserAsync(Guid id)
+    {
+        var user = await _repository.GetByIdAsync(id);
+        if (user == null)
+            throw new NotFoundException("User not found");
+        return user;
+    }
+}
+```
+- Verbose constructor boilerplate
+- No CancellationToken
+- Exception for expected failure (not found)
+- No logging
+</Bad>
 
 ### Result Pattern
 
@@ -115,46 +120,18 @@ public readonly record struct Result<T>
 ### Minimal API Endpoints
 
 ```csharp
-app.MapGet("/users/{id:guid}", async (Guid id, IUserService service) =>
+app.MapGet("/users/{id:guid}", async (Guid id, IUserService service, CancellationToken ct) =>
 {
-    var result = await service.GetUserAsync(id);
+    var result = await service.GetUserAsync(id, ct);
     return result.IsSuccess
         ? Results.Ok(result.Value)
         : Results.NotFound(result.Error);
 });
 ```
 
-### Repository Pattern
+## Testing
 
-```csharp
-public interface IRepository<T> where T : class
-{
-    Task<T?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<T>> GetAllAsync(CancellationToken ct = default);
-    Task AddAsync(T entity, CancellationToken ct = default);
-    void Update(T entity);
-    void Remove(T entity);
-}
-```
-
-### Entity Configuration (EF Core)
-
-```csharp
-public class UserConfiguration : IEntityTypeConfiguration<User>
-{
-    public void Configure(EntityTypeBuilder<User> builder)
-    {
-        builder.HasKey(u => u.Id);
-        builder.Property(u => u.Email).HasMaxLength(256).IsRequired();
-        builder.HasIndex(u => u.Email).IsUnique();
-    }
-}
-```
-
-## Testing Patterns
-
-### xUnit with FluentAssertions
-
+<Good>
 ```csharp
 public class UserServiceTests
 {
@@ -167,7 +144,7 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task GetUserAsync_WhenExists_ReturnsUser()
+    public async Task GetUserAsync_WhenExists_ReturnsSuccess()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -179,70 +156,65 @@ public class UserServiceTests
         var result = await _sut.GetUserAsync(userId);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Email.Should().Be("test@example.com");
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Email.Should().Be("test@example.com");
     }
 }
 ```
+- Clear Arrange/Act/Assert
+- FluentAssertions for readability
+- Tests behavior, not implementation
+</Good>
 
-### Integration Tests with TestContainers
+## Common Rationalizations
 
-```csharp
-public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
-{
-    private readonly HttpClient _client;
+| Excuse | Reality |
+|--------|---------|
+| "Nullable is too strict" | It catches bugs at compile time. Enable it. |
+| "Exceptions are easier" | Result pattern makes error handling explicit and testable. |
+| "Primary constructors are new" | C# 12 is stable. Use modern features. |
+| "I don't need CancellationToken" | Every HTTP request can be cancelled. Always pass it. |
 
-    public ApiTests(WebApplicationFactory<Program> factory)
-    {
-        _client = factory.CreateClient();
-    }
+## Red Flags - STOP
 
-    [Fact]
-    public async Task GetUser_ReturnsOk()
-    {
-        var response = await _client.GetAsync("/users/123");
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-}
-```
+- `#nullable disable` in new code
+- `throw new Exception()` for expected failures
+- Missing CancellationToken on async methods
+- `await` without ConfigureAwait in libraries
+- EF queries without `.AsNoTracking()` for reads
+- No structured logging (string interpolation in logs)
+
+## Verification Checklist
+
+- [ ] `<Nullable>enable</Nullable>` in csproj
+- [ ] Primary constructors for DI
+- [ ] CancellationToken on all async methods
+- [ ] Result pattern for expected failures
+- [ ] Tests use Arrange/Act/Assert
+- [ ] `dotnet build --warnaserror` passes
+- [ ] `dotnet list package --vulnerable` clean
 
 ## Review Tools
 
 ```bash
-# Format check
-dotnet format --verify-no-changes
-
-# Build warnings as errors
-dotnet build --warnaserror
-
-# Security audit
-dotnet list package --vulnerable
-
-# Code analysis
-dotnet build /p:EnforceCodeStyleInBuild=true
+dotnet format --verify-no-changes          # Format check
+dotnet build --warnaserror                  # Warnings as errors
+dotnet build /p:EnforceCodeStyleInBuild=true  # Code analysis
+dotnet list package --vulnerable            # Security audit
+dotnet test --collect:"XPlat Code Coverage" # Coverage
 ```
 
-## File Organization
+## When Stuck
 
-```
-src/
-├── Domain/           # Entities, value objects, domain events
-├── Application/      # Use cases, DTOs, interfaces
-├── Infrastructure/   # EF Core, external services
-└── Api/              # Controllers, endpoints, middleware
+| Problem | Solution |
+|---------|----------|
+| Nullable warnings everywhere | Enable nullable, fix errors file by file |
+| EF migrations failing | Check connection string, ensure migrations project set |
+| Test dependencies | Use Mock<T> for interfaces, TestContainers for integration |
+| DI not resolving | Check service registration, constructor parameters |
 
-tests/
-├── Domain.Tests/
-├── Application.Tests/
-├── Infrastructure.Tests/
-└── Api.Tests/
-```
+## Related Skills
 
-## Common Conventions
-
-- Nullable reference types enabled
-- File-scoped namespaces
-- Primary constructors for DI
-- Records for DTOs
-- Result pattern over exceptions for expected failures
-- CancellationToken on all async methods
+- `tdd` - Test-first development workflow
+- `reviewer` - Uses dotnet build/test for validation
+- `postgresql` - EF Core with PostgreSQL

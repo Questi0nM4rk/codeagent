@@ -61,6 +61,9 @@ RECOMMENDED_PACMAN=(
     "valgrind"        # Memory debugger
     "docker"          # Container runtime
     "docker-compose"  # Container orchestration
+    "github-cli"      # GitHub CLI (gh) - replaces GitHub MCP
+    "kubectl"         # Kubernetes CLI
+    "libsecret"       # Keyring library for secret-tool
 )
 
 RECOMMENDED_YAY=(
@@ -71,6 +74,8 @@ RECOMMENDED_YAY=(
     "stylua"          # Lua formatter
     "cppcheck"        # C/C++ static analyzer
     "yq"              # YAML processor
+    "aws-cli-v2"      # AWS CLI - uses ~/.aws/credentials
+    "azure-cli"       # Azure CLI - uses az login
 )
 
 # Python tools (pip)
@@ -97,6 +102,7 @@ NODE_TOOLS=(
     "typescript"      # TypeScript compiler
     "prettier"        # Code formatter
     "@biomejs/biome"  # Fast linter (Rust-based)
+    "@smithery/cli"   # MCP marketplace CLI
 )
 
 # Full installation extras (--full)

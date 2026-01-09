@@ -5,111 +5,92 @@ description: Python development expertise. Activates when working with .py files
 
 # Python Development Skill
 
-Domain knowledge for modern Python development.
+Domain knowledge for modern Python development with type safety.
+
+## The Iron Law
+
+```
+TYPE HINTS EVERYWHERE + STRICT MYPY + RUFF
+Every function has type hints. mypy --strict passes. ruff check passes.
+```
+
+## Core Principle
+
+> "Python is dynamically typed. Your code doesn't have to be. Type hints prevent bugs."
 
 ## Stack
 
-- **Version**: Python 3.11+
-- **Package Manager**: uv, pip, poetry
-- **Type Checking**: mypy, pyright
-- **Testing**: pytest
-- **Linting**: ruff, flake8
-- **Formatting**: black, ruff format
+| Component | Technology |
+|-----------|------------|
+| Version | Python 3.11+ |
+| Package Manager | uv (fast), pip |
+| Type Checking | mypy --strict |
+| Testing | pytest |
+| Linting | ruff |
+| Formatting | ruff format |
 
-## Commands
-
-### Development
+## Essential Commands
 
 ```bash
-# Virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-.venv\Scripts\activate     # Windows
-
-# Using uv (fast)
-uv venv
+# Virtual environment (uv is faster)
+uv venv && source .venv/bin/activate
 uv pip install -r requirements.txt
-uv pip install package
 
-# Run
-python src/main.py
-python -m module_name
+# Type check (strict)
+mypy src/ --strict
 
-# Type checking
-mypy src/
-pyright src/
-
-# Linting
-ruff check src/
+# Lint + format
 ruff check src/ --fix
-flake8 src/
-
-# Formatting
 ruff format src/
-black src/
-black --check src/
-```
 
-### Testing
-
-```bash
-# Run all tests
-pytest
-pytest -v
-pytest -v --tb=short
-
-# Single test
-pytest tests/test_module.py
-pytest tests/test_module.py::test_function
-pytest -k "test_name"
-
-# With coverage
-pytest --cov=src --cov-report=html
+# Test with coverage
 pytest --cov=src --cov-report=term-missing
-
-# Parallel
-pytest -n auto
-```
-
-### Package Management
-
-```bash
-# pip
-pip install package
-pip install -e .
-pip freeze > requirements.txt
-
-# poetry
-poetry add package
-poetry install
-poetry build
-
-# uv
-uv pip install package
-uv pip sync requirements.txt
 ```
 
 ## Patterns
 
 ### Type Hints
 
+<Good>
 ```python
-from typing import Protocol, TypeVar, Generic
 from collections.abc import Callable, Iterable
+from typing import TypeVar
 
 T = TypeVar("T")
 
-def process_items(items: Iterable[T], func: Callable[[T], T]) -> list[T]:
+def process_items(
+    items: Iterable[T],
+    func: Callable[[T], T],
+) -> list[T]:
+    """Process items with a transformation function."""
     return [func(item) for item in items]
 
 # Protocol for structural typing
+from typing import Protocol
+
 class Repository(Protocol[T]):
     def get(self, id: str) -> T | None: ...
     def save(self, entity: T) -> None: ...
 ```
+- Generic with TypeVar
+- Callable with proper signature
+- Protocol for duck typing
+- Union with `|` syntax (3.10+)
+</Good>
+
+<Bad>
+```python
+def process_items(items, func):
+    return [func(item) for item in items]
+```
+- No type hints
+- Unclear expected types
+- Hard to catch errors at development time
+</Bad>
 
 ### Dataclasses
 
+<Good>
 ```python
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -124,8 +105,12 @@ class User:
         if "@" not in self.email:
             raise ValueError("Invalid email")
 ```
+- Frozen for immutability
+- Validation in `__post_init__`
+- Default factory for mutable defaults
+</Good>
 
-### Pydantic Models
+### Pydantic for Validation
 
 ```python
 from pydantic import BaseModel, EmailStr, field_validator
@@ -142,31 +127,12 @@ class UserCreate(BaseModel):
         return v
 ```
 
-### Async Patterns
+### Result Pattern (No Exceptions)
 
+<Good>
 ```python
-import asyncio
-from contextlib import asynccontextmanager
-
-async def fetch_all(urls: list[str]) -> list[Response]:
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch(session, url) for url in urls]
-        return await asyncio.gather(*tasks)
-
-@asynccontextmanager
-async def managed_connection():
-    conn = await connect()
-    try:
-        yield conn
-    finally:
-        await conn.close()
-```
-
-### Error Handling
-
-```python
-from typing import TypeVar, Generic
 from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E")
@@ -185,112 +151,146 @@ def divide(a: float, b: float) -> Result[float, str]:
     if b == 0:
         return Err("Division by zero")
     return Ok(a / b)
+
+# Usage
+match divide(10, 2):
+    case Ok(value):
+        print(f"Result: {value}")
+    case Err(error):
+        print(f"Error: {error}")
 ```
+- Explicit error handling
+- Pattern matching (3.10+)
+- No exception for expected failures
+</Good>
 
-## Testing Patterns
-
-### pytest
+### Async Patterns
 
 ```python
+import asyncio
+from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator
+
+@asynccontextmanager
+async def managed_connection() -> AsyncGenerator[Connection, None]:
+    conn = await connect()
+    try:
+        yield conn
+    finally:
+        await conn.close()
+
+async def fetch_all(urls: list[str]) -> list[Response]:
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch(session, url) for url in urls]
+        return await asyncio.gather(*tasks)
+```
+
+## Testing
+
+<Good>
+```python
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 class TestUserService:
     @pytest.fixture
-    def mock_repo(self):
+    def mock_repo(self) -> Mock:
         return Mock(spec=UserRepository)
 
     @pytest.fixture
-    def service(self, mock_repo):
+    def service(self, mock_repo: Mock) -> UserService:
         return UserService(mock_repo)
 
-    def test_get_user_returns_user(self, service, mock_repo):
+    def test_get_user_returns_user_when_exists(
+        self, service: UserService, mock_repo: Mock
+    ) -> None:
+        # Arrange
         mock_repo.get.return_value = User(id="1", email="test@example.com")
 
+        # Act
         result = service.get_user("1")
 
+        # Assert
         assert result is not None
         assert result.email == "test@example.com"
 
-    def test_get_user_not_found(self, service, mock_repo):
+    def test_get_user_returns_none_when_not_found(
+        self, service: UserService, mock_repo: Mock
+    ) -> None:
         mock_repo.get.return_value = None
 
         result = service.get_user("1")
 
         assert result is None
 ```
+- Type hints on fixtures
+- Mock with spec for type checking
+- Arrange/Act/Assert pattern
+</Good>
 
 ### Parametrized Tests
 
 ```python
-@pytest.mark.parametrize("input,expected", [
+@pytest.mark.parametrize("input_str,expected", [
     ("hello", "HELLO"),
     ("world", "WORLD"),
     ("", ""),
 ])
-def test_uppercase(input: str, expected: str):
-    assert input.upper() == expected
+def test_uppercase(input_str: str, expected: str) -> None:
+    assert input_str.upper() == expected
 ```
 
-### Async Tests
+## Common Rationalizations
 
-```python
-import pytest
+| Excuse | Reality |
+|--------|---------|
+| "Type hints are verbose" | They catch bugs. IDEs autocomplete them. Worth it. |
+| "Python is dynamic" | Your bugs are too. Type hints prevent them. |
+| "mypy --strict is too strict" | It catches real bugs. Fix them. |
+| "I'll add types later" | Later never comes. Type from the start. |
 
-@pytest.mark.asyncio
-async def test_async_fetch():
-    result = await fetch_data()
-    assert result is not None
-```
+## Red Flags - STOP
+
+- Functions without type hints
+- `# type: ignore` without explanation
+- `Any` type used as escape hatch
+- `except Exception:` (too broad)
+- Missing `-> None` on functions returning nothing
+- `print()` instead of `logging`
+- Mutable default arguments (`def f(x=[]): ...`)
+
+## Verification Checklist
+
+- [ ] `mypy src/ --strict` passes
+- [ ] `ruff check src/` passes
+- [ ] `ruff format --check src/` passes
+- [ ] `pytest --cov=src` shows adequate coverage
+- [ ] All functions have type hints (including `-> None`)
+- [ ] No `# type: ignore` without explanation
+- [ ] Public APIs have docstrings
 
 ## Review Tools
 
 ```bash
-# Lint
-ruff check src/ --output-format=github
-
-# Type check
-mypy src/ --strict
-
-# Format check
-ruff format --check src/
-black --check src/
-
-# Security
-bandit -r src/
-pip-audit
-
-# Import sorting
-isort --check-only src/
-ruff check --select I src/
+mypy src/ --strict                    # Type check
+ruff check src/                       # Lint
+ruff format --check src/              # Format check
+pytest --cov=src --cov-report=term    # Tests with coverage
+bandit -r src/                        # Security
+pip-audit                             # Dependency vulnerabilities
 ```
 
-## File Organization
+## When Stuck
 
-```
-project/
-├── pyproject.toml
-├── src/
-│   └── package/
-│       ├── __init__.py
-│       ├── main.py
-│       ├── models.py
-│       ├── services.py
-│       └── repository.py
-├── tests/
-│   ├── conftest.py
-│   ├── test_models.py
-│   └── test_services.py
-└── scripts/
-    └── run.py
-```
+| Problem | Solution |
+|---------|----------|
+| mypy error on library | Add type stubs or `# type: ignore[import]` with comment |
+| Complex generic types | Start simple, add generics incrementally |
+| Circular imports | Move types to separate `types.py` module |
+| Async test issues | Use `@pytest.mark.asyncio` decorator |
 
-## Common Conventions
+## Related Skills
 
-- Use type hints everywhere
-- Prefer `pathlib.Path` over `os.path`
-- Use `dataclasses` or `pydantic` for data structures
-- Use `contextlib` for resource management
-- Prefer `logging` over `print`
-- Use `enum.Enum` for constants
-- Document public APIs with docstrings
+- `tdd` - Test-first development workflow
+- `reviewer` - Uses mypy/ruff for validation
+- `bash` - For scripting alongside Python

@@ -1,212 +1,162 @@
 ---
 name: reviewer
-description: Code review methodology and best practices. Activates when reviewing code, pull requests, or conducting project audits. Provides structured review frameworks for different project sizes.
+description: Code review specialist using external validation tools. Activates when reviewing code, validating implementations, or checking for issues. Never relies on self-assessment.
 ---
 
-# Code Review Methodology Skill
+# Code Review Skill
 
-Comprehensive code review knowledge for projects of all sizes.
+External validation methodology for code quality. Reviews must use tools - never self-assess.
+
+## The Iron Law
+
+```
+NEVER SELF-VALIDATE - USE EXTERNAL TOOLS ONLY
+LLMs miss 60-80% of errors when self-reviewing. Run linters, tests, security scanners.
+```
 
 ## Core Principle
 
-**Never self-validate.** Reviews must use external tools - linters, type checkers, security scanners, tests. LLMs miss 60-80% of errors when self-reviewing.
+> "If you wrote it, you can't objectively review it. Let the tools decide."
+
+## When to Use
+
+**Always:**
+- After implementing any feature (run tests, linters)
+- Before committing code (pre-commit checks)
+- Before merging PRs (full review suite)
+- When asked to review code
+
+**Exceptions (ask human partner):**
+- Quick syntax checks (still run linter anyway)
+- Documentation-only changes (still check links/spelling)
 
 ## Review Levels
 
-### Level 1: Quick Review (Small Changes)
-**Scope**: Single file, < 100 lines, bug fixes, small features
-**Time**: 5-15 minutes
-**Focus**: Correctness, obvious issues
+| Level | Scope | Time | Focus |
+|-------|-------|------|-------|
+| Quick | < 100 lines, single file | 5-15 min | Correctness |
+| Standard | 100-500 lines, multiple files | 30-60 min | Design + Security |
+| Deep | 500+ lines, architectural | 2-4 hours | Scalability + Reliability |
+| Audit | Entire project | Days | Technical debt + Compliance |
 
-```markdown
-## Quick Review Checklist
+## Workflow
 
-### Correctness
-- [ ] Logic is correct
-- [ ] Edge cases handled
-- [ ] Error handling present
+### Step 1: Run External Tools First
 
-### Style
-- [ ] Follows existing patterns
-- [ ] No obvious code smells
-- [ ] Naming is clear
+Before ANY manual review, run appropriate tools:
 
-### Tests
-- [ ] Tests added/updated
-- [ ] Tests pass
+```bash
+# Language-agnostic
+shellcheck *.sh              # Shell scripts
+yamllint *.yml               # YAML files
 
-### Tools Run
-- [ ] Linter: [result]
-- [ ] Type check: [result]
+# TypeScript/JavaScript
+npx eslint --ext .ts,.tsx .
+npx tsc --noEmit
+
+# Python
+ruff check .
+mypy .
+
+# Rust
+cargo clippy -- -D warnings
+cargo test
+
+# C#
+dotnet build --warnaserror
+dotnet test
+
+# Security (all languages)
+semgrep --config auto .
 ```
 
-### Level 2: Standard Review (Medium Changes)
-**Scope**: Multiple files, 100-500 lines, features, refactors
-**Time**: 30-60 minutes
-**Focus**: Design, maintainability, performance
+### Step 2: Analyze Tool Output
 
+Document ALL findings. Don't dismiss warnings.
+
+### Step 3: Targeted Manual Review
+
+Only review what tools can't catch:
+- Business logic correctness
+- Design appropriateness
+- API contracts
+
+### Step 4: Document Findings
+
+Use the finding format below for every issue.
+
+## Examples
+
+<Good>
 ```markdown
-## Standard Review Checklist
+## Review Report
 
-### Design
-- [ ] Appropriate abstraction level
-- [ ] Single responsibility maintained
-- [ ] Dependencies are sensible
-- [ ] No circular dependencies introduced
+### Tool Results
+| Tool | Status | Issues |
+|------|--------|--------|
+| ESLint | PASS | 0 |
+| TypeScript | PASS | 0 |
+| Semgrep | WARN | 2 findings |
+| Jest | PASS | 47/47 tests |
 
-### Code Quality
-- [ ] DRY - no unnecessary duplication
-- [ ] YAGNI - no speculative generality
-- [ ] Clear intent in code
-- [ ] Comments explain "why" not "what"
+### Security Findings
 
-### Security
-- [ ] Input validation
-- [ ] No hardcoded secrets
-- [ ] Proper authentication/authorization
-- [ ] SQL injection prevention
-- [ ] XSS prevention
+#### [HIGH] SQL Injection Risk
+**Location**: `src/api/users.ts:42`
+**Tool**: Semgrep (rule: typescript.lang.security.audit.sqli)
 
-### Performance
-- [ ] No obvious N+1 queries
-- [ ] Appropriate data structures
-- [ ] No memory leaks
-- [ ] Async where appropriate
+**Issue**: String concatenation in SQL query
+**Impact**: Allows attackers to extract/modify database
 
-### Tests
-- [ ] Unit tests for business logic
-- [ ] Integration tests for APIs
-- [ ] Edge cases covered
-- [ ] Test names describe behavior
+**Code**:
+```typescript
+// Before (vulnerable)
+const query = `SELECT * FROM users WHERE id = ${userId}`;
 
-### Tools Run
-- [ ] Linter: [result]
-- [ ] Type check: [result]
-- [ ] Security scan: [result]
-- [ ] Test suite: [result]
+// After (parameterized)
+const query = 'SELECT * FROM users WHERE id = $1';
+const result = await db.query(query, [userId]);
 ```
 
-### Level 3: Deep Review (Large Changes)
-**Scope**: Architectural changes, new systems, 500+ lines
-**Time**: 2-4 hours (split sessions)
-**Focus**: Architecture, scalability, long-term maintenance
-
-```markdown
-## Deep Review Checklist
-
-### Architecture
-- [ ] Fits overall system architecture
-- [ ] Clear boundaries defined
-- [ ] API contracts well-defined
-- [ ] Backward compatibility considered
-- [ ] Migration path clear
-
-### Scalability
-- [ ] Database queries optimized
-- [ ] Caching strategy appropriate
-- [ ] Horizontal scaling possible
-- [ ] Resource limits defined
-
-### Reliability
-- [ ] Failure modes identified
-- [ ] Retry logic appropriate
-- [ ] Circuit breakers where needed
-- [ ] Monitoring/alerting hooks
-
-### Maintainability
-- [ ] Documentation updated
-- [ ] Configuration externalized
-- [ ] Feature flags for rollout
-- [ ] Logging sufficient for debugging
-
-### Security (Deep)
-- [ ] Threat model updated
-- [ ] Authentication flows secure
-- [ ] Authorization comprehensive
-- [ ] Data encryption at rest/transit
-- [ ] Audit logging
-
-### Testing (Comprehensive)
-- [ ] Unit test coverage adequate
-- [ ] Integration tests complete
-- [ ] E2E tests for critical paths
-- [ ] Performance tests if applicable
-- [ ] Chaos testing considered
-
-### Tools Run
-- [ ] Linter: [result]
-- [ ] Type check: [result]
-- [ ] Security scan (deep): [result]
-- [ ] Dependency audit: [result]
-- [ ] Test suite with coverage: [result]
-- [ ] Performance benchmarks: [result]
+**Verdict**: CHANGES REQUIRED (1 HIGH severity)
 ```
+- Used external tools first
+- Documented tool that found the issue
+- Clear before/after fix
+- Specific file:line reference
+</Good>
 
-### Level 4: Project Audit (Enterprise)
-**Scope**: Entire project or major subsystem
-**Time**: Days to weeks
-**Focus**: Technical debt, compliance, strategic alignment
-
+<Bad>
 ```markdown
-## Project Audit Framework
+## Review
 
-### Phase 1: Overview (Day 1)
-- [ ] Architecture documentation review
-- [ ] Dependency inventory
-- [ ] Build system analysis
-- [ ] CI/CD pipeline review
+I looked at the code and it seems fine. The logic looks correct and I don't
+see any obvious bugs. The code is well-structured and follows good practices.
 
-### Phase 2: Code Quality (Days 2-3)
-- [ ] Static analysis (full)
-- [ ] Code coverage analysis
-- [ ] Complexity metrics
-- [ ] Technical debt inventory
-
-### Phase 3: Security (Days 4-5)
-- [ ] SAST scan (Semgrep, SonarQube)
-- [ ] Dependency vulnerability scan
-- [ ] Secret scanning
-- [ ] OWASP Top 10 check
-
-### Phase 4: Infrastructure (Day 6)
-- [ ] Container security
-- [ ] Network policies
-- [ ] Access controls
-- [ ] Backup/recovery procedures
-
-### Phase 5: Documentation (Day 7)
-- [ ] API documentation completeness
-- [ ] Runbook accuracy
-- [ ] Architecture diagrams current
-- [ ] Onboarding guide quality
-
-### Deliverables
-1. Executive summary
-2. Detailed findings with severity
-3. Remediation roadmap
-4. Metrics baseline
+Approved!
 ```
+- No tools run
+- Subjective "seems fine" assessment
+- No specific findings
+- Self-validation (LLM reviewing LLM code)
+</Bad>
 
-## Review Documentation
-
-### Finding Format
+## Finding Format
 
 ```markdown
 ### [SEVERITY] Title
 
 **Location**: `file.ts:42`
 **Category**: Security | Performance | Maintainability | Correctness
+**Tool**: [which tool found this, or "Manual review"]
 
-**Issue**:
-[What's wrong]
-
-**Impact**:
-[Why it matters]
+**Issue**: [What's wrong]
+**Impact**: [Why it matters]
 
 **Recommendation**:
 [How to fix]
 
-**Code Example**:
+**Code**:
 ```language
 // Before
 [problematic code]
@@ -216,47 +166,122 @@ Comprehensive code review knowledge for projects of all sizes.
 ```
 ```
 
-### Severity Levels
+## Severity Levels
 
 | Level | Description | Action |
 |-------|-------------|--------|
-| CRITICAL | Security vulnerability, data loss risk | Block merge, fix immediately |
-| HIGH | Significant bug, performance issue | Fix before merge |
-| MEDIUM | Code smell, maintainability concern | Should fix, can defer |
+| CRITICAL | Security vulnerability, data loss | Block merge, fix NOW |
+| HIGH | Significant bug, security issue | Fix before merge |
+| MEDIUM | Code smell, maintainability | Should fix |
 | LOW | Style, minor improvement | Nice to have |
-| INFO | Observation, learning opportunity | No action required |
+| INFO | Learning opportunity | No action |
 
-## Review Report Template
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "The linter is too strict" | Configure it properly, don't ignore it. |
+| "It's just a warning" | Warnings become bugs. Fix them. |
+| "I tested it manually" | Manual testing misses edge cases. Write tests. |
+| "Security scan has false positives" | Verify each one. False negatives are worse. |
+| "I know this code is correct" | Then prove it with tests. |
+| "No time for full review" | Quick review is better than none. Run tools at minimum. |
+
+## Red Flags - STOP and Start Over
+
+These indicate you're self-validating instead of using tools:
+
+- "Looks good to me" without tool output
+- Approving without running tests
+- Dismissing linter warnings without fixing
+- Skipping security scan "this time"
+- "I already know this code works"
+- Manual code inspection without tool backup
+- Approving your own implementation without external check
+
+**If you catch yourself doing these, STOP. Run the tools.**
+
+## Verification Checklist
+
+Before marking any review complete:
+
+- [ ] Linter ran with zero errors/warnings (or documented exceptions)
+- [ ] Type checker passed (where applicable)
+- [ ] All tests pass
+- [ ] Security scanner ran (semgrep or equivalent)
+- [ ] Each finding has file:line reference
+- [ ] Each finding has severity level
+- [ ] Tool that found each issue is documented
+- [ ] Before/after code shown for fixes
+
+## Required Tools by Language
+
+| Language | Linter | Types | Security | Tests |
+|----------|--------|-------|----------|-------|
+| TypeScript | ESLint | tsc | Semgrep | Jest/Vitest |
+| Python | Ruff | mypy | Semgrep | pytest |
+| Rust | clippy | rustc | cargo-audit | cargo test |
+| C# | dotnet build | Roslyn | Semgrep | dotnet test |
+| C/C++ | cppcheck | N/A | Semgrep | ctest |
+| Lua | luacheck | N/A | Semgrep | busted |
+| Bash | shellcheck | N/A | shellcheck | bats |
+| SQL | sqlfluff | N/A | Semgrep | pgTap |
+
+## When Stuck
+
+| Problem | Solution |
+|---------|----------|
+| Tool not installed | Install it. Don't skip the check. |
+| Too many warnings | Fix incrementally. Start with errors, then warnings. |
+| Don't understand finding | Look up the rule. Tools explain why. |
+| False positive | Document and suppress with comment explaining why. |
+| Can't run tests | Fix the test setup first. Untestable code can't be reviewed. |
+| Review too large | Split into sessions. Max 500 lines per review. |
+
+## Context Management for Large Reviews
+
+```markdown
+## Review Progress
+
+### Session 1: Core Logic
+- Files: src/core/*.ts
+- Tools: ESLint ✓, tsc ✓, Jest ✓
+- Findings: 2 MEDIUM
+
+### Session 2: API Layer
+- Files: src/api/*.ts
+- Tools: ESLint ✓, tsc ✓, Semgrep ✓
+- Findings: 1 HIGH, 1 MEDIUM
+
+### Remaining
+- [ ] Tests coverage check
+- [ ] Documentation review
+```
+
+## Report Template
 
 ```markdown
 # Code Review Report
 
-**PR/Change**: [link or description]
+**PR/Change**: [link]
 **Reviewer**: [name]
 **Date**: [date]
-**Review Level**: Quick | Standard | Deep
+**Level**: Quick | Standard | Deep
 
 ## Summary
 
 **Verdict**: APPROVED | CHANGES REQUIRED | BLOCKED
 
-| Severity | Count |
-|----------|-------|
-| Critical | 0 |
-| High | 0 |
-| Medium | 0 |
-| Low | 0 |
-
 ## Tool Results
 
 | Tool | Status | Issues |
 |------|--------|--------|
-| Linter | ✅ | 0 |
-| Types | ✅ | 0 |
-| Security | ⚠️ | 2 |
-| Tests | ✅ | 47/47 |
+| Linter | ✅/❌ | N |
+| Types | ✅/❌ | N |
+| Security | ✅/❌ | N |
+| Tests | ✅/❌ | N/M |
 
-## Findings
+## Findings by Severity
 
 ### Critical
 [none or list]
@@ -272,72 +297,10 @@ Comprehensive code review knowledge for projects of all sizes.
 
 ## Positive Notes
 - [What was done well]
-
-## Recommendations
-- [Suggestions for improvement]
 ```
 
-## Context Management
+## Related Skills
 
-### Avoid Context Bloat
-
-For large reviews:
-1. Review in chunks (max 500 lines per session)
-2. Use separate agents for different aspects
-3. Summarize findings between sessions
-4. Keep running tally of issues
-
-### Document as You Go
-
-```markdown
-## Review Progress
-
-### Session 1: Core Logic
-- Files: src/core/*.ts
-- Duration: 45 min
-- Findings: 2 medium, 1 low
-
-### Session 2: API Layer
-- Files: src/api/*.ts
-- Duration: 30 min
-- Findings: 1 high, 1 medium
-
-### Remaining
-- [ ] Tests
-- [ ] Documentation
-```
-
-## Common Patterns to Catch
-
-### Security
-- Hardcoded credentials
-- SQL injection (string concatenation in queries)
-- Missing input validation
-- Improper error messages (leaking info)
-- Missing authentication/authorization
-
-### Performance
-- N+1 queries
-- Missing database indexes
-- Synchronous blocking in async context
-- Memory leaks (event listeners, subscriptions)
-- Unbounded data fetching
-
-### Maintainability
-- God classes/functions (too many responsibilities)
-- Deep nesting (> 3 levels)
-- Magic numbers/strings
-- Duplicate code
-- Missing error handling
-
-## Language-Specific Tools
-
-Load the appropriate domain skill for tool commands:
-- TypeScript/JavaScript → frontend skill
-- C# → dotnet skill
-- Rust → rust skill
-- C/C++ → cpp skill
-- Python → python skill
-- Lua → lua skill
-- Bash → bash skill
-- SQL → postgresql skill
+- `tdd` - Ensures tests exist for review to validate
+- `systematic-debugging` - When review finds bugs to investigate
+- `implementer` - Produces code that gets reviewed

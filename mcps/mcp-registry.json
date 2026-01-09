@@ -58,13 +58,6 @@
   ],
   "npm_optional": [
     {
-      "name": "github",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env_key": "GITHUB_TOKEN",
-      "env_var": "GITHUB_TOKEN"
-    },
-    {
       "name": "tavily",
       "command": "npx",
       "args": ["-y", "tavily-mcp"],
@@ -86,6 +79,23 @@
       "env_key": "SUPABASE_ACCESS_TOKEN",
       "env_var": "SUPABASE_ACCESS_TOKEN",
       "description": "Supabase project integration for database, auth, and edge functions"
+    }
+  ],
+  "uvx": [
+    {
+      "name": "code-execution",
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/elusznik/mcp-server-code-execution-mode", "mcp-server-code-execution-mode", "run"],
+      "env": {
+        "MCP_BRIDGE_RUNTIME": "docker",
+        "MCP_BRIDGE_IMAGE": "python:3.13-slim",
+        "MCP_BRIDGE_TIMEOUT": "60",
+        "MCP_BRIDGE_MEMORY": "512m"
+      },
+      "required": true,
+      "description": "Zero-context code execution sandbox. Runs Python/CLIs in isolated Docker containers.",
+      "prerequisites": ["docker", "uv"],
+      "docker_image": "python:3.13-slim"
     }
   ],
   "python": [

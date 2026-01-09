@@ -5,96 +5,55 @@ description: Rust development expertise. Activates when working with .rs files, 
 
 # Rust Development Skill
 
-Domain knowledge for Rust systems programming.
+Domain knowledge for Rust systems programming with memory safety.
+
+## The Iron Law
+
+```
+NO UNWRAP IN LIBRARY CODE - HANDLE EVERY ERROR WITH ? OR RESULT
+Panics are for bugs, not user errors. Use thiserror for library errors.
+```
+
+## Core Principle
+
+> "If it compiles, it works. Let the borrow checker catch bugs at compile time."
 
 ## Stack
 
-- **Toolchain**: rustup, cargo
-- **Edition**: 2021
-- **Testing**: Built-in test framework
-- **Linting**: clippy
-- **Formatting**: rustfmt
-- **Docs**: rustdoc
+| Component | Technology |
+|-----------|------------|
+| Toolchain | rustup, cargo |
+| Edition | 2021 |
+| Testing | Built-in + proptest |
+| Linting | clippy |
+| Formatting | rustfmt |
+| Async | tokio |
 
-## Commands
-
-### Development
+## Essential Commands
 
 ```bash
 # Build
-cargo build
 cargo build --release
-cargo build --all-features
-
-# Run
-cargo run
-cargo run --release
-cargo run -- args
-
-# Check (faster than build)
-cargo check
-cargo check --all-targets
 
 # Test
 cargo test
-cargo test test_name
-cargo test --lib
-cargo test --doc
-cargo test -- --nocapture
-cargo test -- --test-threads=1
 
-# Lint
-cargo clippy
-cargo clippy -- -D warnings
-cargo clippy --all-targets --all-features
+# Lint (strict)
+cargo clippy -- -D warnings -W clippy::pedantic
 
 # Format
-cargo fmt
 cargo fmt --check
 
-# Documentation
-cargo doc
-cargo doc --open
-cargo doc --no-deps
-```
-
-### Dependency Management
-
-```bash
-# Add dependency
-cargo add serde
-cargo add serde --features derive
-cargo add tokio --features full
-
-# Update dependencies
-cargo update
-cargo update -p package_name
-
-# Check outdated
-cargo outdated
-
-# Security audit
+# Security
 cargo audit
 cargo deny check
 ```
 
-### Release
-
-```bash
-# Build optimized
-cargo build --release
-
-# Strip symbols
-cargo build --release && strip target/release/binary
-
-# Cross-compile
-cargo build --target x86_64-unknown-linux-musl
-```
-
 ## Patterns
 
-### Error Handling
+### Error Handling with thiserror
 
+<Good>
 ```rust
 use thiserror::Error;
 
@@ -109,7 +68,29 @@ pub enum AppError {
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;
+
+pub fn read_config(path: &str) -> Result<Config> {
+    let content = std::fs::read_to_string(path)?; // ? propagates io::Error
+    parse_config(&content).ok_or_else(|| AppError::InvalidInput("Invalid config".into()))
+}
 ```
+- Custom error type with thiserror
+- `#[from]` for automatic conversion
+- `?` operator for propagation
+- No unwrap/expect
+</Good>
+
+<Bad>
+```rust
+pub fn read_config(path: &str) -> Config {
+    let content = std::fs::read_to_string(path).unwrap();
+    parse_config(&content).unwrap()
+}
+```
+- Panics on error
+- No error handling
+- Caller can't recover
+</Bad>
 
 ### Builder Pattern
 
@@ -126,11 +107,6 @@ impl RequestBuilder {
         self
     }
 
-    pub fn timeout(mut self, timeout: Duration) -> Self {
-        self.timeout = Some(timeout);
-        self
-    }
-
     pub fn build(self) -> Result<Request> {
         Ok(Request {
             url: self.url.ok_or(AppError::InvalidInput("url required".into()))?,
@@ -142,6 +118,7 @@ impl RequestBuilder {
 
 ### Async with Tokio
 
+<Good>
 ```rust
 use tokio::sync::mpsc;
 
@@ -150,7 +127,9 @@ async fn main() -> Result<()> {
     let (tx, mut rx) = mpsc::channel(32);
 
     tokio::spawn(async move {
-        tx.send("message").await.unwrap();
+        if let Err(e) = tx.send("message").await {
+            eprintln!("Send failed: {}", e);
+        }
     });
 
     while let Some(msg) = rx.recv().await {
@@ -160,59 +139,41 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+- Proper error handling in spawn
+- Channel for communication
+- Returns Result
+</Good>
 
-### Traits and Generics
+## Testing
 
-```rust
-pub trait Repository<T> {
-    async fn get(&self, id: &str) -> Result<Option<T>>;
-    async fn save(&self, entity: &T) -> Result<()>;
-    async fn delete(&self, id: &str) -> Result<()>;
-}
-
-impl<T: Serialize + DeserializeOwned> Repository<T> for RedisRepository {
-    async fn get(&self, id: &str) -> Result<Option<T>> {
-        // implementation
-    }
-}
-```
-
-## Testing Patterns
-
-### Unit Tests
-
+<Good>
 ```rust
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_builder_creates_request() {
+    fn builder_creates_request_with_defaults() {
         let request = RequestBuilder::default()
             .url("https://example.com")
             .build()
-            .unwrap();
+            .unwrap(); // OK in tests
 
         assert_eq!(request.url, "https://example.com");
+        assert_eq!(request.timeout, Duration::from_secs(30));
     }
 
     #[test]
-    fn test_builder_fails_without_url() {
+    fn builder_fails_without_url() {
         let result = RequestBuilder::default().build();
-        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::InvalidInput(_))));
     }
 }
 ```
-
-### Async Tests
-
-```rust
-#[tokio::test]
-async fn test_async_operation() {
-    let result = fetch_data().await;
-    assert!(result.is_ok());
-}
-```
+- `unwrap()` OK in tests (expected to pass)
+- `matches!` for error variants
+- Test both success and failure
+</Good>
 
 ### Property-Based Testing
 
@@ -221,56 +182,64 @@ use proptest::prelude::*;
 
 proptest! {
     #[test]
-    fn test_parse_roundtrip(s in "[a-z]+") {
-        let parsed = parse(&s).unwrap();
+    fn parse_roundtrip(s in "[a-z]+") {
+        let parsed = parse(&s)?;
         let serialized = serialize(&parsed);
-        assert_eq!(s, serialized);
+        prop_assert_eq!(s, serialized);
     }
 }
 ```
 
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "unwrap is fine here" | Use `expect("reason")` at minimum. Better: handle error. |
+| "Lifetimes are too hard" | Start with owned types. Add lifetimes when profiling shows need. |
+| "clippy::pedantic is too strict" | It catches real bugs. Allow specific lints with reason. |
+| "I'll add error handling later" | Later never comes. Use `?` from the start. |
+
+## Red Flags - STOP
+
+- `unwrap()` or `expect()` in library code
+- `panic!()` for recoverable errors
+- Ignoring clippy warnings
+- `unsafe` without clear justification and comment
+- Missing `#[must_use]` on functions with important returns
+- Clone everywhere instead of references
+
+## Verification Checklist
+
+- [ ] `cargo clippy -- -D warnings` passes
+- [ ] `cargo fmt --check` passes
+- [ ] `cargo test` passes
+- [ ] `cargo audit` clean
+- [ ] No `unwrap()` in library code (grep for it)
+- [ ] All public items documented with `///`
+- [ ] Error types derive `Error` and `Debug`
+
 ## Review Tools
 
 ```bash
-# Lint with all warnings
-cargo clippy -- -D warnings -W clippy::pedantic
-
-# Format check
-cargo fmt --check
-
-# Security audit
-cargo audit
-cargo deny check advisories
-
-# Unused dependencies
-cargo +nightly udeps
-
-# Memory safety (miri)
-cargo +nightly miri test
+cargo clippy -- -D warnings -W clippy::pedantic  # Strict lint
+cargo fmt --check                                  # Format check
+cargo audit                                        # Security vulnerabilities
+cargo deny check advisories                        # License + security
+cargo +nightly udeps                               # Unused dependencies
+cargo +nightly miri test                           # Memory safety (UB detector)
 ```
 
-## File Organization
+## When Stuck
 
-```
-src/
-├── main.rs           # Binary entry point
-├── lib.rs            # Library root
-├── error.rs          # Error types
-├── config.rs         # Configuration
-├── domain/           # Domain types
-├── repository/       # Data access
-└── service/          # Business logic
+| Problem | Solution |
+|---------|----------|
+| Borrow checker error | Draw ownership diagram. Consider `Rc`/`Arc` or restructure. |
+| Lifetime error | Start with `'static` or owned types, loosen later. |
+| Trait bound error | Check required traits. Consider `dyn Trait` or generics. |
+| Async borrow issues | Use `Arc` for shared state, channels for communication. |
 
-tests/
-├── integration/      # Integration tests
-└── common/           # Test utilities
-```
+## Related Skills
 
-## Common Conventions
-
-- Use `Result` and `?` for error handling
-- Prefer `&str` over `String` in function parameters
-- Use `impl Trait` for return types when possible
-- Document public APIs with `///` comments
-- Use `#[must_use]` for functions with important return values
-- Avoid `unwrap()` in library code
+- `tdd` - Test-first development workflow
+- `reviewer` - Uses cargo clippy/audit for validation
+- `cpp` - Similar systems programming concepts

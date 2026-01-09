@@ -108,8 +108,8 @@ main() {
         service="test"
         echo -e "${BLUE}[INFO]${NC} Test mode: ${YELLOW}github${NC} (curl one-liner, needs SSH keys)"
 
-        # Check if SSH keys exist
-        if [ ! -f "$HOME/.ssh/id_ed25519" ] && [ ! -f "$HOME/.ssh/id_rsa" ]; then
+        # Check if SSH keys exist (any private key file)
+        if ! ls "$HOME/.ssh/"*[!.pub] >/dev/null 2>&1; then
             echo -e "${RED}[ERROR]${NC} No SSH keys found in ~/.ssh/"
             echo -e "${YELLOW}GitHub test mode requires SSH keys for cloning${NC}"
             exit 1
