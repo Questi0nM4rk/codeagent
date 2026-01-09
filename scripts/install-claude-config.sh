@@ -16,6 +16,7 @@ NC=${NC:-'\033[0m'}
 
 # Configuration
 FORCE=${CODEAGENT_FORCE:-false}
+AUTO_YES=${CODEAGENT_AUTO_YES:-false}
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 CLAUDE_DIR="$HOME/.claude"
 SOURCE_DIR="$INSTALL_DIR/framework"
@@ -335,10 +336,16 @@ install_skills() {
     local skipped=0
     local failed=0
 
-    # Read skills from registry
+    # Read skills from registry OR directory fallback
+    local use_registry=false
     if [ -f "$REGISTRY_FILE" ]; then
-        local skill_count=$(jq '.skills | length' "$REGISTRY_FILE")
+        local skill_count=$(jq '.skills | length' "$REGISTRY_FILE" 2>/dev/null || echo "0")
+        if [ "$skill_count" -gt 0 ]; then
+            use_registry=true
+        fi
+    fi
 
+    if [ "$use_registry" = "true" ]; then
         for ((i=0; i<skill_count; i++)); do
             local skill_name=$(jq -r ".skills[$i].name" "$REGISTRY_FILE")
             local skill_source=$(jq -r ".skills[$i].source" "$REGISTRY_FILE")
@@ -371,8 +378,10 @@ install_skills() {
 
             ((installed++)) || true
         done
-    else
-        # Fallback: install from directory structure
+    fi
+
+    # Fallback: install from directory structure if registry is empty or missing
+    if [ "$use_registry" = "false" ]; then
         for skill_dir in "$SOURCE_DIR/skills"/*/; do
             if [ -d "$skill_dir" ]; then
                 local skill_name=$(basename "$skill_dir")
@@ -592,8 +601,48 @@ install_agents() {
     local skipped=0
     local failed=0
 
-    # Install from directory (agents don't have registry entries yet)
-    for agent_file in "$SOURCE_DIR/agents"/*.md; do
+    # Read agents from registry OR directory fallback
+    local use_registry=false
+    if [ -f "$REGISTRY_FILE" ]; then
+        local agent_count=$(jq '.agents | length' "$REGISTRY_FILE" 2>/dev/null || echo "0")
+        if [ "$agent_count" -gt 0 ]; then
+            use_registry=true
+        fi
+    fi
+
+    if [ "$use_registry" = "true" ]; then
+        for ((i=0; i<agent_count; i++)); do
+            local agent_name=$(jq -r ".agents[$i].name" "$REGISTRY_FILE")
+            local agent_source=$(jq -r ".agents[$i].source" "$REGISTRY_FILE")
+            local source_path="$INSTALL_DIR/$agent_source"
+            local target_path="$CLAUDE_DIR/agents/$agent_name.md"
+
+            if [ -f "$target_path" ] && [ "$FORCE" != "true" ]; then
+                if diff -q "$source_path" "$target_path" > /dev/null 2>&1; then
+                    ((skipped++)) || true
+                    continue
+                fi
+            fi
+
+            cp "$source_path" "$target_path" 2>/dev/null || {
+                log_error "Failed to copy agent: $agent_name"
+                ((failed++)) || true
+                continue
+            }
+
+            if ! validate_agent "$target_path" > /dev/null 2>&1; then
+                log_error "Agent validation failed: $agent_name"
+                ((failed++)) || true
+                continue
+            fi
+
+            ((installed++)) || true
+        done
+    fi
+
+    # Fallback: install from directory structure if registry is empty or missing
+    if [ "$use_registry" = "false" ]; then
+        for agent_file in "$SOURCE_DIR/agents"/*.md; do
         if [ -f "$agent_file" ]; then
             local agent_name=$(basename "$agent_file" .md)
             local target_path="$CLAUDE_DIR/agents/$agent_name.md"
@@ -619,7 +668,8 @@ install_agents() {
 
             ((installed++)) || true
         fi
-    done
+        done
+    fi
 
     if [ $installed -gt 0 ]; then
         log_success "Installed $installed agents"
@@ -801,6 +851,15 @@ prompt_user_choice() {
     [ -n "$EXISTING_HOOKS" ] && echo "  - ~/.claude/hooks/ ($EXISTING_HOOKS hooks)"
     [ -n "$EXISTING_AGENTS" ] && echo "  - ~/.claude/agents/ ($EXISTING_AGENTS agents)"
     echo ""
+
+    # Auto-accept if -y flag passed or running non-interactively
+    if [ "$AUTO_YES" = "true" ] || [ ! -t 0 ]; then
+        log_info "Auto-accepting: backup existing and install CodeAgent config"
+        INSTALL_MODE="fresh"
+        create_backup
+        return
+    fi
+
     echo "Options:"
     echo "  1) Backup existing and install CodeAgent config (recommended)"
     echo "  2) Merge (keep existing, add CodeAgent additions)"

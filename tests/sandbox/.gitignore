@@ -1,0 +1,5 @@
+# Test results
+results/
+
+# Docker build artifacts
+.docker-build-*

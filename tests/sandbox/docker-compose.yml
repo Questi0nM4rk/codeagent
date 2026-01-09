@@ -1,0 +1,62 @@
+# CodeAgent Test Sandbox
+# Run: docker compose run --rm test
+# Or:  ./test.sh [scenario]
+
+services:
+  test:
+    build:
+      context: ../..
+      dockerfile: tests/sandbox/Dockerfile
+    container_name: codeagent-test-sandbox
+    # Use mock docker (no actual daemon needed)
+    environment:
+      - HOME=/home/testuser
+      - TERM=xterm-256color
+      - VERBOSE=${VERBOSE:-false}
+      # Use local copy mode (don't try to clone from GitHub)
+      - CODEAGENT_REPO=https://github.com/YOUR_USERNAME/codeagent.git
+      # Fake API keys to skip interactive prompts during testing
+      - OPENAI_API_KEY=sk-test-fake-key-for-testing
+      - GITHUB_TOKEN=ghp_test_fake_token
+      - TAVILY_API_KEY=tvly-test-fake-key
+    # Mount source as read-only for live testing during development
+    # Comment out to use COPY in Dockerfile for isolated tests
+    volumes:
+      - ../..:/home/testuser/codeagent-source:ro
+    # Default: run all tests
+    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "${TEST_SCENARIO:-all}"]
+    # Prevent OOM on large test suites
+    mem_limit: 2g
+    # No network needed for most tests
+    network_mode: none
+
+  # Interactive shell for debugging
+  shell:
+    build:
+      context: ../..
+      dockerfile: tests/sandbox/Dockerfile
+    container_name: codeagent-test-shell
+    environment:
+      - HOME=/home/testuser
+      - TERM=xterm-256color
+    volumes:
+      - ../..:/home/testuser/codeagent-source:ro
+    command: ["/bin/bash"]
+    stdin_open: true
+    tty: true
+    mem_limit: 2g
+    network_mode: none
+
+  # Source validation only (fast)
+  lint:
+    build:
+      context: ../..
+      dockerfile: tests/sandbox/Dockerfile
+    container_name: codeagent-test-lint
+    environment:
+      - HOME=/home/testuser
+    volumes:
+      - ../..:/home/testuser/codeagent-source:ro
+    command: ["/home/testuser/codeagent-source/tests/sandbox/run-tests.sh", "source"]
+    mem_limit: 1g
+    network_mode: none

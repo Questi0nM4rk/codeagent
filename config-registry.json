@@ -1,41 +1,51 @@
 {
   "version": "1.0",
-  "skills": [
+  "skills": [],
+  "agents": [
     {
       "name": "researcher",
       "description": "Memory-first context gathering",
-      "source": "framework/skills/researcher",
-      "files": ["SKILL.md"]
+      "source": "framework/agents/researcher.md"
     },
     {
       "name": "architect",
       "description": "Tree-of-Thought solution design",
-      "source": "framework/skills/architect",
-      "files": ["SKILL.md"]
+      "source": "framework/agents/architect.md"
     },
     {
       "name": "orchestrator",
       "description": "Parallel execution analysis",
-      "source": "framework/skills/orchestrator",
-      "files": ["SKILL.md"]
+      "source": "framework/agents/orchestrator.md"
     },
     {
       "name": "implementer",
       "description": "Strict TDD workflow",
-      "source": "framework/skills/implementer",
-      "files": ["SKILL.md"]
+      "source": "framework/agents/implementer.md"
     },
     {
       "name": "reviewer",
       "description": "External validation",
-      "source": "framework/skills/reviewer",
-      "files": ["SKILL.md"]
+      "source": "framework/agents/reviewer.md"
     },
     {
       "name": "learner",
       "description": "Pattern extraction",
-      "source": "framework/skills/learner",
-      "files": ["SKILL.md"]
+      "source": "framework/agents/learner.md"
+    },
+    {
+      "name": "memory-writer",
+      "description": "Letta memory management",
+      "source": "framework/agents/memory-writer.md"
+    },
+    {
+      "name": "indexer",
+      "description": "Code graph indexing",
+      "source": "framework/agents/indexer.md"
+    },
+    {
+      "name": "validator",
+      "description": "External tool validation",
+      "source": "framework/agents/validator.md"
     }
   ],
   "commands": [

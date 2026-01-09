@@ -79,6 +79,34 @@ check_command() {
     fi
 }
 
+# Install Claude Code CLI from Anthropic's official installer
+install_claude_cli() {
+    log_info "Installing Claude Code CLI..."
+
+    if command -v claude &> /dev/null; then
+        log_success "Claude Code CLI already installed"
+        return 0
+    fi
+
+    # Use Anthropic's official installer
+    if curl -fsSL https://claude.ai/install.sh | bash; then
+        # Add to PATH for current session
+        export PATH="$HOME/.claude/bin:$PATH"
+
+        if command -v claude &> /dev/null; then
+            log_success "Claude Code CLI installed successfully"
+            return 0
+        else
+            log_warn "Claude Code CLI installed but not in PATH - restart your shell"
+            return 0
+        fi
+    else
+        log_warn "Failed to install Claude Code CLI - you can install it manually later"
+        log_info "Visit: https://claude.ai/code"
+        return 1
+    fi
+}
+
 # ============================================
 # Requirement Checks
 # ============================================
@@ -103,8 +131,13 @@ check_requirements() {
         failed=true
     fi
 
-    # Optional but recommended
-    check_command claude "Claude Code CLI" false
+    # Install Claude Code CLI if not found
+    if ! command -v claude &> /dev/null; then
+        log_info "Claude Code CLI not found - installing..."
+        install_claude_cli || log_warn "Continuing without Claude CLI"
+    else
+        log_success "Claude Code CLI found"
+    fi
 
     if [ "$failed" = true ]; then
         echo ""
@@ -130,10 +163,23 @@ install_codeagent() {
     # Clone or update
     if [ -d "$INSTALL_DIR" ]; then
         log_info "Updating existing installation..."
-        cd "$INSTALL_DIR"
 
-        # Check if this is a git repo
-        if [ -d ".git" ]; then
+        # Local install mode - copy files
+        if [ "$local_install" = true ]; then
+            log_info "Updating from local source..."
+            local script_dir
+            script_dir="$(cd "$(dirname "$0")" && pwd)"
+            # Sync local files (exclude .git, venv, and data)
+            rsync -av --exclude='.git' --exclude='venv' --exclude='data' \
+                "$script_dir"/ "$INSTALL_DIR"/ 2>/dev/null || \
+                cp -r "$script_dir"/* "$INSTALL_DIR"/ 2>/dev/null || {
+                    log_error "Failed to update local files"
+                    exit 1
+                }
+            log_success "Updated from local source"
+        # Git mode
+        elif [ -d "$INSTALL_DIR/.git" ]; then
+            cd "$INSTALL_DIR"
             if [ "$force_reinstall" = true ]; then
                 # Force mode: discard all local changes and reset to remote
                 log_warn "Force mode: discarding local changes in $INSTALL_DIR..."
@@ -157,14 +203,17 @@ install_codeagent() {
         fi
     else
         log_info "Cloning repository..."
-        if [ "$REPO_URL" = "https://github.com/YOUR_USERNAME/codeagent.git" ]; then
+        if [ "$local_install" = true ] || [ "$REPO_URL" = "https://github.com/YOUR_USERNAME/codeagent.git" ]; then
             # Local install mode (development)
             log_info "Running in local development mode..."
+            local script_dir
+            script_dir="$(cd "$(dirname "$0")" && pwd)"
             mkdir -p "$INSTALL_DIR"
-            cp -r "$(dirname "$0")"/* "$INSTALL_DIR/" 2>/dev/null || {
+            cp -r "$script_dir"/* "$INSTALL_DIR/" 2>/dev/null || {
                 log_error "Failed to copy files. Run from the codeagent directory."
                 exit 1
             }
+            log_success "Copied local files to $INSTALL_DIR"
         else
             git clone "$REPO_URL" "$INSTALL_DIR"
         fi
@@ -276,6 +325,7 @@ setup_global_config() {
     # Export variables for sub-script
     export CODEAGENT_HOME="$INSTALL_DIR"
     export CODEAGENT_FORCE="${CODEAGENT_FORCE_REINSTALL:-false}"
+    export CODEAGENT_AUTO_YES="${CODEAGENT_AUTO_YES:-false}"
     export RED GREEN YELLOW BLUE CYAN NC
 
     # Call the dedicated config installer
@@ -380,6 +430,15 @@ ENVHEADER
         if [ -n "${!key_name}" ]; then
             set_env_key "$key_name" "${!key_name}"
             log_success "$key_name: copied from environment"
+            return
+        fi
+
+        # Skip interactive prompt if non-interactive mode
+        if [ "$auto_yes" = "true" ] || [ ! -t 0 ]; then
+            if [ "$required" = "required" ]; then
+                set_env_key "$key_name" "REPLACE_WITH_YOUR_KEY"
+                log_warn "$key_name: placeholder added - run 'codeagent-config store $key_name <value>' to set it"
+            fi
             return
         fi
 
@@ -643,6 +702,7 @@ main() {
     local force_reinstall=false
     local reset_data=false
     local auto_yes=false
+    local local_install=false
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -663,6 +723,10 @@ main() {
                 auto_yes=true
                 shift
                 ;;
+            --local)
+                local_install=true
+                shift
+                ;;
             -h|--help)
                 echo "CodeAgent Installer"
                 echo ""
@@ -672,7 +736,8 @@ main() {
                 echo "  --no-docker    Skip Docker container setup"
                 echo "  --force, -f    Force reinstall MCPs and recreate containers (preserves data)"
                 echo "  --reset        Delete ALL data (Letta agents, memories, Neo4j graph)"
-                echo "  -y, --yes      Auto-accept prompts (not fully implemented)"
+                echo "  -y, --yes      Auto-accept prompts (backup existing config)"
+                echo "  --local        Install from local source (development mode)"
                 echo "  -h, --help     Show this help message"
                 echo ""
                 echo "Data Preservation:"
@@ -716,6 +781,11 @@ main() {
     check_requirements
     install_codeagent
     configure_shell
+
+    # Pass auto-yes to sub-scripts
+    if [ "$auto_yes" = "true" ]; then
+        export CODEAGENT_AUTO_YES=true
+    fi
     setup_global_config
     setup_api_keys
 
