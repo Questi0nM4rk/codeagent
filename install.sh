@@ -199,7 +199,22 @@ install_codeagent() {
                 }
             fi
         else
-            log_warn "$INSTALL_DIR exists but is not a git repo"
+            # Not a git repo - check if we're running from source directory
+            local script_dir
+            script_dir="$(cd "$(dirname "$0")" && pwd)"
+            if [ -f "$script_dir/install.sh" ] && [ -d "$script_dir/mcps" ]; then
+                log_info "$INSTALL_DIR is not a git repo, syncing from local source..."
+                rsync -av --exclude='.git' --exclude='venv' --exclude='data' --exclude='memory' \
+                    "$script_dir"/ "$INSTALL_DIR"/ 2>/dev/null || \
+                    cp -r "$script_dir"/* "$INSTALL_DIR"/ 2>/dev/null || {
+                        log_error "Failed to sync files from local source"
+                        exit 1
+                    }
+                log_success "Synced from local source"
+            else
+                log_warn "$INSTALL_DIR exists but is not a git repo"
+                log_warn "Run installer from source directory to update files"
+            fi
         fi
     else
         log_info "Cloning repository..."
