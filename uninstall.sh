@@ -51,7 +51,8 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${BLUE}Removing Docker volumes...${NC}"
-    docker volume rm codeagent_qdrant_data codeagent_letta_data 2>/dev/null || true
+    docker volume rm codeagent_qdrant_data 2>/dev/null || true
+    rm -rf "$HOME/.codeagent/memory" 2>/dev/null || true
     echo -e "${GREEN}✓${NC} Volumes removed"
 else
     echo -e "${YELLOW}○${NC} Volumes preserved"
@@ -74,7 +75,7 @@ if command -v claude &> /dev/null; then
     claude mcp remove context7 2>/dev/null || true
     claude mcp remove code-execution 2>/dev/null || true
     claude mcp remove reflection 2>/dev/null || true
-    claude mcp remove letta 2>/dev/null || true
+    claude mcp remove amem 2>/dev/null || true
     claude mcp remove tavily 2>/dev/null || true
     claude mcp remove figma 2>/dev/null || true
     claude mcp remove supabase 2>/dev/null || true

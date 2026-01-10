@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Context gatherer that queries memory and codebase before implementation. Use when you need to understand existing patterns, find similar code, or gather requirements context.
-tools: Read, Glob, Grep, mcp__letta__*, mcp__reflection__retrieve_episodes, mcp__context7__*, mcp__code-execution__run_python
+tools: Read, Glob, Grep, mcp__amem__*, mcp__reflection__retrieve_episodes, mcp__context7__*, mcp__code-execution__run_python
 model: opus
 skills: frontend, dotnet, rust, cpp, python, lua, bash, postgresql, supabase, external-services
 ---
@@ -30,9 +30,9 @@ mcp__reflection__get_reflection_history:
   task="[task description]"
   limit=5
 
-# Query Letta for similar implementations
-mcp__letta__prompt_agent: "Find similar past implementations for [task]"
-mcp__letta__list_passages: Search archival memory
+# Query A-MEM for similar implementations
+mcp__amem__search_memory: query="[task]", k=5
+mcp__amem__list_memories: limit=10, project="[project-name]"
 
 # Query reflection memory for lessons learned
 mcp__reflection__retrieve_episodes: task="[current task]", include_successes=true
@@ -62,18 +62,18 @@ mcp__context7__query-docs: libraryId="[id]", query="[topic]"
 
 ### 4. Large Query Filtering (code-execution sandbox)
 
-When Letta queries return too many results, filter in sandbox:
+When A-MEM queries return too many results, filter in sandbox:
 
 ```python
 mcp__code-execution__run_python(
     code='''
-passages = mcp_letta.list_passages(search="[topic]")
-relevant = [p for p in passages if "[keyword]" in p.text][:5]
-print(f"Found {len(relevant)} relevant passages")
-for p in relevant:
-    print(f"- {p.text[:100]}...")
+memories = mcp_amem.search_memory(query="[topic]", k=20)
+relevant = [m for m in memories if "[keyword]" in m.content][:5]
+print(f"Found {len(relevant)} relevant memories")
+for m in relevant:
+    print(f"- {m.content[:100]}...")
 ''',
-    servers=["letta"]
+    servers=["amem"]
 )
 ```
 

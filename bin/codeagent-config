@@ -280,7 +280,7 @@ ENVHEADER
 
     echo ""
     echo -e "${BLUE}Required:${NC}"
-    configure_key "OPENAI_API_KEY" "needed for Letta memory (~\$4/month)" "required" "sk-..."
+    configure_key "OPENAI_API_KEY" "needed for A-MEM metadata generation (~\$0.01/month)" "required" "sk-..."
 
     echo ""
     echo -e "${BLUE}Optional:${NC}"

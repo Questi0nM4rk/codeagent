@@ -24,7 +24,7 @@ Main Claude (Orchestrator)
       │
       ├─► researcher agent (opus)
       │       skills: [domain skills based on file types]
-      │       → Queries Letta, codebase, context7
+      │       → Queries A-MEM, codebase, context7
       │       → Returns: context summary, confidence score
       │
       ├─► architect agent (opus)
@@ -43,7 +43,7 @@ Main Claude (Orchestrator)
 
 ```markdown
 Research Priority:
-1. Query Letta for similar past implementations
+1. Query A-MEM for similar past implementations
 2. Analyze codebase for patterns and conventions (Grep/Glob/Read)
 3. Only if needed: Context7 for docs, external research
 
@@ -163,11 +163,11 @@ Ready for /implement (will auto-parallelize)
 | Estimated speedup < 30% | SEQUENTIAL | Overhead not worth it |
 | All subtasks fully isolated | PARALLEL | Safe to proceed |
 
-## Letta Integration
+## A-MEM Integration
 
-The planning pipeline uses Letta memory throughout:
+The planning pipeline uses A-MEM memory throughout:
 
-**Researcher agent queries Letta for:**
+**Researcher agent queries A-MEM for:**
 - Past similar designs (avoids reinventing)
 - Project-specific constraints and conventions
 - Previous architecture decisions
@@ -181,10 +181,12 @@ The planning pipeline uses Letta memory throughout:
 - Past parallelization decisions
 - Known file conflict patterns
 
+A-MEM automatically links related memories and evolves existing context.
+
 ## Notes
 
 - Always run /scan before first /plan in a project
 - /plan stores its output in memory for /implement to use
 - Use `--deep` for complex investigative tasks
 - If confidence < 7, the plan will recommend human review
-- Architecture decisions are stored in Letta for future reference
+- Architecture decisions are stored in A-MEM for future reference

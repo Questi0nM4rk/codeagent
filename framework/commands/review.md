@@ -173,25 +173,25 @@ Additional deep checks:
 - [ ] Auth bypass attempts
 - [ ] Input validation complete
 
-## Letta Integration
+## A-MEM Integration
 
-The reviewer agent uses Letta memory:
+The reviewer agent uses A-MEM memory:
 
 **Before reviewing:**
-- Queries Letta for common issues in this codebase
+- Queries A-MEM for common issues in this codebase
 - Checks for known code smell patterns
 - References established review standards
 
 **After review:**
 - Stores significant issue patterns found
-- Updates review knowledge base for future reference
+- A-MEM automatically links to related patterns
 
 ## Post-Review
 
 On APPROVED:
 - Learner agent automatically extracts patterns
 - Stores success episode in reflection memory
-- Updates Letta with new patterns
+- Updates A-MEM with new patterns (auto-links to existing)
 
 On CHANGES REQUIRED:
 - Fix listed issues

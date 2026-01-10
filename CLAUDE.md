@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**CodeAgent** is a research-backed autonomous coding framework for Claude Code. It transforms Claude Code into an accuracy-optimized system with persistent memory, structured reasoning, and TDD enforcement.
+**CodeAgent** is a research-backed autonomous coding framework for Claude Code. Transforms Claude into an accuracy-optimized system with persistent memory, structured reasoning, and TDD enforcement.
 
-**Core thesis**: Never guess. Accuracy over speed. Memory-first intelligence backed by 1,400+ academic papers.
+**Core thesis**: Never guess. Accuracy over speed. Memory-first intelligence.
 
 ## Development Commands
 
@@ -14,18 +14,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Validate shell scripts
 shellcheck install.sh bin/* framework/hooks/*.sh
 
-# Test custom MCP servers
-~/.codeagent/venv/bin/python -m pytest mcps/reflection-mcp/
+# Test reflection MCP
+cd mcps/reflection-mcp && ~/.codeagent/venv/bin/python -m pytest
 
-# Infrastructure
-codeagent start        # Start Qdrant, Letta
-codeagent stop         # Stop services
-codeagent status       # Health check
-codeagent config       # Configure API keys
+# Run reflection MCP standalone (for debugging)
+~/.codeagent/venv/bin/python -m reflection_mcp
 
-# Manual Docker control
+# Infrastructure control
+codeagent start              # Start Qdrant
+codeagent stop               # Stop services
+codeagent status             # Health check (-w for watch, -r auto-restart)
+codeagent logs -f qdrant     # Follow Qdrant logs
+
+# Docker direct access
 cd infrastructure && docker compose up -d
 docker compose logs -f
+
+# Install/reinstall
+./install.sh                 # First install
+./install.sh --force         # Force reinstall (keeps data)
+./install.sh --reset         # Delete ALL data and reinstall
+./install.sh --local         # Development mode (copy from local)
 ```
 
 ## Architecture
@@ -36,182 +45,258 @@ User: /scan → /plan → /implement → /integrate → /review
         ┌──────────────────┼──────────────────┐
         ▼                  ▼                  ▼
    Skills Layer      MCP Servers      Infrastructure
-   (6 agents)       (reflection)       (Qdrant, Letta)
+   (6 agents)    (reflection, amem)    (Qdrant, local)
 ```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `bin/codeagent` | Main CLI dispatcher (routes to subcommands) |
+| `bin/codeagent-init` | Project initialization (creates .claude/, docs/) |
+| `install.sh` | Full installation with dependency checks |
+| `mcps/install-mcps.sh` | MCP registration to Claude Code |
+| `mcps/mcp-registry.json` | MCP server definitions and install status |
+| `infrastructure/docker-compose.yml` | Qdrant service definitions |
+| `framework/settings.json.template` | Claude Code settings template |
 
 ### Source Directories
 
 | Directory | Purpose |
 |-----------|---------|
-| `bin/` | CLI entry points (codeagent, codeagent-start, etc.) |
-| `framework/skills/` | 6 skill definitions (SKILL.md each) |
-| `framework/commands/` | 5 slash command specs |
-| `framework/hooks/` | Pre/post tool hooks (7 scripts) |
+| `bin/` | CLI entry points (8 executables) |
+| `framework/skills/` | Skill definitions (SKILL.md each) |
+| `framework/commands/` | Slash command specs (5 commands) |
+| `framework/hooks/` | Pre/post tool hooks (8 scripts) |
+| `framework/agents/` | Agent definitions for Task tool |
 | `mcps/` | Custom Python MCP servers + installers |
-| `infrastructure/` | Docker Compose for Qdrant, Letta |
-| `templates/` | CLAUDE.md templates by language (cpp, dotnet, lua, rust) |
-| `scripts/` | Utility scripts (backup, restore, health-check) |
+| `mcps/installers/` | Per-MCP installation scripts |
+| `infrastructure/` | Docker Compose for Qdrant |
+| `templates/` | CLAUDE.md templates by language |
+| `scripts/` | Utility scripts (backup, restore, update) |
 | `Docs/` | Vision, implementation docs, workflows |
 
-## Research Foundation
+## MCP System
 
-The custom MCPs implement findings from academic research:
+### Registry Structure (mcps/mcp-registry.json)
 
-| MCP | Backend | Research | Improvement |
-|-----|---------|----------|-------------|
-| `reflection` | Qdrant | Reflexion (NeurIPS 2023) | +21% on code tasks |
+Defines all MCPs with their installation requirements:
+- `type`: npm | python | docker | builtin
+- `package`: Package name for installation
+- `args`: Command-line arguments
+- `env`: Required environment variables
+- `dependencies`: Other MCPs that must be running
 
-**Letta memory**: 74% LOCOMO accuracy vs basic persistence.
+### Custom MCP: Reflection
 
-## Letta Memory System
+**Location**: `mcps/reflection-mcp/src/reflection_mcp/server.py`
 
-### Two Memory Systems: Letta vs Reflection
+Implements Reflexion pattern (NeurIPS 2023) for +21% accuracy on code tasks.
 
-| Aspect | **Reflection** | **Letta** |
+**Tools provided:**
+- `reflect_on_failure` - Analyze failures, generate structured insights
+- `store_episode` - Store learning episode in episodic memory
+- `retrieve_episodes` - Find similar past failures
+- `generate_improved_attempt` - Guidance based on past lessons
+- `mark_lesson_effective` - Track if applying lesson led to success
+- `export_lessons` - Export for learner skill integration
+
+**Data storage**: `~/.codeagent/data/reflection-episodes/`
+
+## A-MEM Memory System
+
+Brain-like memory based on NeurIPS 2025 paper "A-MEM: Agentic Memory for LLM Agents".
+
+### Two Memory Systems
+
+| Aspect | **Reflection** | **A-MEM** |
 |--------|---------------|-----------|
 | **Memory Type** | Episodic (experiences) | Semantic (knowledge) |
 | **What it stores** | Task attempts, failures, lessons | Patterns, architectures, decisions |
 | **Question it answers** | "Did this fail before?" | "What architecture do we use?" |
-| **Key feature** | Returns raw episodes | **Synthesizes** answers via LLM |
+| **Key feature** | Returns raw episodes | **Auto-links** memories, evolves over time |
+| **Scope** | Per-session/task | Global (shared across all projects) |
 
-**Simple rule:**
-- **Reflection**: Learning from mistakes ("what happened")
-- **Letta**: Project knowledge base ("what do we know")
+### A-MEM Features
 
-### Letta Tools Reference
+- **Automatic linking**: New memories connect to related existing ones (Zettelkasten-style)
+- **Memory evolution**: New information updates existing memories' context
+- **Rich metadata**: Auto-generated keywords, context, and tags
+- **Global storage**: Shared at `~/.codeagent/memory/` across all projects
 
-**Query memory:**
-```
-mcp__letta__prompt_agent(agent_id, message)  # Ask Letta, get synthesized answer
-mcp__letta__list_passages(agent_id, search)  # Search archival memory
-```
+### A-MEM Tools Reference
 
-**Store memory:**
-```
-mcp__letta__create_passage(agent_id, text)   # Add to archival memory
-```
+```python
+# Store (auto-generates keywords, context, tags, links)
+mcp__amem__store_memory(content="JaCore uses repository pattern", tags=["architecture"])
 
-**Update memory:**
-```
-mcp__letta__modify_passage(agent_id, memory_id, update_data)
-mcp__letta__delete_passage(agent_id, memory_id)
-```
+# Search (semantic similarity + link traversal)
+mcp__amem__search_memory(query="data access patterns", k=5)
 
-### Memory Format Standard
+# Read specific memory
+mcp__amem__read_memory(memory_id="mem_0001")
 
-Store memories in this format for consistent retrieval:
+# List and filter
+mcp__amem__list_memories(limit=10, project="JaCore")
 
-```markdown
-## [Category]: [Name]
-Type: architectural|code|testing|process
-Context: [when this applies]
-Files: [reference files]
+# Update (triggers re-evolution of links)
+mcp__amem__update_memory(memory_id="mem_0001", content="Updated content")
 
-### Description
-[What this pattern/decision solves]
-
-### Implementation
-[How it was done]
-
-### Rationale
-[Why this approach was chosen]
+# Statistics
+mcp__amem__get_memory_stats()
 ```
 
-### When to Use Each
+### Memory Evolution Example
 
-| Scenario | Use | Why |
-|----------|-----|-----|
-| Test failed, need similar failures | **Reflection** | Track failure chains |
-| Need to know project architecture | **Letta** | Get synthesized answer |
-| Track that approach X didn't work | **Reflection** | Episodic memory |
-| Store a design decision | **Letta** | Project knowledge |
-| Check if I tried this before | **Reflection** | Task-specific history |
-| Ask "why did we choose X?" | **Letta** | Contextual answer |
+```
+# Store first memory
+store_memory("JaCore uses repository pattern")
+→ Keywords: [repository, pattern, JaCore]
 
-### Project Agent ID
+# Store related memory
+store_memory("Unit of Work wraps repository transactions")
+→ Keywords: [unit, work, repository, transactions]
+→ Auto-linked to "repository pattern" memory
+→ Original memory's context updated to include "transactions"
+```
 
-Each project has a Letta agent ID stored in `.claude/letta-agent`.
-Use this ID for all Letta calls in that project.
+### Project Tagging
+
+Use `project:NAME` tag to filter memories by project:
+```python
+store_memory("...", tags=["project:JaCore", "architecture"])
+search_memory("...", project="JaCore")  # Filters by project tag
+```
 
 ## Skills System
 
-Each skill has a SKILL.md in `framework/skills/`:
+Skills auto-activate based on file types and context. Each skill has a SKILL.md in `framework/skills/`:
 
 | Skill | Thinking | Behavior |
 |-------|----------|----------|
-| researcher | `think hard` | Query Letta → external. Say "I don't know" if unfound |
+| researcher | `think hard` | Query A-MEM → external. Say "I don't know" if unfound |
 | architect | `ultrathink` | Generate 3+ approaches, present tradeoffs |
 | orchestrator | `think harder` | Analyze isolation boundaries. Only parallelize truly isolated tasks |
 | implementer | `think hard` | TDD loop: test → fail → code → pass. Max 3 attempts before escalate |
 | reviewer | `think hard` | External tools only. Never self-validate |
-| learner | `think` | Extract patterns post-implementation, store in Letta |
+| learner | `think` | Extract patterns post-implementation, store in A-MEM |
 
-## Parallelization Logic
+## Slash Commands
 
-From research: multi-agent fragments context for *shared* code.
-
-```
-PARALLEL (spawn subagents):        SEQUENTIAL (single agent):
-  Agent A: UserController            Agent A: UserController (uses JwtService)
-  Agent B: ProductController         Agent B: AuthController (modifies JwtService)
-  → No shared code                   → Shared dependency
-```
-
-The orchestrator skill detects this automatically.
+| Command | Agent Pipeline | Output |
+|---------|---------------|--------|
+| `/scan` | indexer → memory-writer | Knowledge base in A-MEM |
+| `/plan "task"` | researcher → architect → orchestrator | Plan file with parallel decision |
+| `/implement` | implementer (parallel if plan allows) | TDD commits, test results |
+| `/integrate` | validator | Merged work, consistency check |
+| `/review` | reviewer | External tool validation |
 
 ## Hooks
 
-| Hook | Trigger | Purpose |
-|------|---------|---------|
-| `dangerous-command-check` | PreToolUse:Bash | Block rm -rf /, fork bombs, disk writes |
-| `pre-commit` | PreToolUse:Bash(git commit) | Pre-commit validations |
-| `pre-push` | PreToolUse:Bash(git push) | Security + tests before push |
-| `auto-format` | PostToolUse:Write/Edit | Format by file type |
-| `session-end` | Stop | Cleanup temp files |
+| Hook | Trigger | File |
+|------|---------|------|
+| `dangerous-command-check` | PreToolUse:Bash | `framework/hooks/dangerous-command-check.sh` |
+| `pre-commit` | PreToolUse:Bash(git commit) | `framework/hooks/pre-commit.sh` |
+| `pre-push` | PreToolUse:Bash(git push) | `framework/hooks/pre-push.sh` |
+| `auto-format` | PostToolUse:Write/Edit | `framework/hooks/auto-format.sh` |
+| `index-file` | PostToolUse:Write/Edit | `framework/hooks/index-file.sh` |
+| `session-end` | Stop | `framework/hooks/session-end.sh` |
 
 ## Infrastructure
 
-| Service | Version | Ports | Notes |
-|---------|---------|-------|-------|
-| Qdrant | v1.16.2 | 6333, 6334 | Scalar quantization |
-| Letta | 0.16.0 | 8283 | Depends on Qdrant health |
+| Service | Version | Ports | Health Check |
+|---------|---------|-------|--------------|
+| Qdrant | v1.16.2 | 6333, 6334 | TCP socket (no curl in image) |
 
-Health checks use Python-based testing (curl not available in Letta container).
+**Resource limits** (docker-compose.yml):
+- Qdrant: 2GB RAM, 2 CPUs
+
+**Local storage:**
+- A-MEM: `~/.codeagent/memory/` (ChromaDB/JSON)
 
 ## Installation Structure
 
-### Global (install.sh)
+### Global (~/.codeagent/)
+
+```
+~/.codeagent/
+├── bin/                # CLI executables (symlinked to ~/.local/bin/)
+├── mcps/               # Custom MCP servers
+├── infrastructure/     # docker-compose.yml
+├── venv/               # Python virtualenv for MCPs
+├── data/               # Persistent data (reflection episodes)
+└── .env                # API keys (OPENAI_API_KEY, GITHUB_TOKEN, TAVILY_API_KEY)
+```
+
+### Claude Config (~/.claude/)
 
 ```
 ~/.claude/
-├── CLAUDE.md           # Personality + instructions
-├── settings.json       # Permissions, hooks
-├── skills/             # Symlinks to framework/skills/
-├── commands/           # Symlinks to framework/commands/
-└── hooks/              # Hook scripts
-
-~/.codeagent/
-├── bin/                # CLI tools (6 executables)
-├── mcps/               # Custom MCP servers
-├── templates/          # CLAUDE.md templates
-├── infrastructure/     # docker-compose.yml
-└── .env                # API keys
+├── CLAUDE.md           # Global personality + instructions
+├── settings.json       # Permissions, hooks, MCP config
+├── skills/             # Skill definitions
+├── commands/           # Slash command specs
+├── hooks/              # Hook scripts
+└── agents/             # Agent definitions for Task tool
 ```
 
-### Per-Project (codeagent init)
+### Per-Project
 
+Created by `codeagent init`:
 ```
 project/
 ├── .claude/
-│   └── letta-agent     # Letta agent ID for project memory
+│   └── project-info    # Project metadata for memory tagging
 └── docs/
     └── decisions/      # Architecture decision records
+```
+
+## Troubleshooting
+
+### Services not starting
+```bash
+codeagent status              # Check health
+docker logs codeagent-qdrant  # View Qdrant logs
+codeagent stop && codeagent start  # Restart
+```
+
+### Qdrant unhealthy
+```bash
+# Check container status
+docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant
+
+# Restart with fresh containers
+cd ~/.codeagent/infrastructure && docker compose down && docker compose up -d
+```
+
+### A-MEM issues
+```bash
+# Check storage directory
+ls -la ~/.codeagent/memory/
+
+# Test MCP
+~/.codeagent/venv/bin/python -c "from amem_mcp import server; print('OK')"
+```
+
+### MCP not connecting
+```bash
+claude mcp list                           # Check registered MCPs
+~/.codeagent/mcps/install-mcps.sh --force # Force reinstall all MCPs
+```
+
+### Reflection MCP issues
+```bash
+# Test standalone
+~/.codeagent/venv/bin/python -c "from reflection_mcp import server; print('OK')"
+
+# Check data directory
+ls -la ~/.codeagent/data/reflection-episodes/
 ```
 
 ## Design Principles
 
 1. **Partner, not assistant** - Challenge assumptions, push back on bad ideas
-2. **Memory-first** - Query Letta → external. Never fabricate
+2. **Memory-first** - Query A-MEM → external. Never fabricate
 3. **External validation** - Never self-review. Use linters, tests, security scanners
 4. **TDD always** - Test → fail → code → pass
 5. **Accuracy over speed** - Spend tokens for correctness

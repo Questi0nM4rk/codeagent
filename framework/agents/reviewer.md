@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Code reviewer that uses external validation tools only. Use for validating implementations, checking for issues, and ensuring quality before merge.
-tools: Read, Glob, Grep, Bash, mcp__letta__*, mcp__reflection__*, mcp__code-execution__run_python
+tools: Read, Glob, Grep, Bash, mcp__amem__*, mcp__reflection__*, mcp__code-execution__run_python
 model: opus
 skills: reviewer, frontend, dotnet, rust, cpp, python, lua, bash, external-services
 ---
@@ -18,11 +18,11 @@ You are a senior code reviewer who NEVER self-validates. You run actual tools an
 
 Before running validators:
 
-**1. Query Letta for common issues in this codebase:**
+**1. Query A-MEM for common issues in this codebase:**
 ```
-mcp__letta__list_passages:
-  agent_id="[from .claude/letta-agent]"
-  search="review issue common"
+mcp__amem__search_memory:
+  query="review issue common patterns"
+  k=10
 ```
 
 Note patterns to watch for during this review.
@@ -203,13 +203,12 @@ mcp__reflection__store_episode:
   tags=["review", "[language]", "[outcome]"]
 ```
 
-**2. Store significant patterns in Letta (semantic - reusable knowledge):**
+**2. Store significant patterns in A-MEM (semantic - reusable knowledge):**
 
 If you found a significant or recurring issue pattern:
 ```
-mcp__letta__create_passage:
-  agent_id="[from .claude/letta-agent]"
-  text="## Review: [issue pattern name]
+mcp__amem__store_memory:
+  content="## Review: [issue pattern name]
 Type: process
 Context: [when this applies]
 
@@ -224,9 +223,11 @@ Context: [when this applies]
 
 ### Example
 [Code that exhibited this issue]"
+  tags=["project:[name]", "review", "pattern"]
 ```
 
 This builds a knowledge base of review patterns for future reference.
+A-MEM will automatically link this to related patterns and evolve existing memories.
 
 ## Rules
 

@@ -9,7 +9,7 @@ Research-backed autonomous coding framework for Claude Code. Transforms Claude C
 
 | Feature | Description |
 |---------|-------------|
-| **Memory System** | Letta-powered memory with 74% LOCOMO accuracy |
+| **Memory System** | A-MEM brain-like memory with auto-linking and evolution |
 | **Tree-of-Thought** | Explore multiple approaches before committing |
 | **TDD Enforcement** | Strict test-first development workflow |
 | **MCP-First Integration** | External services via code-execution sandbox |
@@ -47,11 +47,11 @@ cd /your/project && codeagent init   # Initialize project
 ### CLI Commands
 
 ```bash
-codeagent start     # Start Qdrant, Letta
+codeagent start     # Start Qdrant
 codeagent stop      # Stop services
 codeagent status    # Health check all services
 codeagent config    # Configure API keys
-codeagent init      # Initialize project (creates Letta agent)
+codeagent init      # Initialize project for memory tagging
 ```
 
 ### Slash Commands
@@ -93,21 +93,18 @@ Six specialized skills auto-activate based on context:
 | MCP | Backend | Purpose |
 |-----|---------|---------|
 | `reflection` | Qdrant | Self-reflection and episodic memory (+21% accuracy) |
-
-### Infrastructure MCPs
-
-| MCP | Purpose |
-|-----|---------|
-| `letta` | Advanced memory system (74% LOCOMO accuracy) |
+| `amem` | ChromaDB | Brain-like memory with auto-linking and evolution |
 
 ## Infrastructure
 
 | Service | Version | Ports | Purpose |
 |---------|---------|-------|---------|
-| Qdrant | v1.16.2 | 6333, 6334 | Vector embeddings |
-| Letta | 0.16.0 | 8283 | Memory system |
+| Qdrant | v1.16.2 | 6333, 6334 | Vector embeddings (reflection MCP) |
 
-**Embedding Cost**: ~$4/month (OpenAI `text-embedding-3-small`)
+**Local Storage:**
+- A-MEM: `~/.codeagent/memory/` (brain-like memory)
+
+**Embedding Cost**: ~$0.0001 per memory (gpt-4o-mini for metadata generation)
 
 ## Configuration
 
@@ -123,7 +120,7 @@ Keys stored in `~/.codeagent/.env`:
 
 | Key | Required | Purpose |
 |-----|----------|---------|
-| `OPENAI_API_KEY` | Yes | Letta embeddings |
+| `OPENAI_API_KEY` | Yes | A-MEM metadata generation |
 | `GITHUB_TOKEN` | No | GitHub MCP - repository, issues, PRs, code search |
 | `TAVILY_API_KEY` | No | Web research |
 
@@ -167,7 +164,7 @@ Created by `codeagent init`:
 ```
 project/
 ├── .claude/
-│   └── letta-agent     # Letta agent ID
+│   └── project-info    # Project metadata for memory tagging
 └── docs/
     └── decisions/      # Architecture decision records
 ```
@@ -231,7 +228,7 @@ CodeAgent treats Claude as a **thinking partner**, not an assistant:
 
 ```bash
 codeagent status              # Check health
-docker logs codeagent-letta   # View logs
+docker logs codeagent-qdrant  # View logs
 codeagent stop && codeagent start
 ```
 
@@ -242,17 +239,17 @@ claude mcp list
 ~/.codeagent/mcps/install-mcps.sh --force
 ```
 
-### Letta connection errors
+### A-MEM issues
 
 ```bash
-# Verify API key
+# Check storage directory
+ls -la ~/.codeagent/memory/
+
+# Test MCP
+~/.codeagent/venv/bin/python -c "from amem_mcp import server; print('OK')"
+
+# Verify API key (needed for metadata generation)
 grep OPENAI_API_KEY ~/.codeagent/.env
-
-# Reconfigure if missing
-codeagent config
-
-# Restart services
-cd ~/.codeagent/infrastructure && docker compose restart letta
 ```
 
 ## License

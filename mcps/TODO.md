@@ -6,8 +6,8 @@ Based on `mcp-registry.json`:
 
 | Category | MCP | Status | Notes |
 |----------|-----|--------|-------|
-| **Docker** | qdrant | ✅ Implemented | Vector store for Letta |
-| **Docker** | letta | ✅ Implemented | Memory system (74% LOCOMO) |
+| **Docker** | qdrant | ✅ Implemented | Vector store for reflection |
+| **Python** | amem | ✅ Implemented | Brain-like memory (NeurIPS 2025 A-MEM) |
 | **NPM** | context7 | ✅ Ready | Library documentation |
 | **NPM Optional** | tavily | ✅ Ready | Requires TAVILY_API_KEY |
 | **NPM Optional** | figma | ✅ Ready | Requires FIGMA_API_KEY |
@@ -18,6 +18,7 @@ Based on `mcp-registry.json`:
 ### Removed MCPs
 | MCP | Reason |
 |-----|--------|
+| letta | Replaced with A-MEM (simpler, brain-like memory) |
 | neo4j | code-graph removed - unreliable, not core to workflow |
 | code-graph | Removed - AST parsing unreliable, wasted MCP calls |
 | tot | Removed - Single use (architect only), replaced by ultrathink |
@@ -49,11 +50,11 @@ Based on `mcp-registry.json`:
 
 ## Testing Checklist
 
-- [x] Letta health: `curl http://localhost:8283/v1/health/`
-- [x] Letta MCP: `claude mcp list | grep letta`
+- [x] A-MEM storage: `ls ~/.codeagent/memory/`
+- [x] A-MEM MCP: `claude mcp list | grep amem`
 - [x] Context7 MCP: `claude mcp list | grep context7`
 - [x] Reflection MCP: `claude mcp list | grep reflection`
-- [x] Docker MCPs installer: `install-docker-mcps.sh` (Qdrant + Letta healthy)
+- [x] Qdrant health: `curl http://localhost:6333/healthz`
 - [ ] Fresh install: `rm -rf ~/.codeagent && ./install.sh`
 - [ ] Update install: `./install.sh` (should skip existing)
 - [ ] No-docker mode: `./install.sh --no-docker`
@@ -63,9 +64,9 @@ Based on `mcp-registry.json`:
 ## Known Issues
 
 1. **npx cold start**: First run of npx MCPs downloads packages (~5-10s delay)
-2. **Docker startup**: Letta container needs ~30s to initialize
+2. **Docker startup**: Qdrant container needs ~10s to initialize
 3. **Qdrant health check**: No curl in image, must use TCP port check
-4. **OPENAI_API_KEY warning**: Shown if not configured, but Letta still starts
+4. **OPENAI_API_KEY warning**: Shown if not configured, A-MEM metadata generation will fail
 
 ---
 
@@ -74,5 +75,5 @@ Based on `mcp-registry.json`:
 - [MCP Protocol Spec](https://spec.modelcontextprotocol.io/)
 - [Claude Code MCP Docs](https://docs.anthropic.com/en/docs/claude-code/mcp)
 - [FastMCP Library](https://github.com/jlowin/fastmcp)
-- [Letta Documentation](https://docs.letta.com/)
+- [A-MEM Paper (NeurIPS 2025)](https://github.com/agiresearch/A-mem)
 - [Reflexion Paper (NeurIPS 2023)](https://arxiv.org/abs/2303.11366)

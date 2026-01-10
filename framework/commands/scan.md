@@ -26,7 +26,7 @@ Main Claude (Orchestrator)
       │       → Returns: files scanned, patterns found
       │
       ├─► memory-writer agent
-      │       → Stores patterns and architecture in Letta
+      │       → Stores patterns and architecture in A-MEM
       │       → Returns: memories created
       │
       └─► validator agent
@@ -39,7 +39,7 @@ Main Claude (Orchestrator)
 
 1. **Discovery**: Find all source files matching your language stack
 2. **Pattern Extraction**: Identify coding conventions and patterns
-3. **Memory Storage**: Store in Letta for semantic retrieval
+3. **Memory Storage**: Store in A-MEM for semantic retrieval
 4. **Validation**: Verify stored data matches actual code
 
 ## Supported Languages
@@ -116,5 +116,5 @@ Main Claude (Orchestrator)
 - First scan may take a few minutes for large codebases
 - Subsequent scans are incremental (only changed files)
 - Use `--full` to force complete rescan
-- Knowledge persists across Claude Code sessions via Letta
+- Knowledge persists across Claude Code sessions via A-MEM
 - Validator agent corrects errors automatically

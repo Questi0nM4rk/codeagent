@@ -6,7 +6,8 @@ Isolated Docker-in-Docker (dind) testing environment for CodeAgent installation.
 
 All tests run inside Docker-in-Docker. This means:
 - **Your host Docker is never touched**
-- Infrastructure containers (Qdrant, Letta) run inside dind
+- Infrastructure containers (Qdrant) run inside dind
+- A-MEM uses local file storage (no container needed)
 - When tests finish, `./test.sh --clean` removes everything
 - No leftover containers, volumes, or configuration on your system
 
@@ -60,9 +61,9 @@ cd tests/sandbox
 │  │  │    inside dind, NOT on host             │   ││
 │  │  └─────────────────────────────────────────┘   ││
 │  │                                                 ││
-│  │  ┌───────┐ ┌───────┐                           ││
-│  │  │Qdrant │ │ Letta │  ← Inside dind            ││
-│  │  └───────┘ └───────┘                           ││
+│  │  ┌───────┐ ┌─────────────┐                     ││
+│  │  │Qdrant │ │ A-MEM local │  ← Inside dind      ││
+│  │  └───────┘ └─────────────┘                     ││
 │  └─────────────────────────────────────────────────┘│
 │                                                      │
 │  docker compose down -v → Everything gone            │
@@ -89,9 +90,10 @@ cd tests/sandbox
    - Python MCPs importable
 
 4. **Infrastructure**
-   - Qdrant, Letta containers start
+   - Qdrant container starts
+   - A-MEM uses local file storage
    - Services become healthy
-   - Letta MCP registered after startup
+   - A-MEM MCP registered
    - Clean shutdown
 
 5. **CLI Commands**

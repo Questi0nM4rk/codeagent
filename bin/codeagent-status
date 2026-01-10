@@ -162,10 +162,10 @@ get_container_stats() {
 output_json() {
     local timestamp=$(date -Iseconds)
     local qdrant_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_running")
-    local letta_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "not_running")
-
     local qdrant_stats=$(get_container_stats codeagent-qdrant)
-    local letta_stats=$(get_container_stats codeagent-letta)
+    local amem_storage="$HOME/.codeagent/memory"
+    local amem_status="available"
+    [ -d "$amem_storage" ] && amem_status="active"
 
     cat <<EOF
 {
@@ -176,10 +176,9 @@ output_json() {
       "cpu": "$(echo $qdrant_stats | cut -d',' -f1)",
       "memory": "$(echo $qdrant_stats | cut -d',' -f2)"
     },
-    "letta": {
-      "status": "$letta_status",
-      "cpu": "$(echo $letta_stats | cut -d',' -f1)",
-      "memory": "$(echo $letta_stats | cut -d',' -f2)"
+    "amem": {
+      "status": "$amem_status",
+      "storage": "$amem_storage"
     }
   }
 }
@@ -209,7 +208,17 @@ run_status_check() {
     echo -e "${BLUE}Infrastructure Services${NC}"
     echo "───────────────────────"
     check_service "Qdrant (vectors)" "codeagent-qdrant" "http://localhost:6333"
-    check_service "Letta (memory)" "codeagent-letta" "http://localhost:8283"
+
+    # A-MEM uses local storage, not Docker
+    local amem_storage="$HOME/.codeagent/memory"
+    if [ -d "$amem_storage" ]; then
+        local mem_count=$(find "$amem_storage" -name "*.json" 2>/dev/null | wc -l || echo "0")
+        echo -e "${GREEN}✓${NC} A-MEM (memory): active"
+        echo -e "    └─ ${BLUE}$amem_storage${NC} ($mem_count files)"
+    else
+        echo -e "${YELLOW}○${NC} A-MEM (memory): not initialized"
+        echo -e "    └─ ${BLUE}$amem_storage${NC} (will be created on first use)"
+    fi
 
     echo ""
     echo -e "${BLUE}Environment${NC}"

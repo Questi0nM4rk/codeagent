@@ -34,12 +34,12 @@
     },
     {
       "name": "memory-writer",
-      "description": "Letta memory management",
+      "description": "A-MEM memory management",
       "source": "framework/agents/memory-writer.md"
     },
     {
       "name": "indexer",
-      "description": "Codebase structure analysis and Letta storage",
+      "description": "Codebase structure analysis and A-MEM storage",
       "source": "framework/agents/indexer.md"
     },
     {

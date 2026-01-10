@@ -12,22 +12,6 @@
       },
       "dependencies": [],
       "mcp_registration": false
-    },
-    {
-      "name": "letta",
-      "container": "codeagent-letta",
-      "healthcheck": {
-        "type": "http",
-        "url": "http://localhost:8283/v1/health/"
-      },
-      "dependencies": ["qdrant"],
-      "mcp_registration": true,
-      "mcp_name": "letta",
-      "mcp_command": "npx",
-      "mcp_args": ["-y", "letta-mcp-server"],
-      "mcp_env": {
-        "LETTA_BASE_URL": "http://localhost:8283"
-      }
     }
   ],
   "npm": [
@@ -95,6 +79,13 @@
       "module": "reflection_mcp.server",
       "path": "mcps/reflection-mcp",
       "required": true
+    },
+    {
+      "name": "amem",
+      "module": "amem_mcp.server",
+      "path": "mcps/amem-mcp",
+      "required": true,
+      "description": "Brain-like memory with automatic linking and evolution (A-MEM)"
     }
   ]
 }

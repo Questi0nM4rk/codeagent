@@ -1,28 +1,19 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Docker MCP Installer
-# Orchestrates Docker-based services and MCPs
+# Orchestrates Docker-based services (Qdrant for reflection)
 # ============================================
 #
-# This installer delegates to specialized installers:
-#   - install-letta.sh: Handles Letta + Qdrant infrastructure
+# Note: A-MEM uses local file storage, not Docker.
+# This installer only handles Qdrant for the reflection MCP.
 
 set -e
 
 # Configuration (inherited from parent)
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 FORCE="${CODEAGENT_FORCE:-false}"
-RESET="${CODEAGENT_RESET:-false}"  # Delete data volumes (agents, memories)
 NO_DOCKER="${CODEAGENT_NO_DOCKER:-false}"
-REGISTRY_FILE="${CODEAGENT_REGISTRY:-$INSTALL_DIR/mcps/mcp-registry.json}"
 DOCKER_COMPOSE_FILE="$INSTALL_DIR/infrastructure/docker-compose.yml"
-# Installers directory - use script's location first, then fall back to install dir
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALLERS_DIR="$SCRIPT_DIR"
-# Fall back to install dir if script dir doesn't have the installer
-if [ ! -f "$INSTALLERS_DIR/install-letta.sh" ]; then
-    INSTALLERS_DIR="$INSTALL_DIR/mcps/installers"
-fi
 
 # Colors
 RED='\033[0;31m'
@@ -48,49 +39,55 @@ log_error() { echo -e "${RED}[DOCKER]${NC} $1"; }
 # Helper Functions
 # ============================================
 
-# Check if MCP is already registered
-mcp_exists() {
-    local name="$1"
-    claude mcp list 2>/dev/null | grep -q "^$name:" 2>/dev/null
-}
-
 # Health check - TCP port
 health_check_tcp() {
     local port=$1
     timeout 2 bash -c "</dev/tcp/localhost/$port" 2>/dev/null
 }
 
-# Health check - HTTP endpoint
-health_check_http() {
-    local url=$1
-    curl -sf --max-time 5 "$url" > /dev/null 2>&1
+# Wait for Qdrant to be healthy
+wait_for_qdrant() {
+    local timeout=60
+    local elapsed=0
+    log_info "Waiting for Qdrant to be healthy (timeout: ${timeout}s)..."
+
+    while [ $elapsed -lt $timeout ]; do
+        if health_check_tcp 6333; then
+            log_success "Qdrant is healthy"
+            return 0
+        fi
+        sleep 5
+        elapsed=$((elapsed + 5))
+        echo -n "."
+    done
+
+    echo ""
+    log_error "Qdrant failed health check after ${timeout}s"
+    return 1
 }
 
 # ============================================
-# Install Letta (Delegated)
+# Start Qdrant
 # ============================================
-install_letta() {
-    local letta_installer="$INSTALLERS_DIR/install-letta.sh"
-
-    if [ ! -f "$letta_installer" ]; then
-        log_error "Letta installer not found: $letta_installer"
-        ((DOCKER_FAILED++)) || true
+start_qdrant() {
+    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+        log_error "docker-compose.yml not found: $DOCKER_COMPOSE_FILE"
         return 1
     fi
 
-    log_info "Delegating to Letta installer..."
+    local compose_dir=$(dirname "$DOCKER_COMPOSE_FILE")
+    cd "$compose_dir"
 
-    # Export environment for sub-installer
-    export CODEAGENT_HOME="$INSTALL_DIR"
-    export CODEAGENT_FORCE="$FORCE"
-    export CODEAGENT_RESET="$RESET"
+    log_info "Starting Qdrant..."
+    docker compose up -d qdrant
 
-    # Run Letta installer
-    if bash "$letta_installer"; then
+    if wait_for_qdrant; then
         ((DOCKER_INSTALLED++)) || true
+        cd - > /dev/null
         return 0
     else
         ((DOCKER_FAILED++)) || true
+        cd - > /dev/null
         return 1
     fi
 }
@@ -111,20 +108,11 @@ check_infrastructure_status() {
         all_ok=false
     fi
 
-    # Check Letta
-    if health_check_http "http://localhost:8283/v1/health/"; then
-        log_success "  letta: healthy"
+    # Check A-MEM storage (local, not Docker)
+    if [ -d "$HOME/.codeagent/memory" ]; then
+        log_success "  A-MEM storage: ready"
     else
-        log_warn "  letta: not responding"
-        all_ok=false
-    fi
-
-    # Check Letta MCP
-    if mcp_exists "letta"; then
-        log_success "  letta MCP: registered"
-    else
-        log_warn "  letta MCP: not registered"
-        all_ok=false
+        log_info "  A-MEM storage: will be created on first use"
     fi
 
     if [ "$all_ok" = "true" ]; then
@@ -166,8 +154,8 @@ main() {
 
     log_info "Installing Docker-based MCPs..."
 
-    # Install Letta (handles Qdrant dependency + MCP registration)
-    install_letta
+    # Start Qdrant (for reflection MCP)
+    start_qdrant
 
     echo ""
     check_infrastructure_status || true

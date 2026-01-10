@@ -3,9 +3,14 @@
 # CodeAgent Init
 # Initialize CodeAgent infrastructure for a project
 #
-# This ONLY sets up infrastructure:
-# - Letta agent (per-project memory)
-# - docs/decisions/ directory
+# This sets up per-project structure:
+# - .claude/ directory
+# - docs/decisions/ for architecture records
+#
+# Memory system:
+# - A-MEM uses global storage at ~/.codeagent/memory/
+# - Shared across all projects (brain-like memory)
+# - No per-project agent needed
 #
 # CLAUDE.md is created by /init slash command
 # Global config (skills, commands, settings) is
@@ -15,6 +20,7 @@
 set -e
 
 PROJECT_DIR="$(pwd)"
+INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 
 # Colors
 RED='\033[0;31m'
@@ -38,7 +44,7 @@ if [ ! -d "$HOME/.claude/skills" ] || [ ! -d "$HOME/.claude/commands" ]; then
     echo ""
 fi
 
-# Detect project type (used for Letta agent description)
+# Detect project type (for documentation)
 detect_project_type() {
     if ls *.csproj *.sln 2>/dev/null | head -1 > /dev/null; then
         echo "dotnet"
@@ -48,13 +54,18 @@ detect_project_type() {
         echo "cpp"
     elif [ -f "init.lua" ] || ls *.rockspec 2>/dev/null | head -1 > /dev/null; then
         echo "lua"
+    elif [ -f "package.json" ]; then
+        echo "node"
+    elif [ -f "pyproject.toml" ] || [ -f "setup.py" ]; then
+        echo "python"
     else
         echo "generic"
     fi
 }
 
 PROJECT_TYPE=$(detect_project_type)
-echo -e "${BLUE}Detected project type:${NC} $PROJECT_TYPE"
+PROJECT_NAME=$(basename "$PROJECT_DIR")
+echo -e "${BLUE}Project:${NC} $PROJECT_NAME ($PROJECT_TYPE)"
 echo ""
 
 # ============================================
@@ -63,83 +74,42 @@ echo ""
 
 echo -e "${BLUE}Creating project structure...${NC}"
 mkdir -p .claude docs/decisions
-echo -e "  ${GREEN}✓${NC} Created .claude/ (for letta-agent ID)"
+
+# Store project info for memory tagging
+cat > .claude/project-info <<EOF
+PROJECT_NAME=$PROJECT_NAME
+PROJECT_TYPE=$PROJECT_TYPE
+PROJECT_PATH=$PROJECT_DIR
+INITIALIZED=$(date -Iseconds)
+EOF
+
+echo -e "  ${GREEN}✓${NC} Created .claude/"
 echo -e "  ${GREEN}✓${NC} Created docs/decisions/ (architecture decision records)"
+echo -e "  ${GREEN}✓${NC} Saved project info to .claude/project-info"
 
 # ============================================
-# Create Letta Agent for Project
+# Initialize A-MEM Memory Storage
 # ============================================
 
 echo ""
-echo -e "${BLUE}Setting up Letta memory agent...${NC}"
+echo -e "${BLUE}Checking A-MEM memory system...${NC}"
 
-# Get project name from directory (sanitize for agent name)
-PROJECT_NAME=$(basename "$PROJECT_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-
-# Check if Letta is running
-if curl -sf http://localhost:8283/v1/health/ > /dev/null 2>&1; then
-    # Check if agent already exists
-    EXISTING_AGENT=$(curl -sfL "http://localhost:8283/v1/agents/" 2>/dev/null | grep -o "\"name\":\"codeagent-$PROJECT_NAME\"" || true)
-
-    if [ -n "$EXISTING_AGENT" ]; then
-        echo -e "  ${GREEN}✓${NC} Letta agent already exists: codeagent-$PROJECT_NAME"
-
-        # Try to get and store agent ID
-        AGENT_ID=$(curl -sfL "http://localhost:8283/v1/agents/" 2>/dev/null | grep -o "\"id\":\"[^\"]*\",\"name\":\"codeagent-$PROJECT_NAME\"" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || true)
-        if [ -n "$AGENT_ID" ]; then
-            echo "$AGENT_ID" > .claude/letta-agent
-        fi
-    else
-        # Create agent via Letta API
-        # Letta 0.16+ requires model and embedding parameters
-        API_ERROR=""
-        AGENT_RESPONSE=$(curl -sL -X POST "http://localhost:8283/v1/agents/" \
-            -H "Content-Type: application/json" \
-            -d "{
-                \"name\": \"codeagent-$PROJECT_NAME\",
-                \"description\": \"CodeAgent memory for $PROJECT_NAME ($PROJECT_TYPE project)\",
-                \"model\": \"openai/gpt-4o-mini\",
-                \"embedding\": \"openai/text-embedding-3-small\",
-                \"memory_blocks\": [
-                    {\"label\": \"persona\", \"value\": \"I am a coding assistant for $PROJECT_NAME. I remember context, patterns, and decisions across sessions. I help with $PROJECT_TYPE development.\"},
-                    {\"label\": \"human\", \"value\": \"Developer working on $PROJECT_NAME\"}
-                ]
-            }" 2>&1)
-
-        # Check for error in response
-        if echo "$AGENT_RESPONSE" | grep -q '"detail"'; then
-            API_ERROR=$(echo "$AGENT_RESPONSE" | grep -o '"detail":"[^"]*"' | cut -d'"' -f4)
-            if [ -z "$API_ERROR" ]; then
-                # Try extracting from array format
-                API_ERROR=$(echo "$AGENT_RESPONSE" | grep -o '"msg":"[^"]*"' | head -1 | cut -d'"' -f4)
-            fi
-        fi
-
-        if [ -n "$API_ERROR" ]; then
-            echo -e "  ${RED}✗${NC} Letta API error: $API_ERROR"
-            echo -e "  ${YELLOW}!${NC} Check 'docker logs codeagent-letta' for details"
-        elif echo "$AGENT_RESPONSE" | grep -q '"id"'; then
-            AGENT_ID=$(echo "$AGENT_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-            if [ -n "$AGENT_ID" ]; then
-                echo -e "  ${GREEN}✓${NC} Created Letta agent: codeagent-$PROJECT_NAME"
-                echo -e "  ${CYAN}Agent ID:${NC} $AGENT_ID"
-
-                # Store agent ID in .claude/letta-agent for reference
-                echo "$AGENT_ID" > .claude/letta-agent
-                echo -e "  ${GREEN}✓${NC} Saved agent ID to .claude/letta-agent"
-            else
-                echo -e "  ${YELLOW}!${NC} Agent created but could not parse ID"
-                echo -e "  ${YELLOW}Response:${NC} $AGENT_RESPONSE"
-            fi
-        else
-            echo -e "  ${YELLOW}!${NC} Unexpected response from Letta API"
-            echo -e "  ${YELLOW}Response:${NC} $AGENT_RESPONSE"
-        fi
-    fi
+MEMORY_DIR="$INSTALL_DIR/memory"
+if [ -d "$MEMORY_DIR" ]; then
+    # Count existing memories
+    MEM_COUNT=$(find "$MEMORY_DIR" -name "*.json" 2>/dev/null | wc -l || echo "0")
+    echo -e "  ${GREEN}✓${NC} A-MEM storage: $MEMORY_DIR"
+    echo -e "  ${CYAN}   ${NC}Existing memories: $MEM_COUNT files"
 else
-    echo -e "  ${YELLOW}!${NC} Letta not running - skipping agent creation"
-    echo -e "  ${YELLOW}!${NC} Run 'codeagent start' then 'codeagent init' to create agent"
+    mkdir -p "$MEMORY_DIR"
+    echo -e "  ${GREEN}✓${NC} Created A-MEM storage: $MEMORY_DIR"
 fi
+
+echo ""
+echo -e "${CYAN}Memory system:${NC}"
+echo "  A-MEM uses global storage shared across all projects."
+echo "  Memories automatically link and evolve over time."
+echo "  Use 'project:$PROJECT_NAME' tag to filter project-specific memories."
 
 # ============================================
 # Summary
@@ -152,14 +122,14 @@ echo -e "${GREEN}╚════════════════════
 echo ""
 echo "Created:"
 echo "  ├── .claude/"
-echo "  │   └── letta-agent        (Letta agent ID for this project)"
+echo "  │   └── project-info        (project metadata for memory tagging)"
 echo "  └── docs/"
-echo "      └── decisions/         (architecture decision records)"
+echo "      └── decisions/          (architecture decision records)"
 echo ""
-echo "Global config (from ~/.claude/):"
-echo "  ├── skills/                (researcher, architect, implementer, ...)"
-echo "  ├── commands/              (/scan, /plan, /implement, /init, /review)"
-echo "  └── settings.json          (permissions, hooks, MCPs)"
+echo "Global resources:"
+echo "  ├── ~/.claude/skills/       (researcher, architect, implementer, ...)"
+echo "  ├── ~/.claude/commands/     (/scan, /plan, /implement, /review)"
+echo "  └── ~/.codeagent/memory/    (A-MEM brain-like memory - shared)"
 echo ""
 echo -e "${CYAN}Next steps in Claude Code:${NC}"
 echo "  /init              Create CLAUDE.md for this project"

@@ -1,5 +1,5 @@
 services:
-  # Vector store for embeddings (used by Letta)
+  # Vector store for embeddings (used by reflection MCP)
   # Optimized for OpenAI embeddings (1536 dimensions)
   qdrant:
     image: qdrant/qdrant:v1.16.2
@@ -32,39 +32,8 @@ services:
           memory: 512M
     restart: unless-stopped
 
-  # Memory system with 74% LOCOMO accuracy
-  letta:
-    image: letta/letta:0.16.0
-    container_name: codeagent-letta
-    ports:
-      - "8283:8283"
-    env_file:
-      - path: ../.env  # Reads ~/.codeagent/.env
-        required: false
-    environment:
-      # Vector store connection
-      LETTA_QDRANT_HOST: qdrant
-      LETTA_QDRANT_PORT: 6333
-    volumes:
-      - codeagent_letta_data:/root/.letta
-    depends_on:
-      qdrant:
-        condition: service_healthy
-    healthcheck:
-      # Letta health endpoint - using python since curl not in container
-      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8283/v1/health/')\" || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-          cpus: '4'
-        reservations:
-          memory: 1G
-    restart: unless-stopped
+  # A-MEM memory uses local ChromaDB (no Docker service needed)
+  # Storage at: ~/.codeagent/memory/
 
   # Local embeddings (optional - saves API costs, requires GPU)
   # Uncomment to use local embeddings instead of OpenAI
@@ -96,8 +65,7 @@ services:
 volumes:
   codeagent_qdrant_data:
     name: codeagent_qdrant_data
-  codeagent_letta_data:
-    name: codeagent_letta_data
+  # A-MEM uses local file storage at ~/.codeagent/memory/
   # Uncomment if using Ollama
   # codeagent_ollama_data:
   #   name: codeagent_ollama_data

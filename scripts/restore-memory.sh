@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Memory Restore
-# Restore Letta and Qdrant data from backup
+# Restore A-MEM and Qdrant data from backup
 # ============================================
 
 set -e
@@ -58,14 +58,15 @@ echo -e "${BLUE}Stopping services...${NC}"
 cd "$INSTALL_DIR/infrastructure"
 docker compose down
 
-# Restore Letta
-if [ -d "$TEMP_DIR/$BACKUP_DIR/letta" ]; then
-    echo -e "${BLUE}Restoring Letta...${NC}"
-    docker volume rm codeagent_letta_data 2>/dev/null || true
-    docker volume create codeagent_letta_data
-    docker run --rm -v codeagent_letta_data:/root/.letta -v "$TEMP_DIR/$BACKUP_DIR/letta:/backup" \
-        alpine sh -c "cp -r /backup/* /root/.letta/" 2>/dev/null || true
-    echo -e "${GREEN}✓${NC} Letta restored"
+# Restore A-MEM (local storage)
+if [ -d "$TEMP_DIR/$BACKUP_DIR/amem" ]; then
+    echo -e "${BLUE}Restoring A-MEM...${NC}"
+    AMEM_DIR="$INSTALL_DIR/memory"
+    rm -rf "$AMEM_DIR" 2>/dev/null || true
+    mkdir -p "$AMEM_DIR"
+    cp -r "$TEMP_DIR/$BACKUP_DIR/amem/"* "$AMEM_DIR/" 2>/dev/null || true
+    MEM_COUNT=$(find "$AMEM_DIR" -name "*.json" 2>/dev/null | wc -l || echo "0")
+    echo -e "${GREEN}✓${NC} A-MEM restored ($MEM_COUNT memories)"
 fi
 
 # Restore Qdrant

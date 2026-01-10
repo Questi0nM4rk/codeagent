@@ -25,7 +25,7 @@ GITHUB_RAW_URL="https://raw.githubusercontent.com/Questi0nM4rk/codeagent/main/in
 
 # Note: Infrastructure tests are skipped in dind because:
 # - Services started inside dind are only accessible from within dind
-# - Test container can't reach localhost:6333 (Qdrant) or localhost:8283 (Letta)
+# - Test container can't reach localhost:6333 (Qdrant)
 # - Use ./test.sh --shell to manually test infrastructure if needed
 SKIP_INFRA="${SKIP_INFRA:-true}"
 
@@ -358,7 +358,7 @@ test_infrastructure() {
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
     # Start infrastructure
-    log_info "Starting CodeAgent infrastructure (Qdrant, Letta)..."
+    log_info "Starting CodeAgent infrastructure (Qdrant)..."
 
     if timeout 180 "$HOME/.local/bin/codeagent-start" 2>&1 | tee /tmp/infra-start.log; then
         assert_pass "Infrastructure startup command succeeded"
@@ -380,11 +380,7 @@ test_infrastructure() {
         assert_fail "Container not running: qdrant"
     fi
 
-    if docker ps --format '{{.Names}}' | grep -q "codeagent-letta"; then
-        assert_pass "Container running: letta"
-    else
-        assert_fail "Container not running: letta"
-    fi
+    # A-MEM uses local storage, no container check needed
 
     # Check service health via codeagent status
     log_info "Checking service health..."
@@ -394,13 +390,13 @@ test_infrastructure() {
         log_warn "Services may not be fully healthy (checking individually)"
     fi
 
-    # Verify Letta MCP registration (requires running Letta)
-    log_info "Checking Letta MCP registration..."
+    # Verify A-MEM MCP registration
+    log_info "Checking A-MEM MCP registration..."
     local claude_json="$HOME/.claude.json"
-    if grep -q "\"letta\"" "$claude_json" 2>/dev/null; then
-        assert_pass "MCP registered: letta"
+    if grep -q "\"amem\"" "$claude_json" 2>/dev/null; then
+        assert_pass "MCP registered: amem"
     else
-        assert_fail "MCP not registered: letta"
+        assert_fail "MCP not registered: amem"
     fi
 }
 

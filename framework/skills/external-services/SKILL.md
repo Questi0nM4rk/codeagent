@@ -20,7 +20,7 @@ MCPs loaded via `servers=[]` in code-execution provide structured responses and 
 | Service | Approach | Package/CLI | Auth |
 |---------|----------|-------------|------|
 | GitHub | **MCP** | `@modelcontextprotocol/server-github` | `GITHUB_TOKEN` |
-| Letta | **MCP** | `letta-mcp-server` | Docker service |
+| A-MEM | **MCP** | `amem-mcp` | `OPENAI_API_KEY` |
 | Tavily | **MCP** | `tavily-mcp` | `TAVILY_API_KEY` |
 | Figma | **MCP** | `figma-developer-mcp` | `FIGMA_API_KEY` |
 | Supabase | **MCP** | `@supabase/mcp-server-supabase` | `SUPABASE_ACCESS_TOKEN` |
@@ -61,18 +61,18 @@ for bug in open_bugs:
 )
 ```
 
-### Letta (MCP)
+### A-MEM (MCP)
 
 ```python
 mcp__code-execution__run_python(
     code='''
-passages = mcp_letta.list_passages(search="authentication")
-relevant = [p for p in passages if "JWT" in p.text][:5]
-print(f"Found {len(relevant)} relevant passages")
-for p in relevant:
-    print(f"- {p.text[:100]}...")
+memories = mcp_amem.search_memory(query="authentication", k=5)
+relevant = [m for m in memories if "JWT" in m.content]
+print(f"Found {len(relevant)} relevant memories")
+for m in relevant:
+    print(f"- {m.content[:100]}...")
 ''',
-    servers=["letta"]
+    servers=["amem"]
 )
 ```
 

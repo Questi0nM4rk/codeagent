@@ -68,7 +68,7 @@ Verify using Grep/Read:
 
 ### Step 4: Pattern Consistency Check
 
-Query Letta:
+Query A-MEM:
 - Does Task A's code follow same patterns as Task B?
 - Any style drift between parallel implementations?
 - Naming conventions consistent?

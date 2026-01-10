@@ -54,12 +54,23 @@ echo ""
 # Check containers
 echo "Containers:"
 check_container "Qdrant" "codeagent-qdrant"
-check_container "Letta" "codeagent-letta"
 
 echo ""
 echo "Services:"
 check_http_service "Qdrant API" "http://localhost:6333/healthz"
-check_http_service "Letta API" "http://localhost:8283/v1/health/"
+
+# A-MEM uses local storage
+echo ""
+echo "A-MEM Storage:"
+AMEM_DIR="$HOME/.codeagent/memory"
+if [ -d "$AMEM_DIR" ]; then
+    MEM_COUNT=$(find "$AMEM_DIR" -name "*.json" 2>/dev/null | wc -l || echo "0")
+    echo -e "${GREEN}✓${NC} A-MEM storage: $AMEM_DIR"
+    echo -e "  Memories: $MEM_COUNT files"
+else
+    echo -e "${YELLOW}○${NC} A-MEM storage not initialized"
+    echo -e "  Will be created on first use"
+fi
 
 echo ""
 echo "Qdrant Stats:"
@@ -92,28 +103,7 @@ else
     echo -e "  ${YELLOW}○${NC} Could not retrieve Qdrant stats"
 fi
 
-echo ""
-echo "Letta Stats:"
-
-# Get Letta agents count (use -sL to follow redirects, trailing slash required)
-LETTA_AGENTS=$(curl -sL "http://localhost:8283/v1/agents/" 2>/dev/null)
-if [ $? -eq 0 ]; then
-    # Count agents (handles empty array [] gracefully)
-    AGENT_COUNT=$(echo "$LETTA_AGENTS" | grep -o '"id"' | wc -l)
-    echo -e "  Agents: $AGENT_COUNT"
-
-    # List agent names if any exist
-    if [ "$AGENT_COUNT" -gt 0 ]; then
-        for agent in $(echo "$LETTA_AGENTS" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | head -5); do
-            echo -e "  - $agent"
-        done
-        if [ "$AGENT_COUNT" -gt 5 ]; then
-            echo -e "  ... and $((AGENT_COUNT - 5)) more"
-        fi
-    fi
-else
-    echo -e "  ${YELLOW}○${NC} Could not retrieve Letta stats"
-fi
+# A-MEM stats moved to storage section above
 
 echo ""
 

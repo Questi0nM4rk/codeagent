@@ -8,7 +8,7 @@ Challenge assumptions, push back on bad ideas, provide objective technical guida
 ## Core Principles
 
 1. **Accuracy over speed** - Verify before acting, spend tokens for correctness
-2. **Memory-first** - Query Letta before external research
+2. **Memory-first** - Query A-MEM before external research
 3. **Test-first** - Always TDD: test → fail → code → pass
 4. **External validation** - Never self-review, use tools (semgrep, linters, tests)
 5. **Partner mentality** - Challenge bad ideas, suggest better approaches
@@ -56,29 +56,31 @@ CodeAgent provides enhanced capabilities through skills, commands, and MCP serve
 | Server | Purpose |
 |--------|---------|
 | reflection | Self-reflection and episodic memory |
-| letta | Long-term memory with 74% LOCOMO accuracy |
+| amem | Brain-like memory with auto-linking and evolution |
 | context7 | Up-to-date library documentation |
 
-### Letta vs Reflection Memory
+### A-MEM vs Reflection Memory
 
-| Aspect | **Reflection** | **Letta** |
+| Aspect | **Reflection** | **A-MEM** |
 |--------|---------------|-----------|
 | **Type** | Episodic (experiences) | Semantic (knowledge) |
 | **Stores** | Task attempts, failures | Patterns, architectures, decisions |
-| **Returns** | Raw episodes | **Synthesized** answers |
+| **Key Feature** | Raw episodes | **Auto-links** memories, evolves over time |
+| **Scope** | Per-session/task | Global (shared across all projects) |
 
-**Letta tools:**
-- `mcp__letta__prompt_agent(agent_id, message)` - Ask Letta, get synthesized answer
-- `mcp__letta__list_passages(agent_id, search)` - Search archival memory
-- `mcp__letta__create_passage(agent_id, text)` - Store to archival memory
+**A-MEM tools:**
+- `mcp__amem__search_memory(query, k)` - Semantic search
+- `mcp__amem__store_memory(content, tags)` - Store with auto-linking
+- `mcp__amem__list_memories(limit, project)` - List/filter memories
+- `mcp__amem__read_memory(memory_id)` - Read specific memory
 
 **When to use:**
 - **Reflection**: "Did this approach fail before?" (track failures)
-- **Letta**: "What architecture do we use?" (project knowledge)
+- **A-MEM**: "What architecture do we use?" (project knowledge)
 
 ## Workflow
 
-1. **New project**: Run `codeagent init` to create Letta agent
+1. **New project**: Run `codeagent init` to initialize project
 2. **First session**: Run `/scan` to build knowledge base
 3. **Tasks**: Use `/plan` → `/implement` → `/review`
 4. **Complex tasks**: Skills auto-activate (architect for design, orchestrator for parallelism)
@@ -86,12 +88,12 @@ CodeAgent provides enhanced capabilities through skills, commands, and MCP serve
 ## Infrastructure
 
 Start services with `codeagent start`:
-- Qdrant (localhost:6333) - Vector embeddings
-- Letta (localhost:8283) - Memory system
+- Qdrant (localhost:6333) - Vector embeddings (for reflection)
+- A-MEM (local) - Brain-like memory at ~/.codeagent/memory/
 
 ## Per-Project Setup
 
 Each project gets:
-- `.claude/letta-agent` - Letta agent ID for project memory
+- `.claude/project-info` - Project metadata for memory tagging
 - `docs/decisions/` - Architecture decision records
 - `CLAUDE.md` - Project-specific instructions (created by /init)

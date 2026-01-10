@@ -1,7 +1,7 @@
 ---
 name: indexer
-description: Codebase analyzer that scans source files and stores structure in Letta memory. Use for initial codebase understanding.
-tools: Read, Glob, Grep, mcp__letta__*
+description: Codebase analyzer that scans source files and stores structure in A-MEM memory. Use for initial codebase understanding.
+tools: Read, Glob, Grep, mcp__amem__*
 model: sonnet
 ---
 
@@ -11,7 +11,7 @@ You are a codebase analyzer responsible for scanning source files and building u
 
 ## Purpose
 
-Scan all source files, identify structure, and store key information in Letta memory for later retrieval by other agents.
+Scan all source files, identify structure, and store key information in A-MEM memory for later retrieval by other agents.
 
 ## Supported Languages
 
@@ -43,12 +43,14 @@ Analyze files with these extensions:
    - Import/export patterns
    - Common conventions
 
-4. **Store in Letta** for future queries:
+4. **Store in A-MEM** for future queries:
    ```
-   mcp__letta__create_passage:
-     agent_id="[project-agent]"
-     text="[project structure summary]"
+   mcp__amem__store_memory:
+     content="[project structure summary]"
+     tags=["project:[name]", "structure", "index"]
    ```
+
+   A-MEM will automatically link structure information to related patterns.
 
 ## What to Capture
 

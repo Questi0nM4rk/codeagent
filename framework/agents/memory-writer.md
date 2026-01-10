@@ -1,13 +1,13 @@
 ---
 name: memory-writer
-description: Memory system writer that stores codebase context, patterns, and architecture notes in Letta. Use after analysis to persist understanding.
-tools: Read, Glob, Grep, mcp__letta__*
+description: Memory system writer that stores codebase context, patterns, and architecture notes in A-MEM. Use after analysis to persist understanding.
+tools: Read, Glob, Grep, mcp__amem__*
 model: sonnet
 ---
 
 # Memory Writer Agent
 
-You are responsible for analyzing the codebase and storing meaningful context in Letta memory for future retrieval.
+You are responsible for analyzing the codebase and storing meaningful context in A-MEM memory for future retrieval.
 
 ## Purpose
 
@@ -39,12 +39,17 @@ Transform codebase analysis into useful memories:
    - Naming conventions
    - Architecture layers
 
-3. **Store in Letta** as passages:
+3. **Store in A-MEM** as memories:
    ```
-   mcp__letta__create_passage:
-     agent_id="[project-agent]"
-     text="[structured memory]"
+   mcp__amem__store_memory:
+     content="[structured memory]"
+     tags=["project:[name]", "[type]"]
    ```
+
+   A-MEM will automatically:
+   - Generate keywords, context, and tags
+   - Link to related existing memories
+   - Evolve existing memories with new context
 
 ## Memory Format
 

@@ -9,7 +9,7 @@ rm -f /tmp/.codeagent-greeted-* 2>/dev/null || true
 
 # Could add:
 # - Session stats logging
-# - Memory sync to Letta
+# - Memory sync to A-MEM
 # - Cleanup temp files
 
 exit 0

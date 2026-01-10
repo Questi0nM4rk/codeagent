@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Memory Backup
-# Backup Letta and Qdrant data
+# Backup A-MEM and Qdrant data
 # ============================================
 
 set -e
@@ -26,12 +26,16 @@ mkdir -p "$BACKUP_PATH"
 echo -e "${BLUE}Backup location:${NC} $BACKUP_PATH"
 echo ""
 
-# Backup Letta data
-echo -e "${BLUE}Backing up Letta...${NC}"
-docker cp codeagent-letta:/root/.letta "$BACKUP_PATH/letta" 2>/dev/null || {
-    echo -e "${YELLOW}○${NC} Letta backup skipped (container may not be running)"
-}
-echo -e "${GREEN}✓${NC} Letta backed up"
+# Backup A-MEM data (local storage)
+echo -e "${BLUE}Backing up A-MEM...${NC}"
+AMEM_DIR="$INSTALL_DIR/memory"
+if [ -d "$AMEM_DIR" ]; then
+    cp -r "$AMEM_DIR" "$BACKUP_PATH/amem"
+    MEM_COUNT=$(find "$BACKUP_PATH/amem" -name "*.json" 2>/dev/null | wc -l || echo "0")
+    echo -e "${GREEN}✓${NC} A-MEM backed up ($MEM_COUNT memories)"
+else
+    echo -e "${YELLOW}○${NC} A-MEM backup skipped (no memories yet)"
+fi
 
 # Backup Qdrant vectors
 echo -e "${BLUE}Backing up Qdrant...${NC}"

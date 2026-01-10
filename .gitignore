@@ -34,7 +34,9 @@ logs/
 
 # Docker volumes (local)
 infrastructure/qdrant/
-infrastructure/letta/
+
+# A-MEM local storage (memory files)
+memory/
 
 # Temporary files
 tmp/

@@ -180,20 +180,21 @@ Branch: checkpoint/[task]-[timestamp]
 [Specific information or help needed]
 ```
 
-## Letta Integration
+## A-MEM Integration
 
-The implementer agent uses Letta memory:
+The implementer agent uses A-MEM memory:
 
 **Before implementing:**
-- Queries Letta for architecture decisions from /plan
+- Queries A-MEM for architecture decisions from /plan
 - Searches for similar implementation patterns
 - Checks for project-specific conventions
 
 **After successful implementation:**
 - Stores novel patterns for future reference
-- Links implementation to architect's design decisions
+- A-MEM automatically links to architect's design decisions
 
 This ensures implementations follow established patterns and new patterns are captured for future use.
+A-MEM's automatic linking helps connect related implementations across sessions.
 
 ## Notes
 

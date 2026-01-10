@@ -23,7 +23,7 @@ usage() {
     echo "Usage: codeagent <command> [options]"
     echo ""
     echo -e "${BLUE}Infrastructure Commands:${NC}"
-    echo "  start         Start all services (Qdrant, Letta)"
+    echo "  start         Start all services (Qdrant)"
     echo "  stop          Stop all services"
     echo "  restart       Restart all services"
     echo "  status        Check service health (-w for watch, -r for auto-restart)"
@@ -38,7 +38,7 @@ usage() {
     echo ""
     echo -e "${BLUE}Maintenance Commands:${NC}"
     echo "  update        Update CodeAgent to latest version"
-    echo "  backup        Backup memory (Letta)"
+    echo "  backup        Backup memory (A-MEM)"
     echo "  restore       Restore memory from backup"
     echo "  tools         Install/check development tools (linters, formatters)"
     echo "  uninstall     Remove CodeAgent completely"
@@ -113,7 +113,7 @@ case "${1:-help}" in
                     lines="$2"
                     shift 2
                     ;;
-                qdrant|letta)
+                qdrant)
                     service="$1"
                     shift
                     ;;

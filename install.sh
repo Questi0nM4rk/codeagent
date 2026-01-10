@@ -470,7 +470,7 @@ ENVHEADER
 
     # Prompt for each key
     echo -e "${BLUE}Required:${NC}"
-    prompt_for_key "OPENAI_API_KEY" "needed for Letta memory (~\$4/month)" "required" "sk-..."
+    prompt_for_key "OPENAI_API_KEY" "needed for A-MEM metadata generation (~\$0.01/month)" "required" "sk-..."
 
     echo ""
     echo -e "${BLUE}Optional:${NC}"
@@ -527,7 +527,7 @@ start_infrastructure() {
 
     # Check if containers exist but are unhealthy - recreate them
     local needs_recreate=false
-    for container in codeagent-qdrant codeagent-letta; do
+    for container in codeagent-qdrant; do
         local status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "none")
         if [ "$status" = "unhealthy" ]; then
             log_warn "$container is unhealthy, will recreate..."
@@ -554,9 +554,8 @@ start_infrastructure() {
 
     while [ $waited -lt $max_wait ]; do
         local qdrant_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "none")
-        local letta_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "none")
 
-        if [ "$qdrant_healthy" = "healthy" ] && [ "$letta_healthy" = "healthy" ]; then
+        if [ "$qdrant_healthy" = "healthy" ]; then
             log_success "All services are healthy!"
             return 0
         fi
@@ -628,10 +627,11 @@ verify_installation() {
         all_ok=false
     fi
 
-    if docker ps | grep -q "codeagent-letta"; then
-        log_success "Letta container running"
+    # Check A-MEM storage
+    if [ -d "$HOME/.codeagent/memory" ] || mkdir -p "$HOME/.codeagent/memory"; then
+        log_success "A-MEM storage ready"
     else
-        log_warn "Letta not running"
+        log_warn "A-MEM storage not accessible"
         all_ok=false
     fi
 
@@ -726,14 +726,14 @@ main() {
                 echo "Options:"
                 echo "  --no-docker    Skip Docker container setup"
                 echo "  --force, -f    Force reinstall MCPs and recreate containers (preserves data)"
-                echo "  --reset        Delete ALL data (Letta agents, memories, vector embeddings)"
+                echo "  --reset        Delete ALL data (A-MEM memories, vector embeddings)"
                 echo "  -y, --yes      Auto-accept prompts (backup existing config)"
                 echo "  --local        Install from local source (development mode)"
                 echo "  -h, --help     Show this help message"
                 echo ""
                 echo "Data Preservation:"
-                echo "  --force        Keeps Letta agents and memories intact"
-                echo "  --reset        DELETES all Letta agents, memories, and vector embeddings"
+                echo "  --force        Keeps A-MEM memories intact"
+                echo "  --reset        DELETES all A-MEM memories and vector embeddings"
                 echo ""
                 exit 0
                 ;;
@@ -754,7 +754,7 @@ main() {
         echo ""
         log_warn "=========================================="
         log_warn "  RESET MODE: All data will be deleted!"
-        log_warn "  - Letta agents and memories"
+        log_warn "  - A-MEM memories"
         log_warn "  - Qdrant vector embeddings"
         log_warn "=========================================="
         echo ""

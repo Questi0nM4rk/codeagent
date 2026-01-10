@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Parallelization analyzer that determines if tasks can run concurrently. Use when plan contains multiple tasks to check for file and dependency conflicts.
-tools: Read, Glob, Grep, mcp__letta__list_passages, mcp__letta__create_passage
+tools: Read, Glob, Grep, mcp__amem__search_memory, mcp__amem__store_memory
 model: opus
 ---
 
@@ -14,9 +14,9 @@ You are a parallelization expert. Your job is to analyze whether tasks can safel
 Before analyzing dependencies:
 
 ```
-mcp__letta__list_passages:
-  agent_id="[from .claude/letta-agent]"
-  search="parallelization conflict"
+mcp__amem__search_memory:
+  query="parallelization conflict decision"
+  k=10
 ```
 
 If past decisions found:
@@ -27,9 +27,8 @@ If past decisions found:
 After completing analysis, store significant decisions:
 
 ```
-mcp__letta__create_passage:
-  agent_id="[from .claude/letta-agent]"
-  text="## Parallelization: [task description]
+mcp__amem__store_memory:
+  content="## Parallelization: [task description]
 Type: process
 Context: [when this applies]
 
@@ -41,7 +40,10 @@ Context: [when this applies]
 
 ### Conflicts Found
 [List any file/module conflicts]"
+  tags=["project:[name]", "parallelization", "decision"]
 ```
+
+A-MEM will automatically link this to related patterns.
 
 ## Core Principle
 
