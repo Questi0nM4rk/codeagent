@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Memory Backup
-# Backup Letta and Neo4j data
+# Backup Letta and Qdrant data
 # ============================================
 
 set -e
@@ -25,26 +25,6 @@ echo ""
 mkdir -p "$BACKUP_PATH"
 echo -e "${BLUE}Backup location:${NC} $BACKUP_PATH"
 echo ""
-
-# Check if services are running
-if ! docker ps --format '{{.Names}}' | grep -q "codeagent-neo4j"; then
-    echo -e "${YELLOW}Warning: Neo4j container not running. Starting for backup...${NC}"
-    cd "$INSTALL_DIR/infrastructure"
-    docker compose up -d neo4j
-    sleep 10
-fi
-
-# Backup Neo4j
-echo -e "${BLUE}Backing up Neo4j...${NC}"
-docker exec codeagent-neo4j neo4j-admin database dump neo4j --to-path=/data/backup 2>/dev/null || true
-docker cp codeagent-neo4j:/data/backup "$BACKUP_PATH/neo4j" 2>/dev/null || {
-    # Alternative: dump via cypher
-    echo "Using cypher export..."
-    docker exec codeagent-neo4j cypher-shell -u neo4j -p codeagent \
-        "CALL apoc.export.json.all('/data/export.json')" 2>/dev/null || true
-    docker cp codeagent-neo4j:/data/export.json "$BACKUP_PATH/neo4j_export.json" 2>/dev/null || true
-}
-echo -e "${GREEN}✓${NC} Neo4j backed up"
 
 # Backup Letta data
 echo -e "${BLUE}Backing up Letta...${NC}"

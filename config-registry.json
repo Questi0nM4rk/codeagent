@@ -39,7 +39,7 @@
     },
     {
       "name": "indexer",
-      "description": "Code graph indexing",
+      "description": "Codebase structure analysis and Letta storage",
       "source": "framework/agents/indexer.md"
     },
     {
@@ -92,14 +92,14 @@
     },
     {
       "name": "post-implement",
-      "description": "Update code graph after implementation",
+      "description": "Run post-implementation tasks",
       "source": "framework/hooks/post-implement.sh",
       "event": "PostToolUse",
       "matcher": "Write|Edit"
     },
     {
       "name": "index-file",
-      "description": "Index single file to knowledge graph",
+      "description": "Track changed files for incremental indexing",
       "source": "framework/hooks/index-file.sh",
       "event": "PostToolUse",
       "matcher": "Write"

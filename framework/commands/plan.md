@@ -24,12 +24,12 @@ Main Claude (Orchestrator)
       │
       ├─► researcher agent (opus)
       │       skills: [domain skills based on file types]
-      │       → Queries Letta, code-graph, context7
+      │       → Queries Letta, codebase, context7
       │       → Returns: context summary, confidence score
       │
       ├─► architect agent (opus)
       │       skills: [spec-driven, relevant domain skills]
-      │       → Uses ToT MCP for structured exploration
+      │       → Uses ultrathink for structured exploration
       │       → Returns: 3+ approaches with evaluation
       │
       └─► orchestrator agent (opus)
@@ -44,9 +44,8 @@ Main Claude (Orchestrator)
 ```markdown
 Research Priority:
 1. Query Letta for similar past implementations
-2. Query code-graph for affected files and dependencies
-3. Analyze codebase for patterns and conventions
-4. Only if needed: Context7 for docs, external research
+2. Analyze codebase for patterns and conventions (Grep/Glob/Read)
+3. Only if needed: Context7 for docs, external research
 
 Output: Context summary with confidence score
 ```
@@ -54,11 +53,11 @@ Output: Context summary with confidence score
 ### Phase 2: Design (architect agent)
 
 ```markdown
-Tree-of-Thought Process:
+Structured Exploration (ultrathink):
 1. Decompose into sub-problems
 2. Generate 3+ approaches per sub-problem
 3. Evaluate each: feasibility, risk, complexity
-4. Select best path (or backtrack if all fail)
+4. Select best path with documented rationale
 
 Output: Architecture decision with explored alternatives
 ```
@@ -163,6 +162,24 @@ Ready for /implement (will auto-parallelize)
 | Subtask A modifies B's dependency | SEQUENTIAL | Dependency conflict |
 | Estimated speedup < 30% | SEQUENTIAL | Overhead not worth it |
 | All subtasks fully isolated | PARALLEL | Safe to proceed |
+
+## Letta Integration
+
+The planning pipeline uses Letta memory throughout:
+
+**Researcher agent queries Letta for:**
+- Past similar designs (avoids reinventing)
+- Project-specific constraints and conventions
+- Previous architecture decisions
+
+**Architect agent stores:**
+- New design decisions (with alternatives considered)
+- Tradeoff analysis and rationale
+- Implementation notes for future reference
+
+**Orchestrator agent queries/stores:**
+- Past parallelization decisions
+- Known file conflict patterns
 
 ## Notes
 

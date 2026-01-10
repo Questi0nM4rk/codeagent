@@ -161,11 +161,9 @@ get_container_stats() {
 
 output_json() {
     local timestamp=$(date -Iseconds)
-    local neo4j_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-neo4j 2>/dev/null || echo "not_running")
     local qdrant_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_running")
     local letta_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "not_running")
 
-    local neo4j_stats=$(get_container_stats codeagent-neo4j)
     local qdrant_stats=$(get_container_stats codeagent-qdrant)
     local letta_stats=$(get_container_stats codeagent-letta)
 
@@ -173,11 +171,6 @@ output_json() {
 {
   "timestamp": "$timestamp",
   "services": {
-    "neo4j": {
-      "status": "$neo4j_status",
-      "cpu": "$(echo $neo4j_stats | cut -d',' -f1)",
-      "memory": "$(echo $neo4j_stats | cut -d',' -f2)"
-    },
     "qdrant": {
       "status": "$qdrant_status",
       "cpu": "$(echo $qdrant_stats | cut -d',' -f1)",
@@ -215,7 +208,6 @@ run_status_check() {
 
     echo -e "${BLUE}Infrastructure Services${NC}"
     echo "───────────────────────"
-    check_service "Neo4j (code graph)" "codeagent-neo4j" "http://localhost:7474"
     check_service "Qdrant (vectors)" "codeagent-qdrant" "http://localhost:6333"
     check_service "Letta (memory)" "codeagent-letta" "http://localhost:8283"
 

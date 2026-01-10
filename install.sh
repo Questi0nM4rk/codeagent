@@ -254,7 +254,6 @@ install_codeagent() {
     "$VENV_DIR/bin/pip" install --quiet --upgrade pip 2>/dev/null || true
     "$VENV_DIR/bin/pip" install --quiet \
         mcp \
-        neo4j \
         openai \
         httpx \
         pydantic 2>/dev/null && log_success "Python dependencies installed" || log_warn "Some Python packages failed to install"
@@ -528,7 +527,7 @@ start_infrastructure() {
 
     # Check if containers exist but are unhealthy - recreate them
     local needs_recreate=false
-    for container in codeagent-neo4j codeagent-qdrant codeagent-letta; do
+    for container in codeagent-qdrant codeagent-letta; do
         local status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "none")
         if [ "$status" = "unhealthy" ]; then
             log_warn "$container is unhealthy, will recreate..."
@@ -554,11 +553,10 @@ start_infrastructure() {
     local waited=0
 
     while [ $waited -lt $max_wait ]; do
-        local neo4j_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-neo4j 2>/dev/null || echo "none")
         local qdrant_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "none")
         local letta_healthy=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "none")
 
-        if [ "$neo4j_healthy" = "healthy" ] && [ "$qdrant_healthy" = "healthy" ] && [ "$letta_healthy" = "healthy" ]; then
+        if [ "$qdrant_healthy" = "healthy" ] && [ "$letta_healthy" = "healthy" ]; then
             log_success "All services are healthy!"
             return 0
         fi
@@ -623,13 +621,6 @@ verify_installation() {
     fi
 
     # Check Docker containers
-    if docker ps | grep -q "codeagent-neo4j"; then
-        log_success "Neo4j container running"
-    else
-        log_warn "Neo4j not running"
-        all_ok=false
-    fi
-
     if docker ps | grep -q "codeagent-qdrant"; then
         log_success "Qdrant container running"
     else
@@ -644,9 +635,9 @@ verify_installation() {
         all_ok=false
     fi
 
-    # Check custom MCPs
-    if [ -f "$INSTALL_DIR/mcps/code-graph-mcp/pyproject.toml" ]; then
-        log_success "Custom MCPs installed (code-graph, tot, reflection)"
+    # Check custom MCPs (reflection is the only custom Python MCP)
+    if [ -f "$INSTALL_DIR/mcps/reflection-mcp/pyproject.toml" ]; then
+        log_success "Custom MCPs installed (reflection)"
     else
         log_warn "Custom MCPs not found"
         all_ok=false
@@ -735,14 +726,14 @@ main() {
                 echo "Options:"
                 echo "  --no-docker    Skip Docker container setup"
                 echo "  --force, -f    Force reinstall MCPs and recreate containers (preserves data)"
-                echo "  --reset        Delete ALL data (Letta agents, memories, Neo4j graph)"
+                echo "  --reset        Delete ALL data (Letta agents, memories, vector embeddings)"
                 echo "  -y, --yes      Auto-accept prompts (backup existing config)"
                 echo "  --local        Install from local source (development mode)"
                 echo "  -h, --help     Show this help message"
                 echo ""
                 echo "Data Preservation:"
                 echo "  --force        Keeps Letta agents and memories intact"
-                echo "  --reset        DELETES all Letta agents, memories, and code graph"
+                echo "  --reset        DELETES all Letta agents, memories, and vector embeddings"
                 echo ""
                 exit 0
                 ;;
@@ -764,7 +755,6 @@ main() {
         log_warn "=========================================="
         log_warn "  RESET MODE: All data will be deleted!"
         log_warn "  - Letta agents and memories"
-        log_warn "  - Neo4j code graph"
         log_warn "  - Qdrant vector embeddings"
         log_warn "=========================================="
         echo ""

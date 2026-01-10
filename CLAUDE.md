@@ -15,12 +15,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 shellcheck install.sh bin/* framework/hooks/*.sh
 
 # Test custom MCP servers
-~/.codeagent/venv/bin/python -m pytest mcps/code-graph-mcp/
-~/.codeagent/venv/bin/python -m pytest mcps/tot-mcp/
 ~/.codeagent/venv/bin/python -m pytest mcps/reflection-mcp/
 
 # Infrastructure
-codeagent start        # Start Neo4j, Qdrant, Letta
+codeagent start        # Start Qdrant, Letta
 codeagent stop         # Stop services
 codeagent status       # Health check
 codeagent config       # Configure API keys
@@ -38,8 +36,7 @@ User: /scan → /plan → /implement → /integrate → /review
         ┌──────────────────┼──────────────────┐
         ▼                  ▼                  ▼
    Skills Layer      MCP Servers      Infrastructure
-   (6 agents)       (code-graph,     (Neo4j, Qdrant,
-                     tot, reflection)     Letta)
+   (6 agents)       (reflection)       (Qdrant, Letta)
 ```
 
 ### Source Directories
@@ -51,7 +48,7 @@ User: /scan → /plan → /implement → /integrate → /review
 | `framework/commands/` | 5 slash command specs |
 | `framework/hooks/` | Pre/post tool hooks (7 scripts) |
 | `mcps/` | Custom Python MCP servers + installers |
-| `infrastructure/` | Docker Compose for Neo4j, Qdrant, Letta |
+| `infrastructure/` | Docker Compose for Qdrant, Letta |
 | `templates/` | CLAUDE.md templates by language (cpp, dotnet, lua, rust) |
 | `scripts/` | Utility scripts (backup, restore, health-check) |
 | `Docs/` | Vision, implementation docs, workflows |
@@ -62,11 +59,79 @@ The custom MCPs implement findings from academic research:
 
 | MCP | Backend | Research | Improvement |
 |-----|---------|----------|-------------|
-| `code-graph` | Neo4j | GraphRAG | +75% code retrieval |
-| `tot` | In-memory | Tree-of-Thought | +70% complex reasoning |
 | `reflection` | Qdrant | Reflexion (NeurIPS 2023) | +21% on code tasks |
 
 **Letta memory**: 74% LOCOMO accuracy vs basic persistence.
+
+## Letta Memory System
+
+### Two Memory Systems: Letta vs Reflection
+
+| Aspect | **Reflection** | **Letta** |
+|--------|---------------|-----------|
+| **Memory Type** | Episodic (experiences) | Semantic (knowledge) |
+| **What it stores** | Task attempts, failures, lessons | Patterns, architectures, decisions |
+| **Question it answers** | "Did this fail before?" | "What architecture do we use?" |
+| **Key feature** | Returns raw episodes | **Synthesizes** answers via LLM |
+
+**Simple rule:**
+- **Reflection**: Learning from mistakes ("what happened")
+- **Letta**: Project knowledge base ("what do we know")
+
+### Letta Tools Reference
+
+**Query memory:**
+```
+mcp__letta__prompt_agent(agent_id, message)  # Ask Letta, get synthesized answer
+mcp__letta__list_passages(agent_id, search)  # Search archival memory
+```
+
+**Store memory:**
+```
+mcp__letta__create_passage(agent_id, text)   # Add to archival memory
+```
+
+**Update memory:**
+```
+mcp__letta__modify_passage(agent_id, memory_id, update_data)
+mcp__letta__delete_passage(agent_id, memory_id)
+```
+
+### Memory Format Standard
+
+Store memories in this format for consistent retrieval:
+
+```markdown
+## [Category]: [Name]
+Type: architectural|code|testing|process
+Context: [when this applies]
+Files: [reference files]
+
+### Description
+[What this pattern/decision solves]
+
+### Implementation
+[How it was done]
+
+### Rationale
+[Why this approach was chosen]
+```
+
+### When to Use Each
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Test failed, need similar failures | **Reflection** | Track failure chains |
+| Need to know project architecture | **Letta** | Get synthesized answer |
+| Track that approach X didn't work | **Reflection** | Episodic memory |
+| Store a design decision | **Letta** | Project knowledge |
+| Check if I tried this before | **Reflection** | Task-specific history |
+| Ask "why did we choose X?" | **Letta** | Contextual answer |
+
+### Project Agent ID
+
+Each project has a Letta agent ID stored in `.claude/letta-agent`.
+Use this ID for all Letta calls in that project.
 
 ## Skills System
 
@@ -74,8 +139,8 @@ Each skill has a SKILL.md in `framework/skills/`:
 
 | Skill | Thinking | Behavior |
 |-------|----------|----------|
-| researcher | `think hard` | Query Letta → code-graph → external. Say "I don't know" if unfound |
-| architect | `ultrathink` | Generate 3+ approaches with ToT, present tradeoffs |
+| researcher | `think hard` | Query Letta → external. Say "I don't know" if unfound |
+| architect | `ultrathink` | Generate 3+ approaches, present tradeoffs |
 | orchestrator | `think harder` | Analyze isolation boundaries. Only parallelize truly isolated tasks |
 | implementer | `think hard` | TDD loop: test → fail → code → pass. Max 3 attempts before escalate |
 | reviewer | `think hard` | External tools only. Never self-validate |
@@ -102,15 +167,12 @@ The orchestrator skill detects this automatically.
 | `pre-commit` | PreToolUse:Bash(git commit) | Pre-commit validations |
 | `pre-push` | PreToolUse:Bash(git push) | Security + tests before push |
 | `auto-format` | PostToolUse:Write/Edit | Format by file type |
-| `index-file` | PostToolUse:Write/Edit | Update code-graph |
-| `post-implement` | PostToolUse:Write | Update graph after TDD |
 | `session-end` | Stop | Cleanup temp files |
 
 ## Infrastructure
 
 | Service | Version | Ports | Notes |
 |---------|---------|-------|-------|
-| Neo4j | 5.26.0-community | 7474, 7687 | APOC enabled |
 | Qdrant | v1.16.2 | 6333, 6334 | Scalar quantization |
 | Letta | 0.16.0 | 8283 | Depends on Qdrant health |
 
@@ -146,14 +208,10 @@ project/
     └── decisions/      # Architecture decision records
 ```
 
-## Language Support
-
-Code-graph MCP parses: C# (.NET), C/C++, Rust, Lua, Python, TypeScript/JavaScript, Go, Bash (9 languages).
-
 ## Design Principles
 
 1. **Partner, not assistant** - Challenge assumptions, push back on bad ideas
-2. **Memory-first** - Query Letta → code-graph → external. Never fabricate
+2. **Memory-first** - Query Letta → external. Never fabricate
 3. **External validation** - Never self-review. Use linters, tests, security scanners
 4. **TDD always** - Test → fail → code → pass
 5. **Accuracy over speed** - Spend tokens for correctness

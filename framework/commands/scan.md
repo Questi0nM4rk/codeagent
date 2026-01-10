@@ -1,10 +1,10 @@
 ---
-description: Build complete knowledge graph of your codebase
+description: Build complete knowledge base of your codebase
 ---
 
 # /scan - Build Knowledge Base
 
-Scans entire codebase and builds knowledge graph + memory store using multiple specialized agents.
+Scans entire codebase and builds memory store using multiple specialized agents.
 
 ## Usage
 
@@ -22,8 +22,8 @@ This command spawns three agents in sequence:
 Main Claude (Orchestrator)
       │
       ├─► indexer agent
-      │       → Parses AST, builds Neo4j graph
-      │       → Returns: files indexed, symbols found
+      │       → Analyzes file structure and patterns
+      │       → Returns: files scanned, patterns found
       │
       ├─► memory-writer agent
       │       → Stores patterns and architecture in Letta
@@ -38,16 +38,14 @@ Main Claude (Orchestrator)
 ## What This Does
 
 1. **Discovery**: Find all source files matching your language stack
-2. **AST Parsing**: Extract functions, classes, dependencies, call relationships
-3. **Pattern Extraction**: Identify coding conventions and patterns
-4. **Memory Storage**: Store in Letta for semantic retrieval
-5. **Graph Storage**: Store in Neo4j for structural queries
-6. **Validation**: Verify stored data matches actual code
+2. **Pattern Extraction**: Identify coding conventions and patterns
+3. **Memory Storage**: Store in Letta for semantic retrieval
+4. **Validation**: Verify stored data matches actual code
 
 ## Supported Languages
 
 ```bash
-# 9 languages supported by code-graph MCP
+# 9 languages supported
 .cs, .csproj, .sln     # .NET (C#)
 .cpp, .c, .h, .hpp     # C/C++
 .rs, Cargo.toml        # Rust
@@ -81,16 +79,14 @@ Main Claude (Orchestrator)
 | Metric | Count |
 |--------|-------|
 | Files scanned | X |
-| Functions indexed | X |
-| Classes indexed | X |
-| Dependencies mapped | X |
+| Patterns found | X |
 
 ### By Language
-| Language | Files | Functions | Classes |
-|----------|-------|-----------|---------|
-| C# | X | X | X |
-| TypeScript | X | X | X |
-| ... | ... | ... | ... |
+| Language | Files |
+|----------|-------|
+| C# | X |
+| TypeScript | X |
+| ... | ... |
 
 ### Patterns Detected
 | Pattern | Occurrences | Files |
@@ -101,7 +97,7 @@ Main Claude (Orchestrator)
 [Brief description of detected architecture]
 
 ### Validation Results
-- Symbols verified: X
+- Memories verified: X
 - Accuracy: Y%
 - Corrections made: Z
 
@@ -120,5 +116,5 @@ Main Claude (Orchestrator)
 - First scan may take a few minutes for large codebases
 - Subsequent scans are incremental (only changed files)
 - Use `--full` to force complete rescan
-- Knowledge persists across Claude Code sessions
+- Knowledge persists across Claude Code sessions via Letta
 - Validator agent corrects errors automatically

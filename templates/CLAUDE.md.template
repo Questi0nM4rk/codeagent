@@ -8,7 +8,7 @@ Challenge assumptions, push back on bad ideas, provide objective technical guida
 ## Core Principles
 
 1. **Accuracy over speed** - Verify before acting, spend tokens for correctness
-2. **Memory-first** - Query Letta/code-graph before external research
+2. **Memory-first** - Query Letta before external research
 3. **Test-first** - Always TDD: test → fail → code → pass
 4. **External validation** - Never self-review, use tools (semgrep, linters, tests)
 5. **Partner mentality** - Challenge bad ideas, suggest better approaches
@@ -35,7 +35,7 @@ CodeAgent provides enhanced capabilities through skills, commands, and MCP serve
 | Skill | Purpose |
 |-------|---------|
 | researcher | Memory-first context gathering before implementation |
-| architect | Tree-of-Thought solution design for complex problems |
+| architect | Structured solution design for complex problems |
 | orchestrator | Analyze tasks for parallel execution potential |
 | implementer | Strict TDD workflow for writing code |
 | reviewer | External tool validation (never self-review) |
@@ -45,7 +45,7 @@ CodeAgent provides enhanced capabilities through skills, commands, and MCP serve
 
 | Command | Usage |
 |---------|-------|
-| /scan | Build knowledge graph of codebase (run first) |
+| /scan | Build knowledge base of codebase (run first) |
 | /plan "task" | Research + design implementation approach |
 | /implement | Execute plan using TDD |
 | /integrate | Merge parallel work streams |
@@ -55,23 +55,37 @@ CodeAgent provides enhanced capabilities through skills, commands, and MCP serve
 
 | Server | Purpose |
 |--------|---------|
-| code-graph | AST-based code knowledge graph (Neo4j) |
-| tot | Tree-of-Thought reasoning for complex problems |
 | reflection | Self-reflection and episodic memory |
 | letta | Long-term memory with 74% LOCOMO accuracy |
 | context7 | Up-to-date library documentation |
 
+### Letta vs Reflection Memory
+
+| Aspect | **Reflection** | **Letta** |
+|--------|---------------|-----------|
+| **Type** | Episodic (experiences) | Semantic (knowledge) |
+| **Stores** | Task attempts, failures | Patterns, architectures, decisions |
+| **Returns** | Raw episodes | **Synthesized** answers |
+
+**Letta tools:**
+- `mcp__letta__prompt_agent(agent_id, message)` - Ask Letta, get synthesized answer
+- `mcp__letta__list_passages(agent_id, search)` - Search archival memory
+- `mcp__letta__create_passage(agent_id, text)` - Store to archival memory
+
+**When to use:**
+- **Reflection**: "Did this approach fail before?" (track failures)
+- **Letta**: "What architecture do we use?" (project knowledge)
+
 ## Workflow
 
 1. **New project**: Run `codeagent init` to create Letta agent
-2. **First session**: Run `/scan` to build knowledge graph
+2. **First session**: Run `/scan` to build knowledge base
 3. **Tasks**: Use `/plan` → `/implement` → `/review`
 4. **Complex tasks**: Skills auto-activate (architect for design, orchestrator for parallelism)
 
 ## Infrastructure
 
 Start services with `codeagent start`:
-- Neo4j (localhost:7474) - Code structure graph
 - Qdrant (localhost:6333) - Vector embeddings
 - Letta (localhost:8283) - Memory system
 

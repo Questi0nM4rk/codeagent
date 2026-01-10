@@ -69,10 +69,7 @@ bandit -r src/                      # Python
 Uses MCPs to verify:
 ```
 mcp__reflection__retrieve_episodes
-    → Get established patterns
-
-mcp__code-graph__query_dependencies
-    → Check for circular deps, broken refs
+    → Get established patterns from past implementations
 ```
 
 ## Output Format
@@ -175,6 +172,19 @@ Additional deep checks:
 - [ ] XSS possibilities
 - [ ] Auth bypass attempts
 - [ ] Input validation complete
+
+## Letta Integration
+
+The reviewer agent uses Letta memory:
+
+**Before reviewing:**
+- Queries Letta for common issues in this codebase
+- Checks for known code smell patterns
+- References established review standards
+
+**After review:**
+- Stores significant issue patterns found
+- Updates review knowledge base for future reference
 
 ## Post-Review
 

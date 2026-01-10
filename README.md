@@ -12,7 +12,7 @@ Research-backed autonomous coding framework for Claude Code. Transforms Claude C
 | **Memory System** | Letta-powered memory with 74% LOCOMO accuracy |
 | **Tree-of-Thought** | Explore multiple approaches before committing |
 | **TDD Enforcement** | Strict test-first development workflow |
-| **Code Knowledge Graph** | AST-based analysis with Neo4j |
+| **MCP-First Integration** | External services via code-execution sandbox |
 | **Self-Reflection** | Learn from failures, improve over time |
 | **External Validation** | Never self-review, always use tools |
 
@@ -47,7 +47,7 @@ cd /your/project && codeagent init   # Initialize project
 ### CLI Commands
 
 ```bash
-codeagent start     # Start Neo4j, Qdrant, Letta
+codeagent start     # Start Qdrant, Letta
 codeagent stop      # Stop services
 codeagent status    # Health check all services
 codeagent config    # Configure API keys
@@ -85,16 +85,14 @@ Six specialized skills auto-activate based on context:
 
 | MCP | Purpose |
 |-----|---------|
-| `sequential-thinking` | Step-by-step complex reasoning |
 | `context7` | Up-to-date library documentation |
+| `code-execution` | Sandboxed Python/CLI execution (Docker) |
 
 ### Custom MCPs
 
 | MCP | Backend | Purpose |
 |-----|---------|---------|
-| `code-graph` | Neo4j | AST-based code knowledge graph |
-| `tot` | In-memory | Tree-of-Thought exploration |
-| `reflection` | Qdrant | Self-reflection and episodic memory |
+| `reflection` | Qdrant | Self-reflection and episodic memory (+21% accuracy) |
 
 ### Infrastructure MCPs
 
@@ -106,7 +104,6 @@ Six specialized skills auto-activate based on context:
 
 | Service | Version | Ports | Purpose |
 |---------|---------|-------|---------|
-| Neo4j | 5.26.0-community | 7474, 7687 | Code structure graph |
 | Qdrant | v1.16.2 | 6333, 6334 | Vector embeddings |
 | Letta | 0.16.0 | 8283 | Memory system |
 
@@ -127,7 +124,7 @@ Keys stored in `~/.codeagent/.env`:
 | Key | Required | Purpose |
 |-----|----------|---------|
 | `OPENAI_API_KEY` | Yes | Letta embeddings |
-| `GITHUB_TOKEN` | No | GitHub MCP integration |
+| `GITHUB_TOKEN` | No | GitHub MCP - repository, issues, PRs, code search |
 | `TAVILY_API_KEY` | No | Web research |
 
 ### Hooks
@@ -140,7 +137,7 @@ CodeAgent configures automatic hooks:
 | `pre-commit` | Pre-git commit | Run pre-commit checks |
 | `pre-push` | Pre-git push | Run pre-push checks |
 | `auto-format` | Post-Write/Edit | Format code by file type |
-| `index-file` | Post-Write/Edit | Update code graph |
+| `index-file` | Post-Write/Edit | Track changed files for indexing |
 | `session-end` | Stop | Cleanup temporary files |
 
 ## Installation Structure

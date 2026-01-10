@@ -48,15 +48,14 @@ services_ready=false
 while [ $attempt -lt $max_attempts ] && [ "$services_ready" = false ]; do
     attempt=$((attempt + 1))
 
-    neo4j_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-neo4j 2>/dev/null || echo "not_found")
     qdrant_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_found")
     letta_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-letta 2>/dev/null || echo "not_found")
 
-    if [ "$neo4j_ready" = "healthy" ] && [ "$qdrant_ready" = "healthy" ] && [ "$letta_ready" = "healthy" ]; then
+    if [ "$qdrant_ready" = "healthy" ] && [ "$letta_ready" = "healthy" ]; then
         services_ready=true
     else
-        printf "\r  Waiting... (%d/%d) Neo4j: %s, Qdrant: %s, Letta: %s    " \
-            "$attempt" "$max_attempts" "$neo4j_ready" "$qdrant_ready" "$letta_ready"
+        printf "\r  Waiting... (%d/%d) Qdrant: %s, Letta: %s    " \
+            "$attempt" "$max_attempts" "$qdrant_ready" "$letta_ready"
         sleep 2
     fi
 done
@@ -86,7 +85,6 @@ echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                CodeAgent is ready!                          ║${NC}"
 echo -e "${GREEN}╠════════════════════════════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║  Neo4j Browser:  ${NC}http://localhost:7474${GREEN}                    ║${NC}"
 echo -e "${GREEN}║  Qdrant API:     ${NC}http://localhost:6333${GREEN}                    ║${NC}"
 echo -e "${GREEN}║  Letta API:      ${NC}http://localhost:8283${GREEN}                    ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"

@@ -6,7 +6,7 @@ Isolated Docker-in-Docker (dind) testing environment for CodeAgent installation.
 
 All tests run inside Docker-in-Docker. This means:
 - **Your host Docker is never touched**
-- Infrastructure containers (Neo4j, Qdrant, Letta) run inside dind
+- Infrastructure containers (Qdrant, Letta) run inside dind
 - When tests finish, `./test.sh --clean` removes everything
 - No leftover containers, volumes, or configuration on your system
 
@@ -60,9 +60,9 @@ cd tests/sandbox
 │  │  │    inside dind, NOT on host             │   ││
 │  │  └─────────────────────────────────────────┘   ││
 │  │                                                 ││
-│  │  ┌───────┐ ┌───────┐ ┌───────┐                ││
-│  │  │ Neo4j │ │Qdrant │ │ Letta │  ← Inside dind ││
-│  │  └───────┘ └───────┘ └───────┘                ││
+│  │  ┌───────┐ ┌───────┐                           ││
+│  │  │Qdrant │ │ Letta │  ← Inside dind            ││
+│  │  └───────┘ └───────┘                           ││
 │  └─────────────────────────────────────────────────┘│
 │                                                      │
 │  docker compose down -v → Everything gone            │
@@ -83,13 +83,13 @@ cd tests/sandbox
    - Python venv created
 
 3. **MCP Installation**
-   - All required MCPs registered (sequential-thinking, context7, code-graph, tot, reflection)
+   - All required MCPs registered (context7, reflection)
    - All optional MCPs registered (tavily, figma, supabase)
-   - code-execution MCP registered
+   - code-execution MCP registered (if Docker available)
    - Python MCPs importable
 
 4. **Infrastructure**
-   - Neo4j, Qdrant, Letta containers start
+   - Qdrant, Letta containers start
    - Services become healthy
    - Letta MCP registered after startup
    - Clean shutdown

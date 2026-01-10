@@ -6,9 +6,6 @@
 #
 # This installer delegates to specialized installers:
 #   - install-letta.sh: Handles Letta + Qdrant infrastructure
-#
-# Other Docker services (neo4j) are infrastructure-only
-# and don't require MCP registration.
 
 set -e
 
@@ -70,43 +67,6 @@ health_check_http() {
 }
 
 # ============================================
-# Start Neo4j (Infrastructure Only)
-# ============================================
-start_neo4j() {
-    log_info "Starting Neo4j..."
-
-    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
-        log_error "docker-compose.yml not found: $DOCKER_COMPOSE_FILE"
-        return 1
-    fi
-
-    local compose_dir=$(dirname "$DOCKER_COMPOSE_FILE")
-    cd "$compose_dir"
-
-    # Start Neo4j
-    docker compose up -d neo4j
-
-    cd - > /dev/null
-
-    # Wait for health
-    log_info "Waiting for Neo4j..."
-    local attempts=0
-    local max_attempts=30
-
-    while [ $attempts -lt $max_attempts ]; do
-        if health_check_http "http://localhost:7474"; then
-            log_success "Neo4j is healthy"
-            return 0
-        fi
-        ((attempts++)) || true
-        sleep 2
-    done
-
-    log_warn "Neo4j health check timed out"
-    return 1
-}
-
-# ============================================
 # Install Letta (Delegated)
 # ============================================
 install_letta() {
@@ -142,14 +102,6 @@ check_infrastructure_status() {
     log_info "Checking Docker infrastructure status..."
 
     local all_ok=true
-
-    # Check Neo4j
-    if health_check_http "http://localhost:7474"; then
-        log_success "  neo4j: healthy"
-    else
-        log_warn "  neo4j: not responding"
-        all_ok=false
-    fi
 
     # Check Qdrant
     if health_check_tcp 6333; then
@@ -213,9 +165,6 @@ main() {
     fi
 
     log_info "Installing Docker-based MCPs..."
-
-    # Start Neo4j (infrastructure only, no MCP)
-    start_neo4j || true
 
     # Install Letta (handles Qdrant dependency + MCP registration)
     install_letta

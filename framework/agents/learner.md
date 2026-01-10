@@ -1,7 +1,7 @@
 ---
 name: learner
 description: Pattern extractor that stores lessons learned after successful implementations. Use after completing features to capture knowledge for future use.
-tools: Read, Glob, mcp__letta__*, mcp__reflection__*, mcp__code-graph__search_symbols
+tools: Read, Glob, mcp__letta__*, mcp__reflection__*
 model: sonnet
 ---
 
@@ -18,6 +18,24 @@ After a successful implementation:
 4. Update reflection memory with success episode
 
 ## Workflow
+
+### 0. Check Existing Lessons First (ALWAYS)
+
+Before extracting new patterns:
+
+```
+# Get proven lessons from reflection memory
+mcp__reflection__export_lessons:
+  min_occurrences=2
+  min_success_rate=0.5
+
+# Get aggregated lessons by feedback type
+mcp__reflection__get_common_lessons
+```
+
+Compare any new patterns against these:
+- If 80%+ overlap with existing lesson: skip extraction, note "already captured"
+- If partial overlap: update existing Letta passage instead of creating new
 
 ### 1. Analyze Implementation
 

@@ -33,8 +33,6 @@ Thumbs.db
 logs/
 
 # Docker volumes (local)
-infrastructure/neo4j/data/
-infrastructure/neo4j/logs/
 infrastructure/qdrant/
 infrastructure/letta/
 

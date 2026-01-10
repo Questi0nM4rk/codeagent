@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Memory Restore
-# Restore Letta and Neo4j data from backup
+# Restore Letta and Qdrant data from backup
 # ============================================
 
 set -e
@@ -57,18 +57,6 @@ BACKUP_DIR=$(ls "$TEMP_DIR")
 echo -e "${BLUE}Stopping services...${NC}"
 cd "$INSTALL_DIR/infrastructure"
 docker compose down
-
-# Restore Neo4j
-if [ -d "$TEMP_DIR/$BACKUP_DIR/neo4j" ]; then
-    echo -e "${BLUE}Restoring Neo4j...${NC}"
-    docker volume rm codeagent_neo4j_data 2>/dev/null || true
-    docker volume create codeagent_neo4j_data
-    docker run --rm -v codeagent_neo4j_data:/data -v "$TEMP_DIR/$BACKUP_DIR/neo4j:/backup" \
-        alpine sh -c "cp -r /backup/* /data/" 2>/dev/null || true
-    echo -e "${GREEN}✓${NC} Neo4j restored"
-elif [ -f "$TEMP_DIR/$BACKUP_DIR/neo4j_export.json" ]; then
-    echo -e "${YELLOW}○${NC} Neo4j export file found - will import after start"
-fi
 
 # Restore Letta
 if [ -d "$TEMP_DIR/$BACKUP_DIR/letta" ]; then

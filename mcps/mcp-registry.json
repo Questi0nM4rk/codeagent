@@ -14,16 +14,6 @@
       "mcp_registration": false
     },
     {
-      "name": "neo4j",
-      "container": "codeagent-neo4j",
-      "healthcheck": {
-        "type": "http",
-        "url": "http://localhost:7474"
-      },
-      "dependencies": [],
-      "mcp_registration": false
-    },
-    {
       "name": "letta",
       "container": "codeagent-letta",
       "healthcheck": {
@@ -42,13 +32,6 @@
   ],
   "npm": [
     {
-      "name": "sequential-thinking",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-      "env": {},
-      "required": true
-    },
-    {
       "name": "context7",
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"],
@@ -57,6 +40,14 @@
     }
   ],
   "npm_optional": [
+    {
+      "name": "github",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env_key": "GITHUB_TOKEN",
+      "env_var": "GITHUB_PERSONAL_ACCESS_TOKEN",
+      "description": "GitHub repository, issues, PRs, and code search"
+    },
     {
       "name": "tavily",
       "command": "npx",
@@ -99,18 +90,6 @@
     }
   ],
   "python": [
-    {
-      "name": "code-graph",
-      "module": "code_graph_mcp.server",
-      "path": "mcps/code-graph-mcp",
-      "required": true
-    },
-    {
-      "name": "tot",
-      "module": "tot_mcp.server",
-      "path": "mcps/tot-mcp",
-      "required": true
-    },
     {
       "name": "reflection",
       "module": "reflection_mcp.server",

@@ -53,13 +53,11 @@ echo ""
 
 # Check containers
 echo "Containers:"
-check_container "Neo4j" "codeagent-neo4j"
 check_container "Qdrant" "codeagent-qdrant"
 check_container "Letta" "codeagent-letta"
 
 echo ""
 echo "Services:"
-check_http_service "Neo4j Browser" "http://localhost:7474"
 check_http_service "Qdrant API" "http://localhost:6333/healthz"
 check_http_service "Letta API" "http://localhost:8283/v1/health/"
 

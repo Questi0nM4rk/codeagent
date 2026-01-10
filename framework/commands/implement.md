@@ -59,8 +59,7 @@ Main Claude (Orchestrator)
 6. Commit implementation
 7. Run full test suite → check for regressions
 8. Refactor if needed (tests must still pass)
-9. Update code-graph index
-10. Next step
+9. Next step
 ```
 
 ## Failure Handling
@@ -180,6 +179,21 @@ Branch: checkpoint/[task]-[timestamp]
 ### Needs
 [Specific information or help needed]
 ```
+
+## Letta Integration
+
+The implementer agent uses Letta memory:
+
+**Before implementing:**
+- Queries Letta for architecture decisions from /plan
+- Searches for similar implementation patterns
+- Checks for project-specific conventions
+
+**After successful implementation:**
+- Stores novel patterns for future reference
+- Links implementation to architect's design decisions
+
+This ensures implementations follow established patterns and new patterns are captured for future use.
 
 ## Notes
 

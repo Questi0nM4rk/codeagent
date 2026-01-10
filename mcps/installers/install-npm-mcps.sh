@@ -108,7 +108,7 @@ install_npm_required() {
 }
 
 # ============================================
-# Install Optional NPM MCPs (require API keys)
+# Install Optional NPM MCPs (API keys can be added later)
 # ============================================
 install_npm_optional() {
     log_info "Installing optional NPM MCPs..."
@@ -122,14 +122,6 @@ install_npm_optional() {
         local env_key=$(jq -r ".npm_optional[$i].env_key" "$REGISTRY_FILE")
         local env_var=$(jq -r ".npm_optional[$i].env_var" "$REGISTRY_FILE")
 
-        # Check if API key is available
-        local key_value=$(get_key_value "$env_key")
-        if [ -z "$key_value" ]; then
-            log_info "  Skipped: $name ($env_key not configured)"
-            ((SKIPPED++)) || true
-            continue
-        fi
-
         # Skip if exists and not force
         if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
             log_info "  Skipped: $name (already registered)"
@@ -142,13 +134,25 @@ install_npm_optional() {
             remove_mcp "$name"
         fi
 
-        # Register MCP with env var (user scope for global)
+        # Check if API key is available
+        local key_value=$(get_key_value "$env_key")
         local add_output
-        add_output=$(claude mcp add --scope user "$name" --env "$env_var=$key_value" -- $command $args 2>&1) || true
 
-        # Check if registration succeeded (either added or already exists)
+        if [ -n "$key_value" ]; then
+            # Register MCP with env var (user scope for global)
+            add_output=$(claude mcp add --scope user "$name" -e "$env_var=$key_value" -- $command $args 2>&1) || true
+        else
+            # Register MCP without env var - will need key configured later
+            add_output=$(claude mcp add --scope user "$name" -- $command $args 2>&1) || true
+        fi
+
+        # Check if registration succeeded
         if mcp_exists "$name"; then
-            log_success "  Installed: $name"
+            if [ -n "$key_value" ]; then
+                log_success "  Installed: $name"
+            else
+                log_success "  Installed: $name (configure $env_key to enable)"
+            fi
             ((INSTALLED++)) || true
         else
             log_error "  Failed: $name"

@@ -61,12 +61,10 @@ Check that parallel implementations agree on:
 - Database schema assumptions
 - API contracts
 
-```markdown
-Query code-graph:
+Verify using Grep/Read:
 - Do all implementations of IUserService match the interface?
 - Are all DTOs used consistently?
 - Any type mismatches across boundaries?
-```
 
 ### Step 4: Pattern Consistency Check
 
@@ -77,12 +75,10 @@ Query Letta:
 
 ### Step 5: Dependency Verification
 
-```markdown
-Query code-graph:
+Check using Grep/Read:
 - Any circular dependencies introduced?
 - Any orphaned code (written but not called)?
 - Any missing implementations (interface methods)?
-```
 
 ### Step 6: Security Scan
 

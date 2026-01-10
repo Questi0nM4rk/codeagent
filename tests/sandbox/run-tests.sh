@@ -303,7 +303,7 @@ test_mcp_installation() {
         assert_pass "claude.json exists"
 
         # Check required MCPs
-        local required_mcps=("sequential-thinking" "context7" "code-graph" "tot" "reflection")
+        local required_mcps=("context7" "reflection")
         for mcp in "${required_mcps[@]}"; do
             if grep -q "\"$mcp\"" "$claude_json"; then
                 assert_pass "MCP registered: $mcp"
@@ -336,18 +336,6 @@ test_mcp_installation() {
     log_info "Verifying Python MCPs can be imported..."
     local venv_python="$INSTALL_DIR/venv/bin/python"
 
-    if $venv_python -c "import code_graph_mcp" 2>/dev/null; then
-        assert_pass "Python MCP importable: code-graph"
-    else
-        assert_fail "Python MCP not importable: code-graph"
-    fi
-
-    if $venv_python -c "import tot_mcp" 2>/dev/null; then
-        assert_pass "Python MCP importable: tot"
-    else
-        assert_fail "Python MCP not importable: tot"
-    fi
-
     if $venv_python -c "import reflection_mcp" 2>/dev/null; then
         assert_pass "Python MCP importable: reflection"
     else
@@ -370,7 +358,7 @@ test_infrastructure() {
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
     # Start infrastructure
-    log_info "Starting CodeAgent infrastructure (Neo4j, Qdrant, Letta)..."
+    log_info "Starting CodeAgent infrastructure (Qdrant, Letta)..."
 
     if timeout 180 "$HOME/.local/bin/codeagent-start" 2>&1 | tee /tmp/infra-start.log; then
         assert_pass "Infrastructure startup command succeeded"
@@ -385,12 +373,6 @@ test_infrastructure() {
 
     # Check if containers are running
     log_info "Checking container status..."
-
-    if docker ps --format '{{.Names}}' | grep -q "codeagent-neo4j"; then
-        assert_pass "Container running: neo4j"
-    else
-        assert_fail "Container not running: neo4j"
-    fi
 
     if docker ps --format '{{.Names}}' | grep -q "codeagent-qdrant"; then
         assert_pass "Container running: qdrant"

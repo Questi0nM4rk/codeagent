@@ -51,7 +51,7 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${BLUE}Removing Docker volumes...${NC}"
-    docker volume rm codeagent_neo4j_data codeagent_neo4j_logs codeagent_qdrant_data codeagent_letta_data 2>/dev/null || true
+    docker volume rm codeagent_qdrant_data codeagent_letta_data 2>/dev/null || true
     echo -e "${GREEN}✓${NC} Volumes removed"
 else
     echo -e "${YELLOW}○${NC} Volumes preserved"
@@ -71,17 +71,14 @@ echo -e "${GREEN}✓${NC} CLI commands removed"
 echo ""
 echo -e "${BLUE}Removing MCP configurations...${NC}"
 if command -v claude &> /dev/null; then
-    claude mcp remove filesystem 2>/dev/null || true
-    claude mcp remove git 2>/dev/null || true
-    claude mcp remove memory 2>/dev/null || true
-    claude mcp remove sequential-thinking 2>/dev/null || true
     claude mcp remove context7 2>/dev/null || true
-    claude mcp remove fetch 2>/dev/null || true
-    claude mcp remove semgrep 2>/dev/null || true
-    claude mcp remove code-graph 2>/dev/null || true
-    claude mcp remove tot 2>/dev/null || true
+    claude mcp remove code-execution 2>/dev/null || true
     claude mcp remove reflection 2>/dev/null || true
     claude mcp remove letta 2>/dev/null || true
+    claude mcp remove tavily 2>/dev/null || true
+    claude mcp remove figma 2>/dev/null || true
+    claude mcp remove supabase 2>/dev/null || true
+    claude mcp remove github 2>/dev/null || true
     echo -e "${GREEN}✓${NC} MCPs removed"
 fi
 
