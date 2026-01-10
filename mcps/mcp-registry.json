@@ -84,6 +84,7 @@
       "name": "amem",
       "module": "amem_mcp.server",
       "path": "mcps/amem-mcp",
+      "extras": "full",
       "required": true,
       "description": "Brain-like memory with automatic linking and evolution (A-MEM)"
     }

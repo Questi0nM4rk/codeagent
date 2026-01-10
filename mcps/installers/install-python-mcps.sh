@@ -83,6 +83,7 @@ setup_venv() {
 install_python_package() {
     local name="$1"
     local mcp_path="$2"
+    local extras="$3"  # Optional extras like "full"
 
     # Check pyproject.toml exists
     if [ ! -f "$mcp_path/pyproject.toml" ]; then
@@ -90,11 +91,17 @@ install_python_package() {
         return 1
     fi
 
+    # Build install target (with optional extras)
+    local install_target="$mcp_path"
+    if [ -n "$extras" ]; then
+        install_target="$mcp_path[$extras]"
+    fi
+
     # Install in editable mode
     if [ "$FORCE" = "true" ]; then
-        "$VENV_PIP" install -e "$mcp_path" --force-reinstall --quiet 2>/dev/null
+        "$VENV_PIP" install -e "$install_target" --force-reinstall --quiet 2>/dev/null
     else
-        "$VENV_PIP" install -e "$mcp_path" --quiet 2>/dev/null
+        "$VENV_PIP" install -e "$install_target" --quiet 2>/dev/null
     fi
 }
 
@@ -110,6 +117,7 @@ install_python_mcps() {
         local name=$(jq -r ".python[$i].name" "$REGISTRY_FILE")
         local module=$(jq -r ".python[$i].module" "$REGISTRY_FILE")
         local path=$(jq -r ".python[$i].path" "$REGISTRY_FILE")
+        local extras=$(jq -r ".python[$i].extras // empty" "$REGISTRY_FILE")
         local mcp_path="$INSTALL_DIR/$path"
 
         # Check MCP directory exists
@@ -126,8 +134,8 @@ install_python_mcps() {
             continue
         fi
 
-        # Install package
-        if ! install_python_package "$name" "$mcp_path"; then
+        # Install package (with optional extras)
+        if ! install_python_package "$name" "$mcp_path" "$extras"; then
             log_error "  Failed to install package: $name"
             ((FAILED++)) || true
             continue
