@@ -77,6 +77,13 @@
   ],
   "hooks": [
     {
+      "name": "dangerous-command-check",
+      "description": "Block dangerous bash commands (sudo, chmod 777, fork bombs)",
+      "source": "framework/hooks/dangerous-command-check.sh",
+      "event": "PreToolUse",
+      "matcher": "Bash"
+    },
+    {
       "name": "pre-commit",
       "description": "Validate before git commit",
       "source": "framework/hooks/pre-commit.sh",
@@ -91,6 +98,13 @@
       "matcher": "Bash(git push:*)"
     },
     {
+      "name": "auto-format",
+      "description": "Auto-format files after write/edit",
+      "source": "framework/hooks/auto-format.sh",
+      "event": "PostToolUse",
+      "matcher": "Write|Edit"
+    },
+    {
       "name": "post-implement",
       "description": "Run post-implementation tasks",
       "source": "framework/hooks/post-implement.sh",
@@ -103,6 +117,13 @@
       "source": "framework/hooks/index-file.sh",
       "event": "PostToolUse",
       "matcher": "Write"
+    },
+    {
+      "name": "session-end",
+      "description": "Cleanup temporary files on session end",
+      "source": "framework/hooks/session-end.sh",
+      "event": "Stop",
+      "matcher": ""
     }
   ],
   "settings": {

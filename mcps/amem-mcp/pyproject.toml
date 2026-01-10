@@ -10,9 +10,9 @@ dependencies = [
 
 [project.optional-dependencies]
 full = [
-    "agentic-memory @ git+https://github.com/agiresearch/A-mem.git",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.0.0",
+    "spacy>=3.7.0",
 ]
 
 [project.scripts]
