@@ -141,6 +141,133 @@ Read: file headers to understand dependencies
 - [Any concerns even if parallel is possible]
 ```
 
+## Execution Strategy Selection
+
+After parallelization analysis, select an execution strategy based on task checkpoint types.
+
+Reference: `@~/.claude/framework/references/execution-strategies.md`
+
+### Strategy Overview
+
+| Strategy | When | Behavior | Main Context Usage |
+|----------|------|----------|-------------------|
+| **A** | All tasks `type="auto"` | Single subagent executes entire plan | ~5% |
+| **B** | Has `checkpoint:human-verify` | Fresh subagent per segment | ~20% |
+| **C** | Has `checkpoint:decision` | Main context only, no subagents | 100% |
+
+### Strategy Selection Algorithm
+
+```python
+def select_strategy(tasks):
+    has_decision = any(t.type == "checkpoint:decision" for t in tasks)
+    has_verify = any(t.type == "checkpoint:human-verify" for t in tasks)
+
+    if has_decision:
+        return "C"  # Decisions require main context
+    elif has_verify:
+        return "B"  # Segment at verify checkpoints
+    else:
+        return "A"  # Fully autonomous
+```
+
+### Decision Matrix
+
+| Has Decision? | Has Verify? | Strategy |
+|---------------|-------------|----------|
+| Yes | Any | C |
+| No | Yes | B |
+| No | No | A |
+
+### Fresh Subagent Per Task (Strategy B)
+
+For each task segment:
+
+1. **Spawn fresh subagent** with:
+   - Task XML from architect
+   - Deviation rules reference
+   - Exclusive file boundaries
+   - Current STATE.md context
+
+2. **Execute until checkpoint**
+
+3. **Return to main context** for validation
+
+4. **Spawn fresh subagent** for next segment
+
+**Benefits:**
+- Full 200k context per segment
+- No context degradation
+- Isolated failures
+
+### Subagent Prompt Template
+
+```markdown
+## Subagent: ${TASK_NAME}
+
+You are executing ONE segment of a larger plan.
+This is a FRESH context - previous segments are complete.
+
+### Your Task
+${TASK_XML}
+
+### Context Files
+Read these for background:
+- .planning/STATE.md - Current project state
+- .planning/PLAN.md - Full plan context
+
+### Deviation Rules
+@~/.claude/framework/references/deviation-rules.md
+
+### File Boundaries
+EXCLUSIVE (can modify): ${EXCLUSIVE_FILES}
+READONLY (read only): ${READONLY_FILES}
+FORBIDDEN (don't touch): ${FORBIDDEN_FILES}
+
+### On Completion
+1. Update .planning/STATE.md with progress
+2. Report results to main context
+3. STOP - do not start next segment
+```
+
+### Strategy Output Section
+
+Add to orchestrator output:
+
+```markdown
+## Execution Strategy: [A|B|C]
+
+**Reason:** [explanation based on checkpoint types]
+
+### Checkpoint Analysis
+| Task | Type | Strategy Impact |
+|------|------|-----------------|
+| [Task 1] | [auto|checkpoint:*] | [impact] |
+| [Task 2] | [auto|checkpoint:*] | [impact] |
+
+### Token Distribution
+- Main context: ~[X]%
+- Subagents: ~[Y]% ([N] segments)
+
+### Segment Boundaries (Strategy B only)
+1. **Segment 1:** Tasks [N-M] (until [checkpoint])
+2. **Segment 2:** Tasks [M-P] (after user verification)
+```
+
+### Integration with Parallel Mode
+
+Strategy selection happens AFTER parallelization analysis:
+
+```
+Parallelization Analysis
+         │
+         ├─ SEQUENTIAL → Select Strategy A, B, or C
+         │
+         └─ PARALLEL → Each parallel task must be Strategy A
+                       (parallel tasks cannot have checkpoints)
+```
+
+**Rule:** Parallel tasks MUST have `type="auto"`. If a task needs checkpoints, it cannot be parallelized and must be SEQUENTIAL.
+
 ## Rules
 
 - ALWAYS check imports, not just direct file access
@@ -150,3 +277,5 @@ Read: file headers to understand dependencies
 - Flag estimated speedup - if < 30%, recommend SEQUENTIAL anyway
 - Never parallelize database migrations
 - Never parallelize shared service modifications
+- ALWAYS select execution strategy after parallelization analysis
+- Tasks with checkpoints cannot be parallelized

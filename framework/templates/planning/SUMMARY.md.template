@@ -1,0 +1,92 @@
+# Summary: {{TASK_NAME}}
+
+## Metadata
+- **Completed:** {{TIMESTAMP}}
+- **Duration:** {{DURATION_MINUTES}} minutes
+- **Strategy Used:** {{A|B|C}}
+- **Plan File:** {{PLAN_FILE_PATH}}
+
+## What Was Done
+
+{{SUMMARY_DESCRIPTION}}
+
+### Tasks Completed
+| Task | Type | Duration | Result |
+|------|------|----------|--------|
+| {{TASK_NAME}} | {{auto|checkpoint}} | {{MINUTES}}m | {{PASS|FAIL}} |
+
+## Files Changed
+
+| File | Action | Lines Changed |
+|------|--------|---------------|
+| {{FILE_PATH}} | {{created|modified|deleted}} | +{{ADDED}}, -{{REMOVED}} |
+
+## Tests Added
+
+| Test File | Tests | Coverage Area | Status |
+|-----------|-------|---------------|--------|
+| {{TEST_FILE}} | {{COUNT}} | {{AREA}} | All passing |
+
+## Commits Made
+
+```
+{{COMMIT_HASH}} {{COMMIT_TYPE}}({{SCOPE}}): {{COMMIT_MESSAGE}}
+```
+
+### Commit Summary
+- **Total commits:** {{COMMIT_COUNT}}
+- **Types:** {{feat: N, test: N, fix: N}}
+
+## Deviations from Plan
+
+| Type | Issue | Action Taken | Impact |
+|------|-------|--------------|--------|
+| {{bug|security|blocker}} | {{ISSUE}} | {{ACTION}} | {{IMPACT}} |
+
+### Deviation Statistics
+- Auto-fixed: {{COUNT}}
+- Decisions required: {{COUNT}}
+- Enhancements logged: {{COUNT}}
+
+## Verification Results
+
+### Tests
+- **Total:** {{TOTAL_TESTS}}
+- **Passed:** {{PASSED_TESTS}}
+- **Coverage:** {{COVERAGE_PERCENT}}%
+
+### Manual Verification
+- [ ] {{VERIFICATION_ITEM}}
+
+## Lessons Learned
+
+### What Worked Well
+- {{POSITIVE_OBSERVATION}}
+
+### What Could Improve
+- {{IMPROVEMENT_OPPORTUNITY}}
+
+### Patterns to Remember
+- {{PATTERN_FOR_FUTURE}}
+
+## Stored In Memory
+
+### A-MEM
+- **Memory ID:** {{AMEM_ID}}
+- **Tags:** {{TAGS}}
+- **Linked To:** {{LINKED_MEMORY_IDS}}
+
+### Reflection Episodes
+| Episode ID | Type | Outcome |
+|------------|------|---------|
+| {{EPISODE_ID}} | {{failure|success}} | {{LESSON}} |
+
+---
+
+## Dependencies for Next Phase
+
+If this plan is part of a larger roadmap:
+
+- **Next Plan:** {{NEXT_PLAN_PATH}}
+- **Blocking:** {{WHAT_THIS_UNBLOCKS}}
+- **Requires:** {{WHAT_THIS_NEEDS}}

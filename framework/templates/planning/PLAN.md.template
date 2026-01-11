@@ -1,0 +1,120 @@
+# Plan: {{TASK_NAME}}
+
+## Metadata
+- **Created:** {{TIMESTAMP}}
+- **Session:** {{SESSION_ID}}
+- **Confidence:** {{CONFIDENCE}}/10
+
+## Execution Mode: {{SEQUENTIAL|PARALLEL}}
+**Reason:** {{MODE_REASON}}
+
+## Execution Strategy: {{A|B|C}}
+**Reason:** {{STRATEGY_REASON}}
+
+### Checkpoint Analysis
+| Task | Type | Strategy Impact |
+|------|------|-----------------|
+| {{TASK_NAME}} | {{auto|checkpoint:*}} | {{IMPACT}} |
+
+### Token Distribution
+- Main context: ~{{MAIN_PERCENT}}%
+- Subagents: ~{{SUBAGENT_PERCENT}}%
+
+---
+
+## Context
+
+### Research Summary
+{{RESEARCH_SUMMARY}}
+
+### Architecture Decision
+{{ARCHITECTURE_DECISION}}
+
+### Files to Reference
+```
+@{{CONTEXT_FILE_1}}
+@{{CONTEXT_FILE_2}}
+```
+
+---
+
+## Tasks
+
+<task type="{{auto|checkpoint:decision|checkpoint:human-verify}}">
+  <name>{{TASK_1_NAME}}</name>
+  <files>
+    <exclusive>{{EXCLUSIVE_FILES}}</exclusive>
+    <readonly>{{READONLY_FILES}}</readonly>
+    <forbidden>{{FORBIDDEN_FILES}}</forbidden>
+  </files>
+  <action>
+    1. {{STEP_1}}
+    2. {{STEP_2}}
+    3. {{STEP_3}}
+
+    Avoid: {{WHAT_TO_AVOID}} because {{WHY}}
+  </action>
+  <verify>
+    {{VERIFICATION_COMMAND_OR_CHECK}}
+  </verify>
+  <done>
+    - [ ] {{CRITERION_1}}
+    - [ ] {{CRITERION_2}}
+    - [ ] No regressions in existing tests
+  </done>
+</task>
+
+<!-- Repeat for 2-3 tasks maximum -->
+
+---
+
+## Deviation Rules
+
+Reference: `@~/.claude/framework/references/deviation-rules.md`
+
+| Rule | Condition | Action |
+|------|-----------|--------|
+| 1 | Bug discovered | Auto-fix, document in STATE.md |
+| 2 | Security/validation gap | Auto-add, document in STATE.md |
+| 3 | Blocker with clear fix | Auto-fix, document in STATE.md |
+| 4 | Architectural change | **STOP**, ask user |
+| 5 | Enhancement opportunity | Log to ISSUES.md, continue |
+
+---
+
+## Verification
+
+After all tasks complete:
+
+### Automated Checks
+```bash
+{{TEST_COMMAND}}
+{{LINT_COMMAND}}
+{{BUILD_COMMAND}}
+```
+
+### Manual Verification
+- [ ] {{MANUAL_CHECK_1}}
+- [ ] {{MANUAL_CHECK_2}}
+
+---
+
+## Success Criteria
+
+- [ ] All `<done>` criteria met for each task
+- [ ] All `<verify>` checks pass
+- [ ] No regressions in test suite
+- [ ] STATE.md updated with completion
+- [ ] SUMMARY.md generated
+
+---
+
+## Output
+
+After completion:
+1. Generate SUMMARY.md with results
+2. Update STATE.md with final status
+3. Store patterns in A-MEM
+4. Store episodes in reflection
+
+**Next Step:** `/implement` to execute this plan

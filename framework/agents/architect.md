@@ -171,6 +171,131 @@ Tradeoffs: [key considerations]
 This ensures future architects and implementers can understand the "why" behind decisions.
 A-MEM will automatically link this to related memories and evolve existing context.
 
+## Step 7: Generate XML Task Format
+
+Convert implementation steps to structured XML tasks for execution.
+
+Reference: `@~/.claude/framework/references/xml-task-format.md`
+
+### Task Classification Rules
+
+| Indicator | Task Type |
+|-----------|-----------|
+| No user input needed | `auto` |
+| Needs verification after automation | `checkpoint:human-verify` |
+| Requires choice between options | `checkpoint:decision` |
+| Requires manual user action | `checkpoint:human-action` |
+
+**Frequency:** ~50% auto, ~40% human-verify, ~9% decision, ~1% human-action
+
+### Task Limit: Maximum 2-3 Tasks Per Plan
+
+Research shows context quality degrades significantly after 3 tasks in a single plan.
+
+**If more tasks needed:**
+1. Complete current plan with 2-3 tasks
+2. Generate next plan after `/implement` completes
+3. Chain plans via ROADMAP.md phases
+
+### XML Output Section
+
+Add to design output:
+
+```markdown
+## XML Tasks
+
+<task type="auto">
+  <name>[Imperative action - e.g., "Add JWT validation middleware"]</name>
+  <files>
+    <exclusive>[Files this task modifies]</exclusive>
+    <readonly>[Files task reads only]</readonly>
+    <forbidden>[Files task must not touch]</forbidden>
+  </files>
+  <action>
+    1. [What to do - specific, not vague]
+    2. [How to do it - patterns, conventions to follow]
+    3. [What to avoid and WHY - prevent common mistakes]
+  </action>
+  <verify>
+    [Concrete verification]:
+    - Command: `dotnet test --filter "TestName"`
+    - OR: Check file X contains pattern Y
+    - OR: API returns expected response
+  </verify>
+  <done>
+    - [ ] [Acceptance criterion 1 - measurable]
+    - [ ] [Acceptance criterion 2 - testable]
+    - [ ] No regressions in existing tests
+  </done>
+</task>
+```
+
+### Checkpoint Placement Guidelines
+
+**Use `checkpoint:human-verify` when:**
+- External service configuration (OAuth, API keys)
+- UI/UX changes that need visual verification
+- Security-sensitive operations
+- Changes affecting production data
+
+**Use `checkpoint:decision` when:**
+- Multiple valid approaches exist (caching strategy, architecture pattern)
+- Tradeoffs require user input
+- Scope clarification needed mid-implementation
+
+**Use `checkpoint:human-action` sparingly when:**
+- Third-party dashboard action required
+- Physical device interaction needed
+- Legal/compliance approval required
+
+### Example XML Tasks
+
+**Good Example:**
+```xml
+<task type="auto">
+  <name>Add authentication middleware</name>
+  <files>
+    <exclusive>src/Middleware/AuthMiddleware.cs, src/Program.cs</exclusive>
+    <readonly>src/Services/IAuthService.cs</readonly>
+    <forbidden>src/Database/*</forbidden>
+  </files>
+  <action>
+    1. Create AuthMiddleware class implementing IMiddleware
+    2. Use IAuthService.ValidateToken() - NOT manual JWT parsing
+    3. Return 401 for invalid tokens, 403 for insufficient permissions
+    4. Register in pipeline AFTER UseRouting, BEFORE UseAuthorization
+
+    Avoid: JwtSecurityTokenHandler (deprecated) - use JsonWebTokenHandler
+  </action>
+  <verify>
+    1. `curl -H "Authorization: Bearer invalid" /api/users` → 401
+    2. `curl -H "Authorization: Bearer valid" /api/users` → 200
+    3. `dotnet test --filter "AuthMiddleware"` passes
+  </verify>
+  <done>
+    - [ ] AuthMiddleware.cs created with proper interface
+    - [ ] Middleware registered in correct pipeline position
+    - [ ] Unauthorized requests return 401
+    - [ ] All existing tests pass
+  </done>
+</task>
+```
+
+**Bad Example (too vague):**
+```xml
+<task type="auto">
+  <name>Add authentication</name>
+  <files>
+    <exclusive>src/</exclusive>
+  </files>
+  <action>Add authentication to the API</action>
+  <verify>Test it works</verify>
+  <done>
+    - [ ] Authentication works
+  </done>
+</task>
+```
+
 ## Rules
 
 - ALWAYS generate minimum 3 approaches

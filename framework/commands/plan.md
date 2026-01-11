@@ -152,6 +152,53 @@ Forbidden: [list]
 Ready for /implement (will auto-parallelize)
 ```
 
+### XML Tasks Section (NEW)
+
+After architecture decision, include XML task format from architect:
+
+```markdown
+## XML Tasks
+
+<task type="auto|checkpoint:human-verify|checkpoint:decision">
+  <name>[Task name]</name>
+  <files>
+    <exclusive>[Files to modify]</exclusive>
+    <readonly>[Files to read]</readonly>
+    <forbidden>[Files to avoid]</forbidden>
+  </files>
+  <action>[Specific instructions]</action>
+  <verify>[Verification command/check]</verify>
+  <done>
+    - [ ] [Criterion 1]
+    - [ ] [Criterion 2]
+  </done>
+</task>
+```
+
+Reference: `@~/.claude/framework/references/xml-task-format.md`
+
+### Execution Strategy Section (NEW)
+
+After parallelization analysis, include strategy from orchestrator:
+
+```markdown
+## Execution Strategy: [A|B|C]
+
+**Reason:** [Based on checkpoint types in tasks]
+
+| Strategy | When | Behavior |
+|----------|------|----------|
+| A | All auto | Single subagent, full plan |
+| B | Has verify | Fresh subagent per segment |
+| C | Has decision | Main context only |
+
+### Checkpoint Analysis
+| Task | Type | Impact |
+|------|------|--------|
+```
+
+Reference: `@~/.claude/framework/references/execution-strategies.md`
+
 ## Mode Detection Rules
 
 | Condition | Mode | Reason |
@@ -183,6 +230,55 @@ The planning pipeline uses A-MEM memory throughout:
 
 A-MEM automatically links related memories and evolves existing context.
 
+## Context File Generation
+
+After planning completes, generate context files in `.planning/` directory:
+
+### Directory Structure
+
+```
+.planning/
+├── STATE.md       # Session state and progress tracking
+├── PLAN.md        # Executable task definitions (XML format)
+└── ISSUES.md      # Deferred enhancements (created during /implement)
+```
+
+### .planning/STATE.md
+
+Generated from template: `@~/.claude/framework/templates/planning/STATE.md.template`
+
+Contents:
+- Session ID (timestamp-based)
+- Current position (phase, task, status)
+- Decisions table (empty, filled during /implement)
+- Blockers table
+- A-MEM/Reflection memory links
+
+### .planning/PLAN.md
+
+Generated from template: `@~/.claude/framework/templates/planning/PLAN.md.template`
+
+Contents:
+- Task name and metadata
+- Execution mode (SEQUENTIAL/PARALLEL)
+- Execution strategy (A/B/C)
+- XML tasks from architect
+- Deviation rules reference
+- Verification steps
+
+### Output Addition
+
+Add to plan output:
+
+```markdown
+## Context Files Created
+
+- `.planning/STATE.md` - Session state tracking (empty decisions table)
+- `.planning/PLAN.md` - Executable XML task definitions
+
+Ready for `/implement` with strategy [A|B|C]
+```
+
 ## Notes
 
 - Always run /scan before first /plan in a project
@@ -190,3 +286,5 @@ A-MEM automatically links related memories and evolves existing context.
 - Use `--deep` for complex investigative tasks
 - If confidence < 7, the plan will recommend human review
 - Architecture decisions are stored in A-MEM for future reference
+- Context files are generated in `.planning/` directory
+- Maximum 2-3 tasks per plan to prevent context degradation

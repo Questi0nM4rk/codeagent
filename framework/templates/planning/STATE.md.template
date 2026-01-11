@@ -1,0 +1,62 @@
+# Project State
+
+## Session
+- **ID:** {{SESSION_ID}}
+- **Started:** {{TIMESTAMP}}
+- **Task:** {{TASK_NAME}}
+
+## Current Position
+- **Phase:** {{PHASE_NAME}}
+- **Plan:** {{PLAN_NUMBER}} of {{TOTAL_PLANS}}
+- **Task:** {{CURRENT_TASK}}
+- **Status:** {{pending|in_progress|blocked|complete}}
+- **Strategy:** {{A|B|C}}
+
+## Progress
+```
+[{{PROGRESS_BAR}}] {{PROGRESS_PERCENT}}%
+```
+
+## Deviations During Implementation
+
+### Auto-Fixed (Rules 1-3)
+| Time | Type | Issue | Action | Files |
+|------|------|-------|--------|-------|
+<!-- Populated during implementation -->
+
+### Decisions Made (Rule 4)
+| Time | Issue | Options | Selected | Rationale |
+|------|-------|---------|----------|-----------|
+<!-- Populated when architectural decisions needed -->
+
+### Deferred (Rule 5)
+See ISSUES.md for logged enhancements.
+
+## Accumulated Context
+
+### Key Decisions
+| ID | Decision | Rationale | Date |
+|----|----------|-----------|------|
+<!-- Important decisions that affect future work -->
+
+### Blockers Encountered
+| ID | Blocker | Impact | Resolution | Status |
+|----|---------|--------|------------|--------|
+<!-- Issues that blocked progress -->
+
+### Constraints Discovered
+- <!-- Constraints learned during implementation -->
+
+## Memory Links
+- **A-MEM:** {{AMEM_MEMORY_IDS}}
+- **Reflection:** {{REFLECTION_EPISODE_IDS}}
+
+## Session Continuity
+- **Last Activity:** {{LAST_ACTIVITY_TIMESTAMP}}
+- **Stopped At:** {{STOP_DESCRIPTION}}
+- **Resume File:** {{RESUME_FILE_PATH|None}}
+
+---
+
+**Size Limit:** Keep under 100 lines. This is a digest, not an archive.
+Move detailed history to SUMMARY.md files.
