@@ -1,10 +1,10 @@
 ---
-description: Research, design, and auto-detect parallel execution potential
+description: Research, design, create epics/tasks, and auto-detect parallel execution potential
 ---
 
 # /plan - Unified Planning
 
-Gathers context, designs solution, and automatically determines if parallel execution is beneficial.
+Gathers context, designs solution, creates backlog items (epics/tasks), and determines if parallel execution is beneficial.
 
 ## Usage
 
@@ -279,6 +279,107 @@ Add to plan output:
 Ready for `/implement` with strategy [A|B|C]
 ```
 
+## Backlog Integration
+
+After planning completes, generate backlog items in `.codeagent/backlog/`:
+
+### Epic Creation (if scope is large)
+
+**File:** `.codeagent/backlog/epics/EPIC-{N}.yaml`
+
+```yaml
+id: EPIC-{N}
+type: epic
+name: "[Task name from plan]"
+description: |
+  [From architect's architecture decision]
+status: ready
+priority: high
+tasks: [TASK-{N}, TASK-{N+1}]
+source:
+  type: plan
+  ref: "[session-id]"
+context:
+  files_to_reference: [from plan's affected files]
+  patterns_to_follow: [from architect's patterns]
+  constraints: [from plan's risks]
+created: "[timestamp]"
+```
+
+### Task Creation
+
+**File:** `.codeagent/backlog/tasks/TASK-{N}.yaml`
+
+```yaml
+id: TASK-{N}
+type: task
+name: "[Step name from plan]"
+description: |
+  [Step description]
+epic: EPIC-{N}  # Link to parent epic
+status: ready
+depends_on: []  # Auto-populated from plan dependencies
+blocks: []
+implementation:
+  files:
+    exclusive: [from plan's exclusive files]
+    readonly: [from plan's readonly files]
+    forbidden: [from plan's forbidden files]
+  action: |
+    [From XML task action]
+  verify: [from XML task verify]
+  done: [from XML task done criteria]
+execution:
+  strategy: A  # From orchestrator's strategy decision
+  checkpoint_type: auto  # auto | human-verify | decision
+source:
+  type: plan
+  ref: "[session-id]"
+created: "[timestamp]"
+```
+
+### Update BACKLOG.md
+
+After creating items, regenerate `.codeagent/backlog/BACKLOG.md`:
+
+```markdown
+# [Project] Backlog
+
+*Auto-generated. Do not edit manually.*
+
+## Summary
+
+| Type | Backlog | Ready | In Progress | Blocked | Done |
+|------|---------|-------|-------------|---------|------|
+| Epics | 0 | 1 | 0 | 0 | 0 |
+| Tasks | 0 | 3 | 0 | 0 | 0 |
+
+## Ready Items
+
+### EPIC-001: [name]
+- [ ] TASK-001: [name]
+- [ ] TASK-002: [name]
+- [ ] TASK-003: [name]
+```
+
+### ID Generation
+
+```
+1. Read .codeagent/config.yaml for id_prefix
+2. Find highest existing number for type
+3. Increment: {prefix}-{TYPE}-{N+1}
+
+Example: If id_prefix="MP" and highest task is TASK-005
+         Next task ID = MP-TASK-006
+```
+
+## Integration with /analyze
+
+If `/analyze` was run first:
+- Link epic to research: `source.type: research`, `source.ref: RES-{N}`
+- Import findings as context
+- Reference research output in epic description
+
 ## Notes
 
 - Always run /scan before first /plan in a project
@@ -287,4 +388,5 @@ Ready for `/implement` with strategy [A|B|C]
 - If confidence < 7, the plan will recommend human review
 - Architecture decisions are stored in A-MEM for future reference
 - Context files are generated in `.planning/` directory
+- Backlog items are created in `.codeagent/backlog/`
 - Maximum 2-3 tasks per plan to prevent context degradation

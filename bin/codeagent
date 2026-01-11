@@ -31,6 +31,8 @@ usage() {
     echo ""
     echo -e "${BLUE}Project Commands:${NC}"
     echo "  init          Initialize CodeAgent in current project"
+    echo "  index         Rebuild codebase index (incremental by default, --full for complete)"
+    echo "  backlog       View project backlog summary"
     echo ""
     echo -e "${BLUE}Configuration Commands:${NC}"
     echo "  config        Configure API keys (add/update without reinstalling)"
@@ -44,9 +46,11 @@ usage() {
     echo "  uninstall     Remove CodeAgent completely"
     echo ""
     echo -e "${BLUE}Claude Code Commands:${NC} (use in Claude Code)"
-    echo "  /scan         Build knowledge graph of codebase"
-    echo "  /plan         Research, design, auto-detect parallel"
-    echo "  /implement    TDD implementation (sequential or parallel)"
+    echo "  /scan         Index codebase + build knowledge graph"
+    echo "  /analyze      Research before planning (creates research items)"
+    echo "  /plan         Create epics/tasks from requirements"
+    echo "  /implement    TDD implementation (consumes tasks)"
+    echo "  /backlog      View/manage project backlog"
     echo "  /review       Validate with external tools"
     echo ""
     echo -e "${BLUE}Options:${NC}"
@@ -85,6 +89,26 @@ case "${1:-help}" in
     init)
         check_install
         exec "$INSTALL_DIR/bin/codeagent-init" "${@:2}"
+        ;;
+    index)
+        check_install
+        # Check if in a CodeAgent project
+        if [ ! -d ".codeagent" ]; then
+            echo -e "${RED}Error: Not a CodeAgent project (no .codeagent/ directory)${NC}"
+            echo "Run 'codeagent init' first"
+            exit 1
+        fi
+        exec "$INSTALL_DIR/bin/codeagent-index" "${@:2}"
+        ;;
+    backlog)
+        check_install
+        # Check if in a CodeAgent project
+        if [ ! -d ".codeagent" ]; then
+            echo -e "${RED}Error: Not a CodeAgent project (no .codeagent/ directory)${NC}"
+            echo "Run 'codeagent init' first"
+            exit 1
+        fi
+        exec "$INSTALL_DIR/bin/codeagent-backlog" "${@:2}"
         ;;
     config)
         check_install

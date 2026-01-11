@@ -1,19 +1,61 @@
 ---
-description: Execute plan using TDD (auto-detects parallel from plan)
+description: Execute plan/backlog using TDD (auto-detects parallel from plan)
 ---
 
 # /implement - TDD Implementation
 
-Implements the plan using Test-Driven Development. Automatically uses parallel execution if the plan detected isolated subtasks.
+Implements the plan or backlog task using Test-Driven Development. Automatically uses parallel execution if the plan detected isolated subtasks.
 
 ## Usage
 
 ```
 /implement                  # Execute plan (uses mode from /plan)
+/implement TASK-001         # Execute specific backlog task
+/implement EPIC-001         # Execute all ready tasks in epic
+/implement BUG-001          # Fix specific bug
 /implement --sequential     # Force sequential even if plan allows parallel
 /implement --step 2         # Start from step 2 (sequential mode)
 /implement --continue       # Continue from last checkpoint
 /implement --task=A         # Re-run specific parallel task
+```
+
+## Backlog Integration
+
+### Task Selection Priority
+
+When running `/implement` without arguments:
+1. Continue from `.planning/STATE.md` if exists
+2. Pick next `ready` task from backlog (priority order)
+3. If no ready tasks, report backlog status
+
+### Picking from Backlog
+
+```
+1. Read .codeagent/backlog/tasks/*.yaml where status=ready
+2. Sort by: epic priority → task dependency order
+3. Move selected task to status: in_progress
+4. Load task context into implementer agent
+```
+
+### Task Context Loading
+
+When starting a task, load:
+```yaml
+# From task file
+implementation:
+  files: exclusive, readonly, forbidden
+  action: what to do
+  verify: how to verify
+  done: completion criteria
+
+# From linked epic
+context:
+  files_to_reference: additional context files
+  patterns_to_follow: project patterns
+  constraints: what to avoid
+
+# From source research (if any)
+RES-XXX-output.md: detailed findings
 ```
 
 ## Agent Pipeline
@@ -368,11 +410,161 @@ mcp__reflection__store_episode:
   }
 ```
 
-### 4. Clean Up
+### 4. Update Backlog
+
+**Update task status:**
+```yaml
+# .codeagent/backlog/tasks/TASK-XXX.yaml
+status: done
+completed_at: "[timestamp]"
+summary: "[1-2 sentence summary]"
+commits:
+  - "abc123: test(auth): add tests for JWT validation"
+  - "def456: feat(auth): implement JWT validation"
+```
+
+**Update epic progress:**
+```yaml
+# .codeagent/backlog/epics/EPIC-XXX.yaml
+progress:
+  total_tasks: 3
+  completed: 1
+  percentage: 33
+```
+
+**Check dependent tasks:**
+```
+For each task that depends_on this task:
+  If all dependencies are done:
+    Move to status: ready
+```
+
+**Regenerate BACKLOG.md:**
+```
+Run codeagent backlog --regenerate
+```
+
+### 5. Update PROJECT.md
+
+Add task summary to `.codeagent/knowledge/PROJECT.md`:
+
+```markdown
+## Recent Completions
+
+### TASK-001: Add JWT middleware (2026-01-10)
+Added AuthMiddleware using JsonWebTokenHandler for token validation.
+Positioned after UseRouting, before UseAuthorization.
+
+- Files: AuthMiddleware.cs (+120 lines)
+- Tests: 5 tests, 100% coverage
+- See: TASK-001-summary.md
+
+## Key Decisions
+
+| Date | Decision | Rationale | Task |
+|------|----------|-----------|------|
+| 2026-01-10 | JsonWebTokenHandler | JwtSecurityTokenHandler deprecated | TASK-001 |
+```
+
+### 6. Generate Task Summary
+
+**File:** `.codeagent/knowledge/summaries/TASK-XXX-summary.md`
+
+```markdown
+# Task Summary: TASK-XXX
+
+**Name:** [task name]
+**Epic:** EPIC-XXX
+**Completed:** [timestamp]
+
+## What Was Done
+
+[Detailed description of implementation]
+
+## Files Modified
+
+| File | Action | Lines |
+|------|--------|-------|
+| src/Middleware/AuthMiddleware.cs | Created | +120 |
+| Program.cs | Modified | +5 |
+
+## Tests Added
+
+| Test | Description |
+|------|-------------|
+| ValidToken_ReturnsOk | Validates JWT with valid token |
+| ExpiredToken_Returns401 | Rejects expired tokens |
+
+## Commits
+
+- abc123: test(auth): add tests for JWT validation
+- def456: feat(auth): implement JWT validation
+
+## Patterns Used
+
+- Middleware pattern for request interception
+- IAuthService for token operations
+
+## Deviations
+
+[Any auto-fixes from Rules 1-3]
+
+## Lessons Learned
+
+[Captured for future reference]
+```
+
+### 7. Clean Up
 
 - Archive `.planning/PLAN.md` to `.planning/history/[timestamp]-PLAN.md`
 - Keep STATE.md for session continuity
 - ISSUES.md persists for future reference
+
+## Failure Handling with Backlog
+
+When implementation fails after 3 attempts:
+
+### Option 1: Create Bug
+
+If user confirms, create bug item:
+
+**File:** `.codeagent/backlog/bugs/BUG-XXX.yaml`
+
+```yaml
+id: BUG-XXX
+type: bug
+name: "[description of failure]"
+severity: medium
+source_task: TASK-XXX
+reproduction:
+  steps: [what was attempted]
+  expected: "[expected behavior]"
+  actual: "[actual error]"
+root_cause: "[from reflection analysis]"
+attempts:
+  - approach: "[approach 1]"
+    error: "[error 1]"
+  - approach: "[approach 2]"
+    error: "[error 2]"
+  - approach: "[approach 3]"
+    error: "[error 3]"
+status: ready
+```
+
+### Option 2: Block Task
+
+Move task to blocked:
+
+```yaml
+# Update TASK-XXX.yaml
+status: blocked
+blocker:
+  reason: "[from reflection analysis]"
+  since: "[timestamp]"
+  needs: "[what help is needed]"
+  attempts: 3
+  checkpoint_branch: "checkpoint/TASK-XXX-[timestamp]"
+```
 
 ## Notes
 

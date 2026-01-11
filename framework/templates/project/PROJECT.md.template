@@ -1,0 +1,94 @@
+# {{PROJECT_NAME}} Knowledge Base
+
+> Auto-updated by CodeAgent after task completions. Manual edits preserved.
+
+## Overview
+
+**Project:** {{PROJECT_NAME}}
+**Type:** {{PROJECT_TYPE}}
+**Created:** {{CREATED_DATE}}
+**Last Updated:** {{UPDATED_DATE}}
+
+{{PROJECT_DESCRIPTION}}
+
+## Architecture
+
+<!-- Architecture patterns discovered and documented during implementation -->
+
+### Core Patterns
+
+| Pattern | Description | Files |
+|---------|-------------|-------|
+| <!-- Pattern entries added by learner agent --> |
+
+### Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| <!-- Stack entries --> |
+
+## Key Decisions
+
+> Architecture decision records from implementations
+
+| Date | Decision | Rationale | Task |
+|------|----------|-----------|------|
+| <!-- Decision entries added after task completion --> |
+
+## Conventions
+
+### Naming
+
+<!-- Discovered naming conventions -->
+
+### Code Organization
+
+<!-- File/folder structure patterns -->
+
+### Testing
+
+<!-- Testing patterns and conventions -->
+
+## Recent Completions
+
+> Last 10 completed tasks with summaries
+
+<!-- RECENT_COMPLETIONS_START -->
+<!-- Recent completion entries inserted here by learner agent -->
+<!-- RECENT_COMPLETIONS_END -->
+
+## Open Items
+
+### In Progress
+
+<!-- From backlog: status=in_progress -->
+
+### Blocked
+
+<!-- From backlog: status=blocked -->
+
+## External References
+
+### Documentation
+
+| Resource | URL | Notes |
+|----------|-----|-------|
+| <!-- External doc references --> |
+
+### Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| <!-- Key dependencies --> |
+
+## A-MEM Links
+
+> Related memories in persistent storage
+
+<!-- Memory IDs linked to this project -->
+- Project structure: `mem_{{MEM_ID_STRUCTURE}}`
+- Patterns: `mem_{{MEM_ID_PATTERNS}}`
+
+---
+
+*This file is auto-updated by CodeAgent. Section markers should not be removed.*

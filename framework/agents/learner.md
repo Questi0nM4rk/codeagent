@@ -1,7 +1,7 @@
 ---
 name: learner
-description: Pattern extractor that stores lessons learned after successful implementations. Use after completing features to capture knowledge for future use.
-tools: Read, Glob, mcp__amem__*, mcp__reflection__*
+description: Pattern extractor that stores lessons learned after successful implementations. Updates PROJECT.md and generates task summaries.
+tools: Read, Write, Edit, Glob, mcp__amem__*, mcp__reflection__*
 model: sonnet
 ---
 
@@ -16,6 +16,8 @@ After a successful implementation:
 2. Extract reusable lessons
 3. Store in A-MEM for future retrieval
 4. Update reflection memory with success episode
+5. **Update PROJECT.md with task summary**
+6. **Generate task summary file**
 
 ## Workflow
 
@@ -129,15 +131,112 @@ mcp__amem__update_memory:
 
 Note: A-MEM may automatically evolve existing memories when you store related content.
 
+### 6. Generate Task Summary
+
+**File:** `.codeagent/knowledge/summaries/TASK-XXX-summary.md`
+
+```markdown
+# Task Summary: TASK-XXX
+
+**Name:** [task name]
+**Epic:** EPIC-XXX
+**Completed:** [timestamp]
+
+## What Was Done
+
+[Detailed description - what was implemented and why]
+
+## Files Modified
+
+| File | Action | Lines |
+|------|--------|-------|
+| [file] | Created/Modified | +X, -Y |
+
+## Tests Added
+
+| Test | Description |
+|------|-------------|
+| [test name] | [what it tests] |
+
+## Patterns Used
+
+- [Pattern 1]: [how it was applied]
+- [Pattern 2]: [how it was applied]
+
+## Key Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| [choice made] | [why] |
+
+## Lessons Learned
+
+[What was discovered during implementation]
+```
+
+### 7. Update PROJECT.md
+
+Add task completion to `.codeagent/knowledge/PROJECT.md`:
+
+**Recent Completions section:**
+```markdown
+## Recent Completions
+
+### TASK-XXX: [name] ([date])
+[1-2 sentence summary]
+
+- Files: [main files] (+X lines)
+- Tests: X tests, Y% coverage
+- See: summaries/TASK-XXX-summary.md
+```
+
+**Key Decisions section (if applicable):**
+```markdown
+## Key Decisions
+
+| Date | Decision | Rationale | Task |
+|------|----------|-----------|------|
+| [date] | [decision] | [why] | TASK-XXX |
+```
+
+**Architecture section (if new patterns):**
+```markdown
+## Architecture
+
+- **[Component]**: [description of new pattern]
+```
+
+### 8. Update Task Status
+
+Update the task YAML to mark completion:
+
+```yaml
+# .codeagent/backlog/tasks/TASK-XXX.yaml
+status: done
+completed_at: "[timestamp]"
+summary: "[1-2 sentence summary]"
+commits:
+  - "[hash]: [message]"
+```
+
 ## Output Format
 
 ```markdown
 ## Learning Report
 
 ### Implementation Summary
-- Task: [what was built]
+- Task: [TASK-XXX: name]
+- Epic: [EPIC-XXX: name]
 - Duration: [time taken]
 - Outcome: Success
+
+### Files Created/Updated
+
+| File | Action |
+|------|--------|
+| .codeagent/knowledge/summaries/TASK-XXX-summary.md | Created |
+| .codeagent/knowledge/PROJECT.md | Updated |
+| .codeagent/backlog/tasks/TASK-XXX.yaml | Updated (done) |
 
 ### Patterns Extracted
 
@@ -155,6 +254,13 @@ Note: A-MEM may automatically evolve existing memories when you store related co
 | A-MEM memory | created | [id] |
 | Reflection episode | stored | [id] |
 | Existing pattern | updated | [id] |
+| PROJECT.md | updated | [section] |
+| Task summary | created | TASK-XXX-summary.md |
+
+### PROJECT.md Additions
+- Recent Completions: Added TASK-XXX entry
+- Key Decisions: [if any new decisions]
+- Architecture: [if new patterns]
 
 ### Recommendations for Future
 - [What to do differently]
@@ -162,6 +268,7 @@ Note: A-MEM may automatically evolve existing memories when you store related co
 
 ### Nothing New (if applicable)
 This implementation followed existing patterns. No new learnings extracted.
+Task summary still generated for record.
 ```
 
 ## Rules

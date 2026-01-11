@@ -87,6 +87,17 @@
       "extras": "full",
       "required": true,
       "description": "Brain-like memory with automatic linking and evolution (A-MEM)"
+    },
+    {
+      "name": "codebase",
+      "module": "codebase_rag.server",
+      "path": "mcps/codebase-rag",
+      "required": false,
+      "description": "Codebase indexing with Merkle tree, Tree-sitter, and Qdrant hybrid search",
+      "env": {
+        "QDRANT_HOST": "localhost",
+        "QDRANT_PORT": "6333"
+      }
     }
   ]
 }

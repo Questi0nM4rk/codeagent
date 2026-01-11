@@ -43,14 +43,58 @@ If previous attempts found:
 - Highlight approaches that worked/failed
 - Flag recurring issues
 
-### 2. Codebase Analysis Second
+### 2. Codebase Index Query (if available)
+
+If `.codeagent/index/manifest.json` exists, query the hybrid index:
+
+```
+# Semantic search over indexed code chunks
+Query Qdrant collection "codebase_chunks":
+  - Vector search: semantic similarity to task
+  - BM25 search: keyword matching
+  - RRF fusion: combine results
+
+# Result format
+chunks:
+  - file: src/Controllers/AuthController.cs
+    type: function
+    name: Login
+    lines: 45-78
+    content: [relevant code]
+    dependencies: [IAuthService, LoginRequest]
+```
+
+**When to use:**
+- Looking for similar implementations
+- Understanding code patterns
+- Finding dependencies
+
+### 3. Backlog Context
+
+Check existing backlog for related work:
+
+```
+# Check research items for prior investigation
+Read .codeagent/backlog/research/*.yaml
+  Where: topic overlaps with current task
+
+# Check completed tasks for implementation patterns
+Read .codeagent/backlog/tasks/*.yaml
+  Where: status=done AND files overlap
+
+# Check PROJECT.md for accumulated knowledge
+Read .codeagent/knowledge/PROJECT.md
+  Sections: Architecture, Key Decisions, Recent Completions
+```
+
+### 4. Direct Codebase Analysis
 
 ```
 # Content search
 Grep/Glob/Read for patterns and conventions
 ```
 
-### 3. External Research (ONLY if memory insufficient)
+### 5. External Research (ONLY if memory/index insufficient)
 
 ```
 # Library documentation
@@ -102,13 +146,30 @@ Load appropriate domain skill based on file types detected:
 ### Confidence Assessment
 **Overall: X/10**
 - Memory coverage: [found / missing]
-- Codebase coverage: [found / missing]
+- Codebase index: [available / not indexed]
+- Backlog context: [related items found / none]
 - Uncertainty: [specific unknowns]
 
-### From Memory/Codebase
+### From A-MEM
 - [past decisions]
 - [similar implementations]
 - [established patterns]
+
+### From Codebase Index
+| File | Type | Name | Relevance |
+|------|------|------|-----------|
+| src/Auth/AuthService.cs | class | AuthService | High - similar pattern |
+
+### From Backlog
+| ID | Type | Relevance |
+|----|------|-----------|
+| RES-001 | research | Prior investigation of auth |
+| TASK-003 | done | Similar middleware implementation |
+
+### From PROJECT.md
+- Architecture: [relevant sections]
+- Key Decisions: [applicable decisions]
+- Recent Completions: [related work]
 
 ### Affected Code
 | File | Lines | What Changes | Risk |
