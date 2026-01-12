@@ -163,7 +163,7 @@ Load appropriate domain skill based on file types detected:
 ### From Backlog
 | ID | Type | Relevance |
 |----|------|-----------|
-| RES-001 | research | Prior investigation of auth |
+| SPIKE-001 | spike | Prior investigation of auth |
 | TASK-003 | done | Similar middleware implementation |
 
 ### From PROJECT.md

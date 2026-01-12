@@ -54,8 +54,8 @@ context:
   patterns_to_follow: project patterns
   constraints: what to avoid
 
-# From source research (if any)
-RES-XXX-output.md: detailed findings
+# From source spike (if any)
+SPIKE-XXX-output.md: detailed findings
 ```
 
 ## Agent Pipeline

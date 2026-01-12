@@ -1,18 +1,20 @@
 ---
-description: Research before planning (creates research items)
+description: Investigate before planning (creates spike items)
 ---
 
-# /analyze - Research Phase
+# /analyze - Spike Investigation
 
-Investigates a topic before deriving tasks. Creates research items in the backlog that auto-generate epics/tasks when findings are actionable.
+Time-boxed investigation of a topic before deriving tasks. Creates spike items in the backlog that auto-generate epics/tasks when findings are actionable.
+
+**Spikes** are Jira/Agile terminology for time-boxed research to reduce uncertainty.
 
 ## Usage
 
 ```
-/analyze "How should we handle auth?"     # Create research item
-/analyze RES-001                           # Continue existing research
-/analyze --deep "Performance issues"       # Extended investigation
-/analyze --list                            # Show all research items
+/analyze "How should we handle auth?"     # Create spike item
+/analyze SPIKE-001                          # Continue existing spike
+/analyze --deep "Performance issues"        # Extended investigation
+/analyze --list                             # Show all spike items
 ```
 
 ## Agent Pipeline
@@ -25,7 +27,7 @@ Main Claude (Orchestrator)
               → Query A-MEM for prior knowledge
               → Query codebase index for patterns
               → External research (Context7, web) if needed
-              → Generate research output
+              → Generate spike output
               → Auto-create derived epics/tasks
 ```
 
@@ -33,14 +35,14 @@ Main Claude (Orchestrator)
 
 ### Phase 1: Check Existing Knowledge
 
-Before new research:
+Before new investigation:
 
 ```
 1. Query A-MEM for related memories
    mcp__amem__search_memory(query="[topic]", k=10)
 
-2. Check existing research items
-   Read .codeagent/backlog/research/*.yaml
+2. Check existing spike items
+   Read .codeagent/backlog/spikes/*.yaml
 
 3. If sufficient knowledge exists:
    - Summarize existing knowledge
@@ -78,10 +80,10 @@ Only when codebase doesn't have answers:
 
 ### Phase 4: Generate Output
 
-Create research item and output:
+Create spike item and output:
 
-1. **Research YAML**: `.codeagent/backlog/research/RES-XXX.yaml`
-2. **Research output**: `.codeagent/knowledge/outputs/RES-XXX-output.md`
+1. **Spike YAML**: `.codeagent/backlog/spikes/SPIKE-XXX.yaml`
+2. **Spike output**: `.codeagent/knowledge/outputs/SPIKE-XXX-output.md`
 3. **Update PROJECT.md**: Add findings to relevant section
 4. **Store in A-MEM**: Key findings with project tag
 
@@ -96,7 +98,7 @@ When findings are actionable:
 2. Create tasks from findings
    .codeagent/backlog/tasks/TASK-XXX.yaml
 
-3. Link research to derived items
+3. Link spike to derived items
    derived_items:
      - type: epic
        id: EPIC-001
@@ -105,9 +107,9 @@ When findings are actionable:
 ## Output Format
 
 ```markdown
-## Research Complete: [Topic]
+## Spike Complete: [Topic]
 
-### Research ID: RES-XXX
+### Spike ID: SPIKE-XXX
 
 ### Summary
 [1-2 sentence summary of findings]
@@ -137,8 +139,8 @@ Based on findings:
 
 ### Files Created
 
-- `.codeagent/backlog/research/RES-XXX.yaml` (research item)
-- `.codeagent/knowledge/outputs/RES-XXX-output.md` (detailed findings)
+- `.codeagent/backlog/spikes/SPIKE-XXX.yaml` (spike item)
+- `.codeagent/knowledge/outputs/SPIKE-XXX-output.md` (detailed findings)
 - `.codeagent/knowledge/PROJECT.md` (updated)
 - `.codeagent/backlog/epics/EPIC-XXX.yaml` (if created)
 - `.codeagent/backlog/tasks/TASK-XXX.yaml` (if created)
@@ -152,20 +154,21 @@ Run `/plan` to detail the created tasks, or:
 - `/analyze "[follow-up topic]"` for deeper research
 ```
 
-## Research Output Format
+## Spike Output Format
 
-**File:** `.codeagent/knowledge/outputs/RES-XXX-output.md`
+**File:** `.codeagent/knowledge/outputs/SPIKE-XXX-output.md`
 
 ```markdown
-# Research: [Topic]
+# Spike: [Topic]
 
-**ID:** RES-XXX
+**ID:** SPIKE-XXX
+**Timebox:** 4h
 **Completed:** [timestamp]
 **Confidence:** X/10
 
 ## Question
 
-[Original question or topic to investigate]
+[Original question or uncertainty to investigate]
 
 ## Summary
 
@@ -226,12 +229,13 @@ Added to PROJECT.md:
 | Flag | Effect |
 |------|--------|
 | `--deep` | Extended investigation with more external research |
-| `--list` | Show all research items and their status |
+| `--list` | Show all spike items and their status |
 | `--no-derive` | Don't auto-create epics/tasks |
+| `--timebox 2h` | Override default timebox (default: 4h) |
 
 ## A-MEM Integration
 
-### Before Research
+### Before Spike
 
 ```
 mcp__amem__search_memory:
@@ -240,12 +244,12 @@ mcp__amem__search_memory:
   project="[project-name]"
 ```
 
-### After Research
+### After Spike
 
 ```
 mcp__amem__store_memory:
-  content="## Research: [topic]
-Type: research
+  content="## Spike: [topic]
+Type: spike
 Context: [when this applies]
 
 ### Key Findings
@@ -253,17 +257,17 @@ Context: [when this applies]
 
 ### Recommendations
 [recommendations]"
-  tags=["project:[name]", "research", "[topic-tags]"]
+  tags=["project:[name]", "spike", "[topic-tags]"]
 ```
 
 ## ID Generation
 
-Research IDs are auto-generated:
+Spike IDs are auto-generated:
 
 ```
 1. Read .codeagent/config.yaml for id_prefix
-2. Find highest existing RES-XXX number
-3. Increment: RES-{N+1}
+2. Find highest existing SPIKE-XXX number
+3. Increment: SPIKE-{N+1}
 ```
 
 ## Derived Item Rules
@@ -279,14 +283,15 @@ Research IDs are auto-generated:
 - Files/patterns to modify known
 
 **Don't create items when:**
-- Research is exploratory only
+- Spike is exploratory only
 - Findings require more research first
 - User requested `--no-derive`
 
 ## Notes
 
-- Research items auto-create derived work (no confirmation needed)
+- Spike items auto-create derived work (no confirmation needed)
 - Use `--no-derive` if you only want investigation, not planning
-- Deep research (`--deep`) costs more tokens but finds more
-- Always check A-MEM first to avoid redundant research
+- Deep spikes (`--deep`) cost more tokens but find more
+- Always check A-MEM first to avoid redundant investigation
 - Store all significant findings in A-MEM for future reference
+- Spikes are time-boxed: respect the timebox to avoid scope creep

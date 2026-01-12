@@ -4,7 +4,7 @@
 # View project backlog summary
 #
 # Reads YAML files from .codeagent/backlog/ and
-# displays a summary of epics, tasks, bugs, research
+# displays a summary of epics, tasks, bugs, spikes
 # ============================================
 
 set -e
@@ -82,10 +82,10 @@ BUG_READY=$(count_by_status "$BACKLOG_DIR/bugs" "ready")
 BUG_PROGRESS=$(count_by_status "$BACKLOG_DIR/bugs" "in_progress")
 BUG_DONE=$(count_by_status "$BACKLOG_DIR/bugs" "done")
 
-# Count research
-RES_BACKLOG=$(count_by_status "$BACKLOG_DIR/research" "backlog")
-RES_PROGRESS=$(count_by_status "$BACKLOG_DIR/research" "in_progress")
-RES_DONE=$(count_by_status "$BACKLOG_DIR/research" "done")
+# Count spikes
+SPIKE_BACKLOG=$(count_by_status "$BACKLOG_DIR/spikes" "backlog")
+SPIKE_PROGRESS=$(count_by_status "$BACKLOG_DIR/spikes" "in_progress")
+SPIKE_DONE=$(count_by_status "$BACKLOG_DIR/spikes" "done")
 
 echo -e "${BLUE}Summary${NC}"
 echo ""
@@ -94,7 +94,7 @@ printf "  %-10s %8s %8s %12s %8s %8s\n" "--------" "-------" "-----" "----------
 printf "  ${MAGENTA}%-10s${NC} %8s %8s %12s %8s %8s\n" "Epics" "$EPIC_BACKLOG" "$EPIC_READY" "$EPIC_PROGRESS" "-" "$EPIC_DONE"
 printf "  ${GREEN}%-10s${NC} %8s %8s %12s %8s %8s\n" "Tasks" "$TASK_BACKLOG" "$TASK_READY" "$TASK_PROGRESS" "$TASK_BLOCKED" "$TASK_DONE"
 printf "  ${RED}%-10s${NC} %8s %8s %12s %8s %8s\n" "Bugs" "$BUG_BACKLOG" "$BUG_READY" "$BUG_PROGRESS" "-" "$BUG_DONE"
-printf "  ${CYAN}%-10s${NC} %8s %8s %12s %8s %8s\n" "Research" "$RES_BACKLOG" "-" "$RES_PROGRESS" "-" "$RES_DONE"
+printf "  ${CYAN}%-10s${NC} %8s %8s %12s %8s %8s\n" "Spikes" "$SPIKE_BACKLOG" "-" "$SPIKE_PROGRESS" "-" "$SPIKE_DONE"
 echo ""
 
 # Show in-progress items
@@ -157,7 +157,7 @@ if [ -d "$BACKLOG_DIR/tasks" ]; then
 fi
 
 # If nothing in backlog
-TOTAL=$((EPIC_BACKLOG + EPIC_READY + EPIC_PROGRESS + TASK_BACKLOG + TASK_READY + TASK_PROGRESS + TASK_BLOCKED + BUG_BACKLOG + BUG_READY + BUG_PROGRESS + RES_BACKLOG + RES_PROGRESS))
+TOTAL=$((EPIC_BACKLOG + EPIC_READY + EPIC_PROGRESS + TASK_BACKLOG + TASK_READY + TASK_PROGRESS + TASK_BLOCKED + BUG_BACKLOG + BUG_READY + BUG_PROGRESS + SPIKE_BACKLOG + SPIKE_PROGRESS))
 if [ "$TOTAL" -eq 0 ]; then
     echo -e "${YELLOW}Backlog is empty.${NC}"
     echo ""

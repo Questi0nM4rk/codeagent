@@ -29,7 +29,7 @@ Global (A-MEM)                    Per-Project (.codeagent/)
      │                                    │
      ├─► Patterns                         ├─► PROJECT.md (overview)
      ├─► Architecture decisions           ├─► Task summaries
-     ├─► Cross-project learnings          ├─► Research outputs
+     ├─► Cross-project learnings          ├─► Spike outputs
      └─► Auto-linked memories             └─► Backlog items
 ```
 
@@ -49,7 +49,7 @@ Global (A-MEM)                    Per-Project (.codeagent/)
 | Conventions | Naming, organization, testing | On pattern discovery |
 | Recent Completions | Last 10 task summaries | On task done |
 | Open Items | In-progress and blocked | On status change |
-| External References | Docs, dependencies | On research |
+| External References | Docs, dependencies | On spike |
 | A-MEM Links | Memory IDs for this project | On memory store |
 
 ### Section Markers
@@ -170,16 +170,16 @@ A-MEM automatically:
 3. Creates bidirectional links
 4. Updates related memories with new context
 
-## Research Output Storage
+## Spike Output Storage
 
-**Location:** `.codeagent/knowledge/outputs/RES-XXX-output.md`
+**Location:** `.codeagent/knowledge/outputs/SPIKE-XXX-output.md`
 
 ### Content
 
 ```markdown
-# Research: [Topic]
+# Spike: [Topic]
 
-**ID:** RES-XXX
+**ID:** SPIKE-XXX
 **Completed:** [timestamp]
 **Confidence:** X/10
 
@@ -211,7 +211,7 @@ A-MEM automatically:
 ### When to Cache
 
 1. Context7 docs relevant to project
-2. API documentation referenced during research
+2. API documentation referenced during spikes
 3. Library guides used for implementation
 
 ### Cache Format
@@ -246,11 +246,11 @@ Input: Question/topic
      │
      ├─► Query A-MEM for existing knowledge
      ├─► Query codebase index
-     ├─► External research if needed
+     ├─► External investigation if needed
      │
      └─► Output:
-         ├─► RES-XXX.yaml (backlog)
-         ├─► RES-XXX-output.md (knowledge)
+         ├─► SPIKE-XXX.yaml (backlog)
+         ├─► SPIKE-XXX-output.md (knowledge)
          ├─► PROJECT.md update (if significant)
          └─► A-MEM store (if reusable)
 ```
@@ -300,13 +300,13 @@ Input: Task ID or plan
 ### Keep Recent (10)
 
 - Task summaries in PROJECT.md Recent Completions
-- Research outputs (older moved to archive)
+- Spike outputs (older moved to archive)
 
 ### Archive
 
 - `.codeagent/knowledge/archive/`
 - Old summaries beyond retention limit
-- Superseded research
+- Superseded spikes
 
 ### Clean Up
 

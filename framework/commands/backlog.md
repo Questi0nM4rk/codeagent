@@ -4,7 +4,7 @@ description: View and manage project backlog
 
 # /backlog - Backlog Management
 
-View and manage project backlog. Shows epics, tasks, bugs, and research items with their statuses.
+View and manage project backlog. Shows epics, tasks, bugs, and spike items with their statuses.
 
 ## Usage
 
@@ -33,13 +33,13 @@ View and manage project backlog. Shows epics, tasks, bugs, and research items wi
 | Epics    | 1       | 2     | 1           | -       | 3    |
 | Tasks    | 5       | 8     | 2           | 1       | 15   |
 | Bugs     | 0       | 2     | 0           | -       | 5    |
-| Research | 1       | -     | 1           | -       | 4    |
+| Spikes   | 1       | -     | 1           | -       | 4    |
 
 ### In Progress
 
 - **TASK-015**: Add user profile endpoint [EPIC-002]
 - **TASK-016**: Implement pagination [EPIC-003]
-- **RES-006**: Caching strategy investigation
+- **SPIKE-006**: Caching strategy investigation
 
 ### Ready (Priority Order)
 
@@ -122,8 +122,8 @@ Implement complete authentication flow including:
 
 ### Source
 
-- Type: research
-- Ref: RES-001
+- Type: spike
+- Ref: SPIKE-001
 
 ### Commands
 
@@ -183,7 +183,7 @@ Positioned after UseRouting, before UseAuthorization.
 ### Related
 
 - Epic: EPIC-001
-- Research: RES-001
+- Research: SPIKE-001
 ```
 
 ### Blocked View (`/backlog blocked`)
@@ -253,7 +253,7 @@ AI-assisted backlog grooming:
 
 1. **Stale items** (no activity > 7 days)
    - TASK-005: Add logging (backlog since 2026-01-03)
-   - RES-002: Investigate caching (in_progress since 2026-01-02)
+   - SPIKE-002: Investigate caching (in_progress since 2026-01-02)
 
 2. **Missing dependencies**
    - TASK-020 depends on TASK-019 but TASK-019 not created
@@ -261,14 +261,14 @@ AI-assisted backlog grooming:
 3. **Orphaned tasks**
    - TASK-021: No linked epic
 
-4. **Duplicate research**
-   - RES-003 and RES-007 both investigate "caching"
+4. **Duplicate spike**
+   - SPIKE-003 and SPIKE-007 both investigate "caching"
 
 ### Recommendations
 
 1. **Deprioritize or close stale items**
    - TASK-005: Still relevant? Move to backlog or close
-   - RES-002: Complete research or mark done
+   - SPIKE-002: Complete spike or mark done
 
 2. **Create missing items**
    - TASK-019: [suggested name based on TASK-020 dependency]
@@ -276,8 +276,8 @@ AI-assisted backlog grooming:
 3. **Link orphaned tasks**
    - TASK-021: Should link to EPIC-003 based on file patterns
 
-4. **Consolidate research**
-   - Merge RES-007 findings into RES-003
+4. **Consolidate spike**
+   - Merge SPIKE-007 findings into SPIKE-003
 
 ### Actions
 
@@ -294,7 +294,7 @@ AI-assisted backlog grooming:
 | `blocked` | Items waiting on something |
 | `done` | Completed items (last 10) |
 | `bugs` | All bugs |
-| `research` | All research items |
+| `spike` | All spike items |
 | `high` | High/critical priority items |
 
 ## Item References
@@ -305,7 +305,7 @@ View any item by ID:
 /backlog EPIC-001    # Epic details
 /backlog TASK-001    # Task details
 /backlog BUG-001     # Bug details
-/backlog RES-001     # Research details
+/backlog SPIKE-001     # Research details
 ```
 
 ## Management Commands

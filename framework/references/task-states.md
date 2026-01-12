@@ -39,7 +39,7 @@ State machine for CodeAgent backlog items.
 Item is recorded but not ready for work.
 
 **Entry conditions:**
-- Item created via /analyze (research)
+- Item created via /analyze (spike)
 - Item created via /plan but dependencies not met
 - Item deprioritized
 
@@ -83,7 +83,7 @@ Task cannot proceed without external help or decision.
 
 **Exit conditions:**
 - Blocker resolved → `ready`
-- Converted to research → (new RES item created)
+- Converted to spike → (new SPIKE item created)
 
 **Required fields when blocked:**
 ```yaml
@@ -142,7 +142,7 @@ commits:
 
 ### `/analyze`
 
-Creates research items in `in_progress` state.
+Creates spike items in `in_progress` state.
 
 ### `/plan`
 
@@ -211,21 +211,22 @@ backlog → ready → in_progress → done
 No `blocked` state for bugs. If a bug fix is blocked:
 1. Document the blocker in description
 2. Move back to `backlog` with updated priority
-3. Create separate research item if needed
+3. Create separate spike item if needed
 
 ---
 
-## Research State Flow
+## Spike State Flow
 
-Research has minimal states:
+Spikes have minimal states:
 
 ```
 backlog → in_progress → done
 ```
 
 **Key differences:**
-- No `ready` state (research starts immediately)
-- No `blocked` state (research continues or is abandoned)
+- No `ready` state (spikes start immediately)
+- No `blocked` state (spikes continue or are abandoned)
+- Time-boxed: spike ends when timebox expires or question answered
 - `done` triggers auto-creation of derived items
 
 ---

@@ -376,9 +376,9 @@ Example: If id_prefix="MP" and highest task is TASK-005
 ## Integration with /analyze
 
 If `/analyze` was run first:
-- Link epic to research: `source.type: research`, `source.ref: RES-{N}`
+- Link epic to spike: `source.type: spike`, `source.ref: SPIKE-{N}`
 - Import findings as context
-- Reference research output in epic description
+- Reference spike output in epic description
 
 ## Notes
 

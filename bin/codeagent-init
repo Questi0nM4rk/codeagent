@@ -5,7 +5,7 @@
 #
 # This sets up per-project structure:
 # - .codeagent/          Full project state
-#   - backlog/           Task management (epics, tasks, bugs, research)
+#   - backlog/           Task management (epics, tasks, bugs, spikes)
 #   - knowledge/         Knowledge accumulation
 #   - index/             Codebase RAG index
 #   - sessions/          Session state
@@ -96,14 +96,14 @@ echo -e "${BLUE}Creating .codeagent/ structure...${NC}"
 mkdir -p .codeagent/backlog/epics
 mkdir -p .codeagent/backlog/tasks
 mkdir -p .codeagent/backlog/bugs
-mkdir -p .codeagent/backlog/research
+mkdir -p .codeagent/backlog/spikes
 mkdir -p .codeagent/knowledge/summaries
 mkdir -p .codeagent/knowledge/outputs
 mkdir -p .codeagent/knowledge/external
 mkdir -p .codeagent/index/chunks
 mkdir -p .codeagent/sessions/history
 
-echo -e "  ${GREEN}+${NC} .codeagent/backlog/{epics,tasks,bugs,research}/"
+echo -e "  ${GREEN}+${NC} .codeagent/backlog/{epics,tasks,bugs,spikes}/"
 echo -e "  ${GREEN}+${NC} .codeagent/knowledge/{summaries,outputs,external}/"
 echo -e "  ${GREEN}+${NC} .codeagent/index/chunks/"
 echo -e "  ${GREEN}+${NC} .codeagent/sessions/history/"
@@ -340,12 +340,12 @@ echo "  +-- backlog/"
 echo "  |   +-- epics/               (high-level features)"
 echo "  |   +-- tasks/               (implementation units)"
 echo "  |   +-- bugs/                (defect tracking)"
-echo "  |   +-- research/            (investigation items)"
+echo "  |   +-- spikes/            (investigation items)"
 echo "  |   +-- BACKLOG.md           (human-readable view)"
 echo "  +-- knowledge/"
 echo "  |   +-- PROJECT.md           (accumulated knowledge)"
 echo "  |   +-- summaries/           (task completion summaries)"
-echo "  |   +-- outputs/             (research outputs)"
+echo "  |   +-- outputs/             (spikes outputs)"
 echo "  |   +-- external/            (cached external docs)"
 echo "  +-- index/"
 echo "  |   +-- manifest.json        (Merkle tree for change detection)"

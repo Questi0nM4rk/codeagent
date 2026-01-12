@@ -1,6 +1,6 @@
 # Task Formats Reference
 
-YAML specifications for CodeAgent backlog items: Epics, Tasks, Bugs, and Research.
+YAML specifications for CodeAgent backlog items: Epics, Tasks, Bugs, and Spikes.
 
 ## File Locations
 
@@ -9,7 +9,7 @@ YAML specifications for CodeAgent backlog items: Epics, Tasks, Bugs, and Researc
 ├── epics/      EPIC-001.yaml, EPIC-002.yaml, ...
 ├── tasks/      TASK-001.yaml, TASK-002.yaml, ...
 ├── bugs/       BUG-001.yaml, BUG-002.yaml, ...
-└── research/   RES-001.yaml, RES-002.yaml, ...
+└── spikes/     SPIKE-001.yaml, SPIKE-002.yaml, ...
 ```
 
 ## ID Format
@@ -23,10 +23,10 @@ Examples:
 - MP-EPIC-001  (MyProject Epic 1)
 - MP-TASK-001  (MyProject Task 1)
 - MP-BUG-001   (MyProject Bug 1)
-- MP-RES-001   (MyProject Research 1)
+- MP-SPIKE-001 (MyProject Spike 1)
 ```
 
-Shorthand form (for CLI): `EPIC-001`, `TASK-001`, `BUG-001`, `RES-001`
+Shorthand form (for CLI): `EPIC-001`, `TASK-001`, `BUG-001`, `SPIKE-001`
 
 ---
 
@@ -63,8 +63,8 @@ labels:
 
 # Source tracking
 source:
-  type: research  # user_request, research, bug_report, /plan
-  ref: RES-001    # Reference to source item (optional)
+  type: spike  # user_request, spike, bug_report, /plan
+  ref: SPIKE-001  # Reference to source item (optional)
   request: "Add auth to the API"  # Original user request (optional)
 
 # Task relationships
@@ -103,8 +103,8 @@ context:
 # Knowledge links
 knowledge:
   amem_ids: []           # A-MEM memory IDs
-  research_refs:
-    - RES-001
+  spike_refs:
+    - SPIKE-001
 
 # Completion (filled when done)
 completed_at: null
@@ -280,16 +280,16 @@ commits: []
 
 ---
 
-## Research Format
+## Spike Format
 
-Research items are investigations that may derive tasks.
+Spikes are time-boxed investigations to reduce uncertainty before implementation.
 
-**File:** `.codeagent/backlog/research/RES-001.yaml`
+**File:** `.codeagent/backlog/spikes/SPIKE-001.yaml`
 
 ```yaml
 # Required fields
-id: RES-001
-type: research
+id: SPIKE-001
+type: spike
 name: "Authentication patterns for .NET 10"
 question: |
   What authentication approach should we use?
@@ -301,7 +301,10 @@ created: "2026-01-10T14:00:00Z"
 updated: "2026-01-10T14:30:00Z"
 status: done  # backlog, in_progress, done
 
-# Research scope
+# Time-box (spikes are always time-limited)
+timebox: "4h"  # Maximum time to spend
+
+# Investigation scope
 scope:
   - "Compare JWT vs session-based auth for API"
   - "Investigate refresh token best practices"
@@ -322,9 +325,9 @@ sources_checked:
     query: "OWASP JWT security best practices"
     found: true
 
-# Research output
+# Spike output
 output:
-  file: "RES-001-output.md"  # Detailed findings in knowledge/outputs/
+  file: "SPIKE-001-output.md"  # Detailed findings in knowledge/outputs/
   summary: |
     Recommendation: JWT with refresh token rotation.
     - Use JsonWebTokenHandler (not JwtSecurityTokenHandler)
@@ -396,7 +399,7 @@ See `task-states.md` for state transitions.
 - "Search results not paginated"
 - "Memory leak in WebSocket handler"
 
-**Research:** Question or topic to investigate
+**Spikes:** Question or uncertainty to investigate (time-boxed)
 - "Authentication patterns for .NET 10"
 - "Caching strategy comparison"
 - "Performance profiling results"
