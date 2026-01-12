@@ -16,13 +16,25 @@ Main Worktree (.)
 └── .codeagent/
 
 Parallel Worktrees (.worktrees/)
-├── TASK-001/          # Worktree for task 1
-│   ├── src/
-│   └── tests/
-└── TASK-002/          # Worktree for task 2
-    ├── src/
-    └── tests/
+└── qsm-ath-256-implement-auth/    # Grouped by parent branch (sanitized)
+    ├── task-001/                   # Worktree for task 1
+    │   ├── src/
+    │   └── tests/
+    └── task-002/                   # Worktree for task 2
+        ├── src/
+        └── tests/
 ```
+
+## Naming Convention
+
+| Component | Format | Example |
+|-----------|--------|---------|
+| Parent branch | `user/ticket-description` | `qsm/ath-256-implement-auth` |
+| Sanitized name | Slashes → dashes | `qsm-ath-256-implement-auth` |
+| Task branch | `<sanitized>--<task-id>` | `qsm-ath-256-implement-auth--task-001` |
+| Worktree path | `.worktrees/<sanitized>/<task-id>` | `.worktrees/qsm-ath-256-implement-auth/task-001` |
+
+**Note:** Task branches use double-dash (`--`) separator to avoid git ref conflicts with parent branch.
 
 ## Worktree Lifecycle
 
@@ -72,61 +84,46 @@ cd .worktrees/TASK-001
 # ... continue work
 ```
 
-## Commands
+## Utility Commands
 
-### Setup Worktree for Task
+All worktree operations use the `codeagent worktree` utility. This is internal plumbing - you don't run these manually.
+
+### Setup Worktree
 
 ```bash
-# Implementer runs before starting parallel task
-setup_worktree() {
-    local task_id="$1"
-    local base_branch="${2:-main}"
+# Called by /implement before spawning parallel agents
+codeagent worktree setup task-001
 
-    # Ensure .worktrees directory exists
-    mkdir -p .worktrees
-
-    # Create task branch from base
-    git branch "task/$task_id" "$base_branch" 2>/dev/null || true
-
-    # Create worktree
-    git worktree add ".worktrees/$task_id" "task/$task_id"
-
-    echo ".worktrees/$task_id"
-}
+# Returns JSON:
+# {"worktree": ".worktrees/qsm-ath-256-implement-auth/task-001",
+#  "branch": "qsm-ath-256-implement-auth--task-001",
+#  "status": "created"}
 ```
 
 ### Cleanup Worktree
 
 ```bash
-cleanup_worktree() {
-    local task_id="$1"
-    local delete_branch="${2:-true}"
+# Remove worktree and delete branch
+codeagent worktree cleanup task-001
 
-    # Remove worktree
-    git worktree remove ".worktrees/$task_id" --force 2>/dev/null || true
-
-    # Optionally delete branch
-    if [ "$delete_branch" = "true" ]; then
-        git branch -D "task/$task_id" 2>/dev/null || true
-    fi
-}
+# Keep branch (for debugging)
+codeagent worktree cleanup task-001 keep-branch
 ```
 
-### Merge Task to Main
+### Merge and Cleanup
 
 ```bash
-merge_task() {
-    local task_id="$1"
+# Called by /integrate after all tasks complete
+codeagent worktree merge task-001
 
-    # Ensure we're in main worktree
-    cd "$(git rev-parse --show-toplevel)"
+# Merges branch to parent with --no-ff, then cleans up
+```
 
-    # Merge task branch
-    git merge "task/$task_id" --no-ff -m "Merge $task_id"
+### List Active Worktrees
 
-    # Cleanup
-    cleanup_worktree "$task_id"
-}
+```bash
+codeagent worktree list
+codeagent worktree status  # More detailed output
 ```
 
 ## Integration with /implement
@@ -140,20 +137,27 @@ No worktrees needed. All work in main worktree.
 ```
 /implement (orchestrator detects parallel-safe)
      │
+     ├─► SETUP PHASE (before spawning):
+     │       codeagent worktree setup task-001
+     │       codeagent worktree setup task-002
+     │       → Store paths in STATE.md
+     │
      ├─► For each parallel task:
-     │       1. Create worktree: .worktrees/TASK-XXX/
-     │       2. Spawn implementer agent with:
-     │          - working_dir: .worktrees/TASK-XXX/
-     │          - branch: task/TASK-XXX
-     │       3. Agent works in isolation
+     │       Spawn implementer agent with:
+     │          - working_dir: .worktrees/<sanitized>/task-XXX
+     │          - branch: <sanitized>--task-XXX
+     │       Agent works in isolation (worktree pre-created)
      │
      ├─► Wait for all parallel tasks
      │
      └─► /integrate phase:
-             1. Merge each task/TASK-XXX to main
-             2. Run integration tests
-             3. Cleanup worktrees
+             codeagent worktree merge task-001
+             codeagent worktree merge task-002
+             → Run integration tests
+             → Worktrees cleaned up automatically
 ```
+
+**Key point:** Implementer agents do NOT create worktrees. They receive `working_dir` pre-created.
 
 ## Agent Working Directory
 
@@ -215,26 +219,28 @@ Add to project .gitignore:
 
 ```yaml
 execution:
-  worktree: .worktrees/TASK-001
-  branch: task/TASK-001
+  worktree: .worktrees/qsm-ath-256-implement-auth/task-001
+  branch: qsm-ath-256-implement-auth--task-001
+  parent_branch: qsm/ath-256-implement-auth
   started_at: "2026-01-10T15:00:00Z"
   commits:
     - "abc123: test(auth): add validation tests"
     - "def456: feat(auth): implement validation"
 ```
 
-### In .codeagent/sessions/current.yaml
+### In STATE.md (parallel execution)
 
 ```yaml
 parallel_execution:
+  parent_branch: qsm/ath-256-implement-auth
   active_worktrees:
-    - task_id: TASK-001
-      worktree: .worktrees/TASK-001
-      branch: task/TASK-001
+    - task_id: task-001
+      worktree: .worktrees/qsm-ath-256-implement-auth/task-001
+      branch: qsm-ath-256-implement-auth--task-001
       status: in_progress
-    - task_id: TASK-002
-      worktree: .worktrees/TASK-002
-      branch: task/TASK-002
+    - task_id: task-002
+      worktree: .worktrees/qsm-ath-256-implement-auth/task-002
+      branch: qsm-ath-256-implement-auth--task-002
       status: in_progress
 ```
 
@@ -257,22 +263,27 @@ git status
 ### Manual Cleanup
 
 ```bash
-# Remove all parallel worktrees
-rm -rf .worktrees/
+# List what needs cleanup
+codeagent worktree list
 
-# Prune git's worktree registry
+# Clean up specific task
+codeagent worktree cleanup task-001
+
+# Nuclear option - remove all worktrees
+rm -rf .worktrees/
 git worktree prune
 
-# Delete orphaned task branches
-git branch | grep "task/" | xargs git branch -D
+# Delete orphaned branches (careful!)
+git branch | grep -E "^  .*/task-" | xargs git branch -D
 ```
 
 ## Best Practices
 
-1. **Always create worktree before parallel execution** - Don't work in main for parallel tasks
-2. **Use --force for cleanup** - Worktrees may have uncommitted changes on failure
-3. **Check for conflicts before merge** - Use merge-tree to preview
+1. **Use the utility** - Always use `codeagent worktree` instead of raw git commands
+2. **Don't create manually** - Let /implement handle worktree creation
+3. **Check before merge** - Utility checks for conflicts automatically
 4. **Keep worktrees on blocked tasks** - Allows easy continuation
-5. **Clean up after successful merge** - Don't let worktrees accumulate
-6. **Track worktrees in session** - Know what's active
-7. **Respect file boundaries** - Worktrees isolate, boundaries prevent logical conflicts
+5. **Clean up after successful merge** - /integrate handles this automatically
+6. **Track worktrees in STATE.md** - Know what's active
+7. **Respect file boundaries** - Worktrees isolate, but boundaries prevent logical conflicts
+8. **Branch inheritance** - Task branches are created from current HEAD, not main

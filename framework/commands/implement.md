@@ -126,12 +126,21 @@ Main Claude (no subagents) 100% context
 ```
 Main Claude (Orchestrator)
       │
+      ├─► SETUP WORKTREES (before spawning agents)
+      │       codeagent worktree setup task-001
+      │       codeagent worktree setup task-002
+      │       → Store paths in STATE.md
+      │
       ├─► implementer agent (Task A) - Strategy A only
+      │       working_dir: .worktrees/<sanitized>/task-001
+      │       branch: <sanitized>--task-001
       │       skills: [tdd, relevant domain skills]
       │       exclusive files: [list]
       │       → TDD loop for Task A
       │
       ├─► implementer agent (Task B) - Strategy A only
+      │       working_dir: .worktrees/<sanitized>/task-002
+      │       branch: <sanitized>--task-002
       │       skills: [tdd, relevant domain skills]
       │       exclusive files: [list]
       │       → TDD loop for Task B
@@ -140,6 +149,41 @@ Main Claude (Orchestrator)
 ```
 
 **Note:** Parallel tasks MUST be `type="auto"`. Tasks with checkpoints cannot be parallelized.
+
+### Parallel Worktree Setup (before spawning agents)
+
+When PARALLEL mode is detected:
+
+1. **For each parallel task:**
+```bash
+result=$(codeagent worktree setup "$TASK_ID")
+worktree_path=$(echo "$result" | jq -r '.worktree')
+task_branch=$(echo "$result" | jq -r '.branch')
+```
+
+2. **Store in STATE.md:**
+```yaml
+parallel_execution:
+  parent_branch: qsm/ath-256-implement-auth
+  active_worktrees:
+    - task_id: task-001
+      worktree: .worktrees/qsm-ath-256-implement-auth/task-001
+      branch: qsm-ath-256-implement-auth--task-001
+      status: pending
+    - task_id: task-002
+      worktree: .worktrees/qsm-ath-256-implement-auth/task-002
+      branch: qsm-ath-256-implement-auth--task-002
+      status: pending
+```
+
+3. **Spawn implementer with pre-created paths:**
+```
+working_dir: $worktree_path
+branch: $task_branch
+file_boundaries: [from orchestrator]
+```
+
+**Important:** Implementer agents receive `working_dir` already created. They do NOT run worktree commands themselves.
 
 ## TDD Loop (Every Step)
 

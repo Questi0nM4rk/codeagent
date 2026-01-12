@@ -24,6 +24,34 @@ Validates and integrates work from parallel implementation. Auto-triggers when /
 
 ## Process
 
+### Step 0: Worktree Merge and Cleanup
+
+First, merge all parallel worktree branches:
+
+```bash
+# Read active worktrees from STATE.md
+# For each worktree:
+codeagent worktree merge task-001
+codeagent worktree merge task-002
+```
+
+This merges each task branch into the parent branch and cleans up worktrees.
+
+**On success:**
+- Task branch merged with `--no-ff` to preserve history
+- Worktree directory removed
+- Task branch deleted
+
+**On merge conflict:**
+- Merge aborted
+- Worktree preserved for manual resolution
+- Error reported with conflict details
+
+```bash
+# Check for remaining worktrees (should be none after success)
+codeagent worktree list
+```
+
 ### Step 1: Merge Validation
 
 Should be conflict-free since files were isolated:
@@ -217,3 +245,18 @@ Priority: MEDIUM (code works but inconsistent)
 - If integration fails, individual tasks may need adjustment
 - Pattern drift warnings are non-blocking but should be addressed
 - Always run /review after successful /integrate
+
+### Worktree Behavior
+
+| Scenario | Worktree Action |
+|----------|-----------------|
+| All tests pass | Worktrees merged and cleaned up |
+| Merge conflict | Worktree preserved, manual resolution needed |
+| Test failure | Worktrees NOT cleaned (debug access) |
+| Pattern drift warning | Worktrees cleaned (non-blocking) |
+
+**Manual cleanup after debugging:**
+```bash
+codeagent worktree cleanup task-001
+codeagent worktree cleanup task-002
+```

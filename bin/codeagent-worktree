@@ -1,0 +1,259 @@
+#!/bin/bash
+# Git worktree management for parallel task execution
+# This is internal plumbing used by /implement and /integrate commands
+#
+# Usage:
+#   codeagent worktree setup TASK-ID    - Create worktree for parallel task
+#   codeagent worktree cleanup TASK-ID  - Remove worktree (keeps branch)
+#   codeagent worktree merge TASK-ID    - Merge branch and cleanup
+#   codeagent worktree list             - List active worktrees
+#   codeagent worktree status           - Show worktree status with branches
+#
+# Worktree structure:
+#   .worktrees/<parent-branch-sanitized>/<task-id>/
+#
+# Branch naming:
+#   <parent-branch>/<task-id>
+#
+# Example:
+#   On branch: qsm/ath-256-implement-auth
+#   Task: task-001
+#   Worktree: .worktrees/qsm-ath-256-implement-auth/task-001/
+#   Branch: qsm/ath-256-implement-auth/task-001
+
+set -e
+
+WORKTREES_DIR=".worktrees"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+# Get current branch name
+get_parent_branch() {
+    git rev-parse --abbrev-ref HEAD
+}
+
+# Sanitize branch name (slashes to dashes)
+get_parent_sanitized() {
+    get_parent_branch | tr '/' '-'
+}
+
+# Get task branch name (sanitized-parent--task-id)
+# Uses double-dash separator to avoid conflict with parent branch
+get_task_branch() {
+    local task_id="$1"
+    echo "$(get_parent_sanitized)--${task_id}"
+}
+
+# Get worktree path
+get_worktree_path() {
+    local task_id="$1"
+    echo "${WORKTREES_DIR}/$(get_parent_sanitized)/${task_id}"
+}
+
+# Setup a new worktree for a task
+cmd_setup() {
+    local task_id="$1"
+
+    if [ -z "$task_id" ]; then
+        echo -e "${RED}Error: TASK-ID required${NC}" >&2
+        echo "Usage: codeagent worktree setup TASK-ID" >&2
+        exit 1
+    fi
+
+    local worktree_path=$(get_worktree_path "$task_id")
+    local task_branch=$(get_task_branch "$task_id")
+    local parent_branch=$(get_parent_branch)
+
+    # Check if worktree already exists
+    if [ -d "$worktree_path" ]; then
+        echo -e "${YELLOW}Worktree already exists at ${worktree_path}${NC}" >&2
+        echo "{\"worktree\": \"$worktree_path\", \"branch\": \"$task_branch\", \"status\": \"exists\"}"
+        exit 0
+    fi
+
+    # Create parent directory
+    mkdir -p "$(dirname "$worktree_path")"
+
+    # Create task branch from current HEAD (ignore if exists)
+    git branch "$task_branch" HEAD 2>/dev/null || true
+
+    # Create worktree
+    git worktree add "$worktree_path" "$task_branch" >/dev/null 2>&1
+
+    # Output JSON for caller
+    echo "{\"worktree\": \"$worktree_path\", \"branch\": \"$task_branch\", \"parent\": \"$parent_branch\", \"status\": \"created\"}"
+}
+
+# Cleanup a worktree (remove worktree and branch)
+cmd_cleanup() {
+    local task_id="$1"
+    local delete_branch="${2:-true}"
+
+    if [ -z "$task_id" ]; then
+        echo -e "${RED}Error: TASK-ID required${NC}" >&2
+        echo "Usage: codeagent worktree cleanup TASK-ID [keep-branch]" >&2
+        exit 1
+    fi
+
+    local worktree_path=$(get_worktree_path "$task_id")
+    local task_branch=$(get_task_branch "$task_id")
+
+    # Remove worktree
+    if [ -d "$worktree_path" ]; then
+        git worktree remove "$worktree_path" --force 2>/dev/null || true
+        echo -e "${GREEN}Removed worktree: ${worktree_path}${NC}" >&2
+    fi
+
+    # Delete branch if requested
+    if [ "$delete_branch" = "true" ]; then
+        git branch -D "$task_branch" 2>/dev/null || true
+        echo -e "${GREEN}Deleted branch: ${task_branch}${NC}" >&2
+    fi
+
+    # Clean empty parent directories
+    rmdir "$(dirname "$worktree_path")" 2>/dev/null || true
+    rmdir "$WORKTREES_DIR" 2>/dev/null || true
+
+    echo "{\"status\": \"cleaned\", \"task\": \"$task_id\"}"
+}
+
+# Merge task branch to parent and cleanup
+cmd_merge() {
+    local task_id="$1"
+
+    if [ -z "$task_id" ]; then
+        echo -e "${RED}Error: TASK-ID required${NC}" >&2
+        echo "Usage: codeagent worktree merge TASK-ID" >&2
+        exit 1
+    fi
+
+    local task_branch=$(get_task_branch "$task_id")
+    local parent_branch=$(get_parent_branch)
+
+    # Ensure we're in the main worktree (git root)
+    cd "$(git rev-parse --show-toplevel)"
+
+    # Check for conflicts before merging
+    if ! git merge-tree "$(git merge-base HEAD "$task_branch")" HEAD "$task_branch" >/dev/null 2>&1; then
+        echo -e "${YELLOW}Warning: Potential merge conflicts detected${NC}" >&2
+    fi
+
+    # Merge task branch with no-ff to preserve history
+    if git merge "$task_branch" --no-ff -m "Merge ${task_id} into ${parent_branch}"; then
+        echo -e "${GREEN}Merged ${task_branch} into ${parent_branch}${NC}" >&2
+
+        # Cleanup after successful merge
+        cmd_cleanup "$task_id" "true"
+
+        echo "{\"status\": \"merged\", \"task\": \"$task_id\", \"into\": \"$parent_branch\"}"
+    else
+        echo -e "${RED}Merge failed - resolve conflicts manually${NC}" >&2
+        echo "{\"status\": \"conflict\", \"task\": \"$task_id\", \"branch\": \"$task_branch\"}"
+        exit 1
+    fi
+}
+
+# List active worktrees
+cmd_list() {
+    if [ ! -d "$WORKTREES_DIR" ]; then
+        echo "No active worktrees"
+        exit 0
+    fi
+
+    echo "Active worktrees:"
+    git worktree list | grep -E "\.worktrees" || echo "  (none)"
+}
+
+# Show detailed status
+cmd_status() {
+    echo "=== Worktree Status ==="
+    echo ""
+    echo "Parent branch: $(get_parent_branch)"
+    echo "Worktrees directory: $WORKTREES_DIR"
+    echo ""
+
+    if [ ! -d "$WORKTREES_DIR" ]; then
+        echo "No active worktrees"
+        exit 0
+    fi
+
+    echo "Active worktrees:"
+    git worktree list --porcelain | while read -r line; do
+        if [[ "$line" == worktree* ]] && [[ "$line" == *".worktrees"* ]]; then
+            path="${line#worktree }"
+            echo "  Path: $path"
+        elif [[ "$line" == branch* ]]; then
+            branch="${line#branch refs/heads/}"
+            echo "  Branch: $branch"
+            echo ""
+        fi
+    done
+}
+
+# Show help
+cmd_help() {
+    cat << 'EOF'
+Git Worktree Management for Parallel Execution
+
+USAGE:
+    codeagent worktree <command> [args]
+
+COMMANDS:
+    setup <TASK-ID>     Create worktree for parallel task
+                        Returns JSON with worktree path and branch
+
+    cleanup <TASK-ID>   Remove worktree and delete branch
+                        Use 'cleanup TASK-ID keep-branch' to preserve branch
+
+    merge <TASK-ID>     Merge task branch into parent and cleanup
+                        Fails if conflicts detected
+
+    list                List active worktrees
+
+    status              Show detailed worktree status
+
+EXAMPLES:
+    # On branch qsm/ath-256-implement-auth
+    codeagent worktree setup task-001
+    # Creates: .worktrees/qsm-ath-256-implement-auth/task-001/
+    # Branch: qsm/ath-256-implement-auth/task-001
+
+    codeagent worktree merge task-001
+    # Merges branch and removes worktree
+
+NOTE:
+    This is internal plumbing used by /implement and /integrate.
+    You typically don't need to run these commands manually.
+EOF
+}
+
+# Main dispatch
+case "${1:-help}" in
+    setup)
+        cmd_setup "$2"
+        ;;
+    cleanup)
+        cmd_cleanup "$2" "$3"
+        ;;
+    merge)
+        cmd_merge "$2"
+        ;;
+    list)
+        cmd_list
+        ;;
+    status)
+        cmd_status
+        ;;
+    help|--help|-h)
+        cmd_help
+        ;;
+    *)
+        echo -e "${RED}Unknown command: $1${NC}" >&2
+        echo "Run 'codeagent worktree help' for usage" >&2
+        exit 1
+        ;;
+esac

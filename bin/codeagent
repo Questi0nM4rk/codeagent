@@ -33,6 +33,7 @@ usage() {
     echo "  init          Initialize CodeAgent in current project"
     echo "  index         Rebuild codebase index (incremental by default, --full for complete)"
     echo "  backlog       View project backlog summary"
+    echo "  worktree      Manage git worktrees for parallel execution (internal)"
     echo ""
     echo -e "${BLUE}Configuration Commands:${NC}"
     echo "  config        Configure API keys (add/update without reinstalling)"
@@ -109,6 +110,15 @@ case "${1:-help}" in
             exit 1
         fi
         exec "$INSTALL_DIR/bin/codeagent-backlog" "${@:2}"
+        ;;
+    worktree)
+        check_install
+        # Must be in a git repository
+        if ! git rev-parse --git-dir > /dev/null 2>&1; then
+            echo -e "${RED}Error: Not a git repository${NC}"
+            exit 1
+        fi
+        exec "$INSTALL_DIR/bin/codeagent-worktree" "${@:2}"
         ;;
     config)
         check_install

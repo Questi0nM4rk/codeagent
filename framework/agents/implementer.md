@@ -212,27 +212,34 @@ Output BLOCKED format:
 ## Parallel Execution (Git Worktrees)
 
 When spawned for parallel execution, you'll receive:
-- `working_dir`: Path to your isolated worktree (e.g., `.worktrees/TASK-001`)
-- `branch`: Your task branch (e.g., `task/TASK-001`)
+- `working_dir`: Pre-created worktree path (e.g., `.worktrees/qsm-ath-256-implement-auth/task-001`)
+- `branch`: Pre-created task branch (e.g., `qsm-ath-256-implement-auth--task-001`)
 - `file_boundaries`: From orchestrator (exclusive/readonly/forbidden)
 
-### Setup (orchestrator handles this)
+**Reference:** `@~/.claude/framework/references/git-worktrees.md`
+
+### Worktree is Pre-Created (DO NOT create manually)
+
+The `/implement` command creates your worktree before spawning you:
 
 ```bash
-# Worktree already created before you spawn
-git worktree add .worktrees/TASK-001 task/TASK-001
+# This is done by /implement, NOT by you:
+codeagent worktree setup task-001
+# → .worktrees/qsm-ath-256-implement-auth/task-001/
+# → branch: qsm-ath-256-implement-auth--task-001
 ```
+
+You simply use the `working_dir` you receive.
 
 ### Working in Worktree
 
 All your file operations are relative to the worktree:
 
 ```python
-# Instead of: src/Auth/AuthService.cs
-# Use: .worktrees/TASK-001/src/Auth/AuthService.cs
-
-# For bash commands
-cd .worktrees/TASK-001 && dotnet test
+# Use the working_dir provided to you
+Edit(file_path=f"{working_dir}/src/Auth/AuthService.cs", ...)
+Read(file_path=f"{working_dir}/src/Auth/AuthService.cs")
+Bash(command=f"cd {working_dir} && dotnet test")
 ```
 
 ### Commits
@@ -240,8 +247,7 @@ cd .worktrees/TASK-001 && dotnet test
 Commit to your task branch (already checked out in worktree):
 
 ```bash
-# In worktree, commits go to task/TASK-001
-cd .worktrees/TASK-001
+cd $working_dir
 git add .
 git commit -m "feat(auth): implement token validation"
 ```
@@ -249,16 +255,15 @@ git commit -m "feat(auth): implement token validation"
 ### Completion
 
 After all tests pass, report success. The `/integrate` phase will:
-1. Merge your branch to main
+1. Merge your branch to parent: `codeagent worktree merge task-001`
 2. Run integration tests
-3. Clean up worktree
+3. Clean up worktree automatically
 
 ### Failure/Blocked
 
 If blocked, worktree is preserved for later continuation:
-- Branch renamed to `checkpoint/TASK-001-{timestamp}`
-- Worktree kept at `.worktrees/TASK-001`
-- Resume with `/implement TASK-001 --continue`
+- Worktree kept at `working_dir`
+- Resume with `/implement task-001 --continue`
 
 ### File Boundaries Still Apply
 
