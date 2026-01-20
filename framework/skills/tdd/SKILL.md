@@ -205,30 +205,128 @@ Before considering any code complete:
 | Test is too complex | You're testing too much. One behavior per test. |
 | 3 failed attempts | Stop. Document attempts. Ask for help or simplify. |
 
+## Model Selection
+
+Model is determined at plan-time, not implementation-time. The `/plan` command queries historical performance data via `mcp__reflection__get_model_effectiveness()` to determine the suggested model.
+
+| Phase | Model | Rationale |
+|-------|-------|-----------|
+| Test writing | opus | Correctness critical - tests define the contract |
+| Implementation | suggested_model | From task, based on historical data |
+
+### Escalation on Failure
+
+Simple two-tier escalation:
+
+```
+suggested_model (attempts 1-3)
+       │
+       ▼ fails
+    opus (attempts 4-6)
+       │
+       ▼ fails
+    REITERATE (return to /plan)
+```
+
+**Rationale:** The /plan phase queries historical data to pick the right starting model. If that fails, opus is the fallback. If opus fails, the approach is wrong—not the model.
+
+**No sonnet tier.** Tasks are either simple enough for haiku (most tasks) or need full opus reasoning (complex tasks). The plan phase makes this decision using data.
+
 ## Failure Protocol
 
-After 3 failed attempts, STOP and report:
+### After 3 attempts with suggested_model:
+
+Request escalation to opus and continue.
+
+### After 3 attempts with opus (6 total):
+
+STOP and REITERATE to /plan:
 
 ```markdown
-## STUCK: Test Won't Pass
+## REITERATE: Test Won't Pass After 6 Attempts
 
 ### Test
 [test code]
 
-### Attempts
-1. [what tried] → [error]
-2. [what tried] → [error]
-3. [what tried] → [error]
+### All Attempts
+| # | Model | Approach | Error |
+|---|-------|----------|-------|
+| 1 | [suggested] | [tried] | [error] |
+| 2 | [suggested] | [tried] | [error] |
+| 3 | [suggested] | [tried] | [error] |
+| 4 | opus | [tried] | [error] |
+| 5 | opus | [tried] | [error] |
+| 6 | opus | [tried] | [error] |
 
 ### Analysis
-[Why I think it's failing]
+[Why the approach isn't working - likely architectural issue]
 
-### Request
-Simplify test OR question requirement OR different approach
+### Recommendation
+Re-run /plan with this context to explore alternative approaches
 ```
+
+## BDD to Test Conversion
+
+When implementing from BDD scenarios (from /plan), convert Gherkin to tests:
+
+### Conversion Pattern
+
+```
+Gherkin                          Test Code
+─────────────────────────────────────────────────────
+Given [precondition]    →    // Arrange
+When [action]           →    // Act
+Then [expectation]      →    // Assert
+```
+
+### Example
+
+**BDD Scenario:**
+```gherkin
+Scenario: Successful login with valid credentials
+  Given a registered user with email "user@example.com"
+  And password "SecurePass123!"
+  When they submit the login form
+  Then they receive a valid JWT token
+  And are redirected to the dashboard
+```
+
+**Generated Test:**
+```typescript
+describe('AuthService', () => {
+  it('should return JWT token for valid credentials', async () => {
+    // Arrange (Given)
+    const user = await createTestUser({
+      email: 'user@example.com',
+      password: 'SecurePass123!'
+    });
+
+    // Act (When)
+    const result = await authService.login({
+      email: 'user@example.com',
+      password: 'SecurePass123!'
+    });
+
+    // Assert (Then)
+    expect(result.token).toBeDefined();
+    expect(result.token).toMatch(/^eyJ/); // JWT format
+    expect(result.redirectUrl).toBe('/dashboard');
+  });
+});
+```
+
+### BDD Scenario Coverage
+
+Ensure each BDD scenario from /plan has a corresponding test:
+
+| Scenario | Test File | Status |
+|----------|-----------|--------|
+| Successful login | auth.test.ts | Written |
+| Invalid password | auth.test.ts | Written |
+| Non-existent user | auth.test.ts | Written |
 
 ## Related Skills
 
 - `reviewer` - Validates test quality during review
 - `systematic-debugging` - When tests reveal bugs to investigate
-- `spec-driven` - Specs inform what tests to write
+- `spec-driven` - Specs inform what tests to write (BDD → Spec → Test)
