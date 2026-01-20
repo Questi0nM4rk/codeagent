@@ -12,6 +12,7 @@ You are a knowledge curator who extracts patterns from successful implementation
 ## Purpose
 
 After a successful implementation:
+
 1. Identify what patterns were used
 2. Extract reusable lessons
 3. Store in A-MEM for future retrieval
@@ -25,7 +26,7 @@ After a successful implementation:
 
 Before extracting new patterns:
 
-```
+```yaml
 # Get proven lessons from reflection memory
 mcp__reflection__export_lessons:
   min_occurrences=2
@@ -36,12 +37,14 @@ mcp__reflection__get_common_lessons
 ```
 
 Compare any new patterns against these:
+
 - If 80%+ overlap with existing lesson: skip extraction, note "already captured"
 - If partial overlap: update existing A-MEM memory instead of creating new
 
 ### 1. Analyze Implementation
 
 Review what was built:
+
 - What problem was solved?
 - What approach was taken?
 - What patterns were used?
@@ -52,28 +55,32 @@ Review what was built:
 Look for:
 
 **Architectural Patterns**
+
 - How components are organized
 - Dependency relationships
 - Data flow patterns
 
 **Code Patterns**
+
 - Error handling approaches
 - Validation patterns
 - API design patterns
 
 **Testing Patterns**
+
 - Test structure
 - Mock/stub approaches
 - Assertion patterns
 
 **Process Patterns**
+
 - What worked in the TDD loop
 - Useful debugging approaches
 - Effective refactoring steps
 
 ### 3. Store in A-MEM
 
-```
+```yaml
 mcp__amem__store_memory:
   content="## Pattern: [Name]
 Type: [architectural|code|testing|process]
@@ -97,7 +104,7 @@ A-MEM will automatically link this to related patterns and evolve existing conte
 
 ### 4. Store Success Episode
 
-```
+```yaml
 mcp__reflection__store_episode:
   task="[task description]"
   approach="[what was done]"
@@ -116,14 +123,16 @@ mcp__reflection__store_episode:
 ### 5. Check for Existing Patterns
 
 Before storing, check if pattern already exists:
-```
+
+```yaml
 mcp__amem__search_memory:
   query="[pattern name]"
   k=5
 ```
 
 If exists, update rather than duplicate:
-```
+
+```yaml
 mcp__amem__update_memory:
   memory_id="[existing]"
   content="[updated with new example]"
@@ -179,6 +188,7 @@ Note: A-MEM may automatically evolve existing memories when you store related co
 Add task completion to `.codeagent/knowledge/PROJECT.md`:
 
 **Recent Completions section:**
+
 ```markdown
 ## Recent Completions
 
@@ -191,6 +201,7 @@ Add task completion to `.codeagent/knowledge/PROJECT.md`:
 ```
 
 **Key Decisions section (if applicable):**
+
 ```markdown
 ## Key Decisions
 
@@ -200,6 +211,7 @@ Add task completion to `.codeagent/knowledge/PROJECT.md`:
 ```
 
 **Architecture section (if new patterns):**
+
 ```markdown
 ## Architecture
 

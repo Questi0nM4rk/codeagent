@@ -1,137 +1,137 @@
 {
-  "version": "1.0",
-  "skills": [],
-  "agents": [
-    {
-      "name": "researcher",
-      "description": "Memory-first context gathering",
-      "source": "framework/agents/researcher.md"
-    },
-    {
-      "name": "architect",
-      "description": "Tree-of-Thought solution design",
-      "source": "framework/agents/architect.md"
-    },
-    {
-      "name": "orchestrator",
-      "description": "Parallel execution analysis",
-      "source": "framework/agents/orchestrator.md"
-    },
-    {
-      "name": "implementer",
-      "description": "Strict TDD workflow",
-      "source": "framework/agents/implementer.md"
-    },
-    {
-      "name": "reviewer",
-      "description": "External validation",
-      "source": "framework/agents/reviewer.md"
-    },
-    {
-      "name": "learner",
-      "description": "Pattern extraction",
-      "source": "framework/agents/learner.md"
-    },
-    {
-      "name": "memory-writer",
-      "description": "A-MEM memory management",
-      "source": "framework/agents/memory-writer.md"
-    },
-    {
-      "name": "indexer",
-      "description": "Codebase structure analysis and A-MEM storage",
-      "source": "framework/agents/indexer.md"
-    },
-    {
-      "name": "validator",
-      "description": "External tool validation",
-      "source": "framework/agents/validator.md"
-    }
-  ],
-  "commands": [
-    {
-      "name": "scan",
-      "description": "Build knowledge graph",
-      "source": "framework/commands/scan.md"
-    },
-    {
-      "name": "plan",
-      "description": "Research & design",
-      "source": "framework/commands/plan.md"
-    },
-    {
-      "name": "implement",
-      "description": "TDD execution",
-      "source": "framework/commands/implement.md"
-    },
-    {
-      "name": "integrate",
-      "description": "Merge parallel work",
-      "source": "framework/commands/integrate.md"
-    },
-    {
-      "name": "review",
-      "description": "External validation",
-      "source": "framework/commands/review.md"
-    }
-  ],
-  "hooks": [
-    {
-      "name": "dangerous-command-check",
-      "description": "Block dangerous bash commands (sudo, chmod 777, fork bombs)",
-      "source": "framework/hooks/dangerous-command-check.sh",
-      "event": "PreToolUse",
-      "matcher": "Bash"
-    },
-    {
-      "name": "pre-commit",
-      "description": "Validate before git commit",
-      "source": "framework/hooks/pre-commit.sh",
-      "event": "PreToolUse",
-      "matcher": "Bash(git commit:*)"
-    },
-    {
-      "name": "pre-push",
-      "description": "Security scan and tests before push",
-      "source": "framework/hooks/pre-push.sh",
-      "event": "PreToolUse",
-      "matcher": "Bash(git push:*)"
-    },
-    {
-      "name": "auto-format",
-      "description": "Auto-format files after write/edit",
-      "source": "framework/hooks/auto-format.sh",
-      "event": "PostToolUse",
-      "matcher": "Write|Edit"
-    },
-    {
-      "name": "post-implement",
-      "description": "Run post-implementation tasks",
-      "source": "framework/hooks/post-implement.sh",
-      "event": "PostToolUse",
-      "matcher": "Write|Edit"
-    },
-    {
-      "name": "index-file",
-      "description": "Track changed files for incremental indexing",
-      "source": "framework/hooks/index-file.sh",
-      "event": "PostToolUse",
-      "matcher": "Write"
-    },
-    {
-      "name": "session-end",
-      "description": "Cleanup temporary files on session end",
-      "source": "framework/hooks/session-end.sh",
-      "event": "Stop",
-      "matcher": ""
-    }
-  ],
-  "settings": {
-    "source": "framework/settings.json.template",
-    "merge_strategy": "append_permissions"
-  },
-  "memory": {
-    "source": "templates/CLAUDE.md.template",
-    "merge_strategy": "append_section"
-  }
+	"version": "1.0",
+	"skills": [],
+	"agents": [
+		{
+			"name": "researcher",
+			"description": "Memory-first context gathering",
+			"source": "framework/agents/researcher.md"
+		},
+		{
+			"name": "architect",
+			"description": "Tree-of-Thought solution design",
+			"source": "framework/agents/architect.md"
+		},
+		{
+			"name": "orchestrator",
+			"description": "Parallel execution analysis",
+			"source": "framework/agents/orchestrator.md"
+		},
+		{
+			"name": "implementer",
+			"description": "Strict TDD workflow",
+			"source": "framework/agents/implementer.md"
+		},
+		{
+			"name": "reviewer",
+			"description": "External validation",
+			"source": "framework/agents/reviewer.md"
+		},
+		{
+			"name": "learner",
+			"description": "Pattern extraction",
+			"source": "framework/agents/learner.md"
+		},
+		{
+			"name": "memory-writer",
+			"description": "A-MEM memory management",
+			"source": "framework/agents/memory-writer.md"
+		},
+		{
+			"name": "indexer",
+			"description": "Codebase structure analysis and A-MEM storage",
+			"source": "framework/agents/indexer.md"
+		},
+		{
+			"name": "validator",
+			"description": "External tool validation",
+			"source": "framework/agents/validator.md"
+		}
+	],
+	"commands": [
+		{
+			"name": "scan",
+			"description": "Build knowledge graph",
+			"source": "framework/commands/scan.md"
+		},
+		{
+			"name": "plan",
+			"description": "Research & design",
+			"source": "framework/commands/plan.md"
+		},
+		{
+			"name": "implement",
+			"description": "TDD execution",
+			"source": "framework/commands/implement.md"
+		},
+		{
+			"name": "integrate",
+			"description": "Merge parallel work",
+			"source": "framework/commands/integrate.md"
+		},
+		{
+			"name": "review",
+			"description": "External validation",
+			"source": "framework/commands/review.md"
+		}
+	],
+	"hooks": [
+		{
+			"name": "dangerous-command-check",
+			"description": "Block dangerous bash commands (sudo, chmod 777, fork bombs)",
+			"source": "framework/hooks/dangerous-command-check.sh",
+			"event": "PreToolUse",
+			"matcher": "Bash"
+		},
+		{
+			"name": "pre-commit",
+			"description": "Validate before git commit",
+			"source": "framework/hooks/pre-commit.sh",
+			"event": "PreToolUse",
+			"matcher": "Bash(git commit:*)"
+		},
+		{
+			"name": "pre-push",
+			"description": "Security scan and tests before push",
+			"source": "framework/hooks/pre-push.sh",
+			"event": "PreToolUse",
+			"matcher": "Bash(git push:*)"
+		},
+		{
+			"name": "auto-format",
+			"description": "Auto-format files after write/edit",
+			"source": "framework/hooks/auto-format.sh",
+			"event": "PostToolUse",
+			"matcher": "Write|Edit"
+		},
+		{
+			"name": "post-implement",
+			"description": "Run post-implementation tasks",
+			"source": "framework/hooks/post-implement.sh",
+			"event": "PostToolUse",
+			"matcher": "Write|Edit"
+		},
+		{
+			"name": "index-file",
+			"description": "Track changed files for incremental indexing",
+			"source": "framework/hooks/index-file.sh",
+			"event": "PostToolUse",
+			"matcher": "Write"
+		},
+		{
+			"name": "session-end",
+			"description": "Cleanup temporary files on session end",
+			"source": "framework/hooks/session-end.sh",
+			"event": "Stop",
+			"matcher": ""
+		}
+	],
+	"settings": {
+		"source": "framework/settings.json.template",
+		"merge_strategy": "append_permissions"
+	},
+	"memory": {
+		"source": "templates/CLAUDE.md.template",
+		"merge_strategy": "append_section"
+	}
 }

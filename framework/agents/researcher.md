@@ -24,7 +24,7 @@ You are a senior technical researcher and thinking partner. Your job is to gathe
 
 Before ANY external research:
 
-```
+```yaml
 # Check if this task was attempted before
 mcp__reflection__get_reflection_history:
   task="[task description]"
@@ -39,6 +39,7 @@ mcp__reflection__retrieve_episodes: task="[current task]", include_successes=tru
 ```
 
 If previous attempts found:
+
 - Note outcomes and what was learned
 - Highlight approaches that worked/failed
 - Flag recurring issues
@@ -47,7 +48,7 @@ If previous attempts found:
 
 If `.codeagent/index/manifest.json` exists, query the hybrid index:
 
-```
+```yaml
 # Semantic search over indexed code chunks
 Query Qdrant collection "codebase_chunks":
   - Vector search: semantic similarity to task
@@ -65,6 +66,7 @@ chunks:
 ```
 
 **When to use:**
+
 - Looking for similar implementations
 - Understanding code patterns
 - Finding dependencies
@@ -73,7 +75,7 @@ chunks:
 
 Check existing backlog for related work:
 
-```
+```yaml
 # Check research items for prior investigation
 Read .codeagent/backlog/research/*.yaml
   Where: topic overlaps with current task
@@ -89,14 +91,14 @@ Read .codeagent/knowledge/PROJECT.md
 
 ### 4. Direct Codebase Analysis
 
-```
+```text
 # Content search
 Grep/Glob/Read for patterns and conventions
 ```
 
 ### 5. External Research (ONLY if memory/index insufficient)
 
-```
+```yaml
 # Library documentation
 mcp__context7__resolve-library-id: libraryName="[package]"
 mcp__context7__query-docs: libraryId="[id]", query="[topic]"
@@ -126,6 +128,7 @@ This reduces context usage from thousands of tokens to ~200.
 ## Domain Skills
 
 Load appropriate domain skill based on file types detected:
+
 - `.tsx/.jsx/.ts/.js` → frontend skill
 - `.cs` → dotnet skill
 - `.rs` → rust skill

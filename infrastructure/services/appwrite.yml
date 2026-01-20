@@ -1,0 +1,110 @@
+# Appwrite - Open-source BaaS (Backend as a Service)
+# https://appwrite.io/
+#
+# IMPORTANT: Appwrite uses its own installer to generate docker-compose.yml
+# Run the installer first, then this file includes the generated config.
+#
+# Installation:
+#   docker run -it --rm \
+#     --volume /var/run/docker.sock:/var/run/docker.sock \
+#     --volume "$(pwd)"/appwrite:/usr/src/code/appwrite:rw \
+#     --entrypoint="install" \
+#     appwrite/appwrite:1.8.1
+#
+# Access:
+#   Console: http://localhost:80
+#   API: http://localhost:80/v1
+#
+# After installation, the generated files are in ./appwrite/
+# This file is a placeholder - actual config is in ./appwrite/docker-compose.yml
+
+# Minimal standalone config for development (without full installer)
+# Use this only for quick testing - production should use the installer
+
+services:
+  appwrite:
+    image: appwrite/appwrite:1.8.1
+    container_name: codeagent-appwrite
+    restart: unless-stopped
+    ports:
+      - "8585:80"
+      - "8586:443"
+    volumes:
+      - codeagent_appwrite_uploads:/storage/uploads:rw
+      - codeagent_appwrite_cache:/storage/cache:rw
+      - codeagent_appwrite_config:/storage/config:rw
+      - codeagent_appwrite_certificates:/storage/certificates:rw
+      - codeagent_appwrite_functions:/storage/functions:rw
+    networks:
+      - codeagent-network
+    environment:
+      - _APP_ENV=development
+      - _APP_LOCALE=en
+      - _APP_OPTIONS_ABUSE=disabled
+      - _APP_OPTIONS_FORCE_HTTPS=disabled
+      - _APP_OPENSSL_KEY_V1=your-secret-key-change-me
+      - _APP_DOMAIN=localhost
+      - _APP_DOMAIN_TARGET_CNAME=localhost
+      - _APP_REDIS_HOST=appwrite-redis
+      - _APP_REDIS_PORT=6379
+      - _APP_DB_HOST=appwrite-mariadb
+      - _APP_DB_PORT=3306
+      - _APP_DB_SCHEMA=appwrite
+      - _APP_DB_USER=appwrite
+      - _APP_DB_PASS=appwrite
+      - _APP_USAGE_STATS=disabled
+      - _APP_STORAGE_LIMIT=30000000
+      - _APP_FUNCTIONS_TIMEOUT=900
+      - _APP_FUNCTIONS_CPUS=1
+      - _APP_FUNCTIONS_MEMORY=512
+    depends_on:
+      - appwrite-mariadb
+      - appwrite-redis
+
+  appwrite-mariadb:
+    image: mariadb:10.11
+    container_name: codeagent-appwrite-mariadb
+    restart: unless-stopped
+    networks:
+      - codeagent-network
+    volumes:
+      - codeagent_appwrite_mariadb:/var/lib/mysql:rw
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootsecretpassword
+      - MYSQL_DATABASE=appwrite
+      - MYSQL_USER=appwrite
+      - MYSQL_PASSWORD=appwrite
+    command: "mysqld --innodb-flush-method=fsync"
+
+  appwrite-redis:
+    image: redis:7.2-alpine
+    container_name: codeagent-appwrite-redis
+    restart: unless-stopped
+    networks:
+      - codeagent-network
+    volumes:
+      - codeagent_appwrite_redis:/data:rw
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+
+volumes:
+  codeagent_appwrite_mariadb:
+    name: codeagent_appwrite_mariadb
+  codeagent_appwrite_redis:
+    name: codeagent_appwrite_redis
+  codeagent_appwrite_uploads:
+    name: codeagent_appwrite_uploads
+  codeagent_appwrite_cache:
+    name: codeagent_appwrite_cache
+  codeagent_appwrite_config:
+    name: codeagent_appwrite_config
+  codeagent_appwrite_certificates:
+    name: codeagent_appwrite_certificates
+  codeagent_appwrite_functions:
+    name: codeagent_appwrite_functions
+
+networks:
+  codeagent-network:
+    external: true

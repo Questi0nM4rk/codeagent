@@ -10,7 +10,7 @@ Time-boxed investigation of a topic before deriving tasks. Creates spike items i
 
 ## Usage
 
-```
+```text
 /analyze "How should we handle auth?"     # Create spike item
 /analyze SPIKE-001                          # Continue existing spike
 /analyze --deep "Performance issues"        # Extended investigation
@@ -19,7 +19,7 @@ Time-boxed investigation of a topic before deriving tasks. Creates spike items i
 
 ## Agent Pipeline
 
-```
+```text
 Main Claude (Orchestrator)
       │
       └─► analyst agent (opus)
@@ -37,7 +37,7 @@ Main Claude (Orchestrator)
 
 Before new investigation:
 
-```
+```text
 1. Query A-MEM for related memories
    mcp__amem__search_memory(query="[topic]", k=10)
 
@@ -53,7 +53,7 @@ Before new investigation:
 
 If knowledge gaps exist:
 
-```
+```text
 1. Query codebase index for patterns
    - Function/class definitions related to topic
    - Import patterns
@@ -69,7 +69,7 @@ If knowledge gaps exist:
 
 Only when codebase doesn't have answers:
 
-```
+```text
 1. Context7 for library documentation
    mcp__context7__resolve-library-id(...)
    mcp__context7__query-docs(...)
@@ -91,7 +91,7 @@ Create spike item and output:
 
 When findings are actionable:
 
-```
+```text
 1. Create epic if scope is large
    .codeagent/backlog/epics/EPIC-XXX.yaml
 
@@ -195,20 +195,23 @@ Run `/plan` to detail the created tasks, or:
 ## Recommendations
 
 | Recommendation | Rationale | Priority |
-|----------------|-----------|----------|
-| [Rec 1] | [Why] | High |
-| [Rec 2] | [Why] | Medium |
+| -------------- | --------- | -------- |
+| [Rec 1]        | [Why]     | High     |
+| [Rec 2]        | [Why]     | Medium   |
 
 ## Sources
 
 ### A-MEM
+
 - mem_XXX: [description]
 
 ### Codebase
+
 - `src/path/file.cs:123`: [what was found]
 
 ### External
-- [URL]: [description]
+
+- Example URL: [description]
 - Context7/library: [what was found]
 
 ## Derived Work Items
@@ -220,9 +223,11 @@ Run `/plan` to detail the created tasks, or:
 ## Knowledge Integration
 
 Added to PROJECT.md:
+
 - Section: [section name]
 - Key patterns documented
-```
+
+```markdown
 
 ## Flags
 
@@ -237,7 +242,7 @@ Added to PROJECT.md:
 
 ### Before Spike
 
-```
+```text
 mcp__amem__search_memory:
   query="[topic] patterns architecture"
   k=10
@@ -246,7 +251,7 @@ mcp__amem__search_memory:
 
 ### After Spike
 
-```
+```text
 mcp__amem__store_memory:
   content="## Spike: [topic]
 Type: spike
@@ -264,7 +269,7 @@ Context: [when this applies]
 
 Spike IDs are auto-generated:
 
-```
+```text
 1. Read .codeagent/config.yaml for id_prefix
 2. Find highest existing SPIKE-XXX number
 3. Increment: SPIKE-{N+1}
@@ -273,16 +278,19 @@ Spike IDs are auto-generated:
 ## Derived Item Rules
 
 **Create Epic when:**
+
 - Scope requires multiple tasks
 - Work spans multiple areas of codebase
 - Estimated effort > 1 day
 
 **Create Tasks when:**
+
 - Findings are actionable
 - Clear implementation steps identified
 - Files/patterns to modify known
 
 **Don't create items when:**
+
 - Spike is exploratory only
 - Findings require more research first
 - User requested `--no-derive`

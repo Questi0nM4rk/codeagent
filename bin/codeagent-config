@@ -28,10 +28,10 @@ log_error() { echo -e "${RED}✗${NC} $1"; }
 
 # Helper to safely set a key in .env file (removes duplicates first)
 set_env_key() {
-    local key="$1"
-    local value="$2"
-    sed -i "/^$key=/d" "$ENV_FILE" 2>/dev/null || true
-    echo "$key=$value" >> "$ENV_FILE"
+  local key="$1"
+  local value="$2"
+  sed -i "/^$key=/d" "$ENV_FILE" 2>/dev/null || true
+  echo "$key=$value" >>"$ENV_FILE"
 }
 
 # ============================================
@@ -42,185 +42,185 @@ set_env_key() {
 
 # Check if secret-tool is available
 has_keyring() {
-    command -v secret-tool &> /dev/null
+  command -v secret-tool &>/dev/null
 }
 
 # Store a secret in the keyring or .env file
 # Usage: store_secret KEY VALUE
 store_secret() {
-    local key="$1"
-    local value="$2"
+  local key="$1"
+  local value="$2"
 
-    if [ -z "$key" ] || [ -z "$value" ]; then
-        log_error "store_secret requires KEY and VALUE arguments"
-        return 1
+  if [ -z "$key" ] || [ -z "$value" ]; then
+    log_error "store_secret requires KEY and VALUE arguments"
+    return 1
+  fi
+
+  if has_keyring; then
+    # Store in system keyring using secret-tool
+    if echo -n "$value" | secret-tool store --label="CodeAgent: $key" service codeagent key "$key"; then
+      log_success "Stored $key in system keyring"
+      # Remove from .env if it exists (prefer keyring)
+      sed -i "/^$key=/d" "$ENV_FILE" 2>/dev/null || true
+      return 0
+    else
+      log_warn "Failed to store in keyring, falling back to .env"
     fi
+  fi
 
-    if has_keyring; then
-        # Store in system keyring using secret-tool
-        if echo -n "$value" | secret-tool store --label="CodeAgent: $key" service codeagent key "$key"; then
-            log_success "Stored $key in system keyring"
-            # Remove from .env if it exists (prefer keyring)
-            sed -i "/^$key=/d" "$ENV_FILE" 2>/dev/null || true
-            return 0
-        else
-            log_warn "Failed to store in keyring, falling back to .env"
-        fi
-    fi
-
-    # Fallback: store in .env file
-    set_env_key "$key" "$value"
-    log_info "Stored $key in $ENV_FILE"
-    chmod 600 "$ENV_FILE" 2>/dev/null || true
+  # Fallback: store in .env file
+  set_env_key "$key" "$value"
+  log_info "Stored $key in $ENV_FILE"
+  chmod 600 "$ENV_FILE" 2>/dev/null || true
 }
 
 # Retrieve a secret from the keyring or .env file
 # Usage: get_secret KEY
 # Returns: Prints the value to stdout, returns 1 if not found
 get_secret() {
-    local key="$1"
+  local key="$1"
 
-    if [ -z "$key" ]; then
-        log_error "get_secret requires KEY argument"
-        return 1
-    fi
-
-    # First try system keyring
-    if has_keyring; then
-        local value
-        value=$(secret-tool lookup service codeagent key "$key" 2>/dev/null)
-        if [ -n "$value" ]; then
-            echo "$value"
-            return 0
-        fi
-    fi
-
-    # Fallback: try .env file
-    if [ -f "$ENV_FILE" ]; then
-        local value
-        value=$(grep "^$key=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
-        if [ -n "$value" ] && [ "$value" != "REPLACE_WITH_YOUR_KEY" ]; then
-            echo "$value"
-            return 0
-        fi
-    fi
-
-    # Not found
+  if [ -z "$key" ]; then
+    log_error "get_secret requires KEY argument"
     return 1
+  fi
+
+  # First try system keyring
+  if has_keyring; then
+    local value
+    value=$(secret-tool lookup service codeagent key "$key" 2>/dev/null)
+    if [ -n "$value" ]; then
+      echo "$value"
+      return 0
+    fi
+  fi
+
+  # Fallback: try .env file
+  if [ -f "$ENV_FILE" ]; then
+    local value
+    value=$(grep "^$key=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+    if [ -n "$value" ] && [ "$value" != "REPLACE_WITH_YOUR_KEY" ]; then
+      echo "$value"
+      return 0
+    fi
+  fi
+
+  # Not found
+  return 1
 }
 
 # List all stored secret keys (not values)
 # Usage: list_secrets
 list_secrets() {
-    echo -e "${CYAN}Stored Secrets:${NC}"
-    echo ""
+  echo -e "${CYAN}Stored Secrets:${NC}"
+  echo ""
 
-    local found_any=false
+  local found_any=false
 
-    # Check keyring
-    if has_keyring; then
-        echo -e "${BLUE}System Keyring:${NC}"
-        # secret-tool doesn't have a list command, so we check known keys
-        for key in OPENAI_API_KEY GITHUB_TOKEN TAVILY_API_KEY ANTHROPIC_API_KEY; do
-            if secret-tool lookup service codeagent key "$key" &>/dev/null; then
-                echo -e "  ${GREEN}✓${NC} $key"
-                found_any=true
-            fi
-        done
-        if [ "$found_any" = false ]; then
-            echo "  (none)"
-        fi
-        echo ""
+  # Check keyring
+  if has_keyring; then
+    echo -e "${BLUE}System Keyring:${NC}"
+    # secret-tool doesn't have a list command, so we check known keys
+    for key in OPENAI_API_KEY GITHUB_TOKEN TAVILY_API_KEY ANTHROPIC_API_KEY; do
+      if secret-tool lookup service codeagent key "$key" &>/dev/null; then
+        echo -e "  ${GREEN}✓${NC} $key"
+        found_any=true
+      fi
+    done
+    if [ "$found_any" = false ]; then
+      echo "  (none)"
     fi
+    echo ""
+  fi
 
-    # Check .env file
-    echo -e "${BLUE}Environment File ($ENV_FILE):${NC}"
-    if [ -f "$ENV_FILE" ]; then
-        local env_keys
-        env_keys=$(grep -E "^[A-Z_]+=.+$" "$ENV_FILE" 2>/dev/null | cut -d= -f1 | grep -v "^#" || true)
-        if [ -n "$env_keys" ]; then
-            while IFS= read -r key; do
-                local value
-                value=$(grep "^$key=" "$ENV_FILE" | tail -1 | cut -d= -f2-)
-                if [ "$value" = "REPLACE_WITH_YOUR_KEY" ]; then
-                    echo -e "  ${YELLOW}○${NC} $key (placeholder)"
-                else
-                    echo -e "  ${GREEN}✓${NC} $key"
-                fi
-            done <<< "$env_keys"
+  # Check .env file
+  echo -e "${BLUE}Environment File ($ENV_FILE):${NC}"
+  if [ -f "$ENV_FILE" ]; then
+    local env_keys
+    env_keys=$(grep -E "^[A-Z_]+=.+$" "$ENV_FILE" 2>/dev/null | cut -d= -f1 | grep -v "^#" || true)
+    if [ -n "$env_keys" ]; then
+      while IFS= read -r key; do
+        local value
+        value=$(grep "^$key=" "$ENV_FILE" | tail -1 | cut -d= -f2-)
+        if [ "$value" = "REPLACE_WITH_YOUR_KEY" ]; then
+          echo -e "  ${YELLOW}○${NC} $key (placeholder)"
         else
-            echo "  (none)"
+          echo -e "  ${GREEN}✓${NC} $key"
         fi
+      done <<<"$env_keys"
     else
-        echo "  (file not found)"
+      echo "  (none)"
     fi
+  else
+    echo "  (file not found)"
+  fi
 
-    echo ""
-    if has_keyring; then
-        echo -e "${CYAN}Note:${NC} Using system keyring for secure storage"
-    else
-        echo -e "${YELLOW}Tip:${NC} Install libsecret for more secure storage:"
-        echo "  sudo pacman -S libsecret"
-    fi
+  echo ""
+  if has_keyring; then
+    echo -e "${CYAN}Note:${NC} Using system keyring for secure storage"
+  else
+    echo -e "${YELLOW}Tip:${NC} Install libsecret for more secure storage:"
+    echo "  sudo pacman -S libsecret"
+  fi
 }
 
 # ============================================
 # Configure a single API key
 # ============================================
 configure_key() {
-    local key_name="$1"
-    local description="$2"
-    local required="$3"
-    local example="$4"
+  local key_name="$1"
+  local description="$2"
+  local required="$3"
+  local example="$4"
 
-    echo ""
+  echo ""
 
-    # Check for existing value (keyring or .env)
-    local existing_value=""
-    existing_value=$(get_secret "$key_name" 2>/dev/null || true)
+  # Check for existing value (keyring or .env)
+  local existing_value=""
+  existing_value=$(get_secret "$key_name" 2>/dev/null || true)
 
-    # If key exists, show current status
-    if [ -n "$existing_value" ]; then
-        echo -e "  ${GREEN}✓${NC} $key_name: configured"
-        echo -n "    Replace? [y/N]: "
-        read -r replace
-        if [ "$replace" != "y" ] && [ "$replace" != "Y" ]; then
-            return
-        fi
+  # If key exists, show current status
+  if [ -n "$existing_value" ]; then
+    echo -e "  ${GREEN}✓${NC} $key_name: configured"
+    echo -n "    Replace? [y/N]: "
+    read -r replace
+    if [ "$replace" != "y" ] && [ "$replace" != "Y" ]; then
+      return
     fi
+  fi
 
-    # Check for key in shell environment
-    if [ -n "${!key_name}" ]; then
-        log_info "Found $key_name in environment"
-        echo -n "  Use it? [Y/n]: "
-        read -r use_env
-        if [ "$use_env" != "n" ] && [ "$use_env" != "N" ]; then
-            store_secret "$key_name" "${!key_name}"
-            log_success "$key_name: copied from environment"
-            return
-        fi
+  # Check for key in shell environment
+  if [ -n "${!key_name}" ]; then
+    log_info "Found $key_name in environment"
+    echo -n "  Use it? [Y/n]: "
+    read -r use_env
+    if [ "$use_env" != "n" ] && [ "$use_env" != "N" ]; then
+      store_secret "$key_name" "${!key_name}"
+      log_success "$key_name: copied from environment"
+      return
     fi
+  fi
 
-    # Prompt for key
-    if [ "$required" = "required" ]; then
-        log_warn "$key_name - $description"
-        echo -n "  Enter $key_name (e.g., $example): "
-    else
-        log_info "$key_name (optional) - $description"
-        echo -n "  Enter $key_name or press Enter to skip: "
-    fi
+  # Prompt for key
+  if [ "$required" = "required" ]; then
+    log_warn "$key_name - $description"
+    echo -n "  Enter $key_name (e.g., $example): "
+  else
+    log_info "$key_name (optional) - $description"
+    echo -n "  Enter $key_name or press Enter to skip: "
+  fi
 
-    read -r new_value
-    if [ -n "$new_value" ]; then
-        store_secret "$key_name" "$new_value"
-        log_success "$key_name: saved"
-    elif [ "$required" = "required" ]; then
-        # For required keys without value, store placeholder in .env (not keyring)
-        set_env_key "$key_name" "REPLACE_WITH_YOUR_KEY"
-        log_warn "$key_name: placeholder added - run 'codeagent config' again to set it"
-    else
-        log_info "$key_name: skipped"
-    fi
+  read -r new_value
+  if [ -n "$new_value" ]; then
+    store_secret "$key_name" "$new_value"
+    log_success "$key_name: saved"
+  elif [ "$required" = "required" ]; then
+    # For required keys without value, store placeholder in .env (not keyring)
+    set_env_key "$key_name" "REPLACE_WITH_YOUR_KEY"
+    log_warn "$key_name: placeholder added - run 'codeagent config' again to set it"
+  else
+    log_info "$key_name: skipped"
+  fi
 }
 
 # ============================================
@@ -228,28 +228,28 @@ configure_key() {
 # ============================================
 
 usage() {
-    echo -e "${CYAN}CodeAgent Config${NC} - API Key & Secret Management"
-    echo ""
-    echo "Usage: codeagent config [command] [options]"
-    echo ""
-    echo -e "${BLUE}Commands:${NC}"
-    echo "  (none)          Interactive API key configuration"
-    echo "  store <key> <value>  Store a secret in keyring (or .env fallback)"
-    echo "  get <key>       Retrieve a secret value"
-    echo "  list            List all stored secrets (keys only)"
-    echo ""
-    echo -e "${BLUE}Options:${NC}"
-    echo "  -h, --help      Show this help message"
-    echo ""
-    echo -e "${BLUE}Examples:${NC}"
-    echo "  codeagent config                    # Interactive setup"
-    echo "  codeagent config store MY_TOKEN abc123"
-    echo "  codeagent config get OPENAI_API_KEY"
-    echo "  codeagent config list"
-    echo ""
-    echo -e "${CYAN}Note:${NC} Uses system keyring (secret-tool) if available,"
-    echo "otherwise falls back to ~/.codeagent/.env"
-    echo ""
+  echo -e "${CYAN}CodeAgent Config${NC} - API Key & Secret Management"
+  echo ""
+  echo "Usage: codeagent config [command] [options]"
+  echo ""
+  echo -e "${BLUE}Commands:${NC}"
+  echo "  (none)          Interactive API key configuration"
+  echo "  store <key> <value>  Store a secret in keyring (or .env fallback)"
+  echo "  get <key>       Retrieve a secret value"
+  echo "  list            List all stored secrets (keys only)"
+  echo ""
+  echo -e "${BLUE}Options:${NC}"
+  echo "  -h, --help      Show this help message"
+  echo ""
+  echo -e "${BLUE}Examples:${NC}"
+  echo "  codeagent config                    # Interactive setup"
+  echo "  codeagent config store MY_TOKEN abc123"
+  echo "  codeagent config get OPENAI_API_KEY"
+  echo "  codeagent config list"
+  echo ""
+  echo -e "${CYAN}Note:${NC} Uses system keyring (secret-tool) if available,"
+  echo "otherwise falls back to ~/.codeagent/.env"
+  echo ""
 }
 
 # ============================================
@@ -257,53 +257,53 @@ usage() {
 # ============================================
 
 interactive_config() {
-    echo -e "${CYAN}CodeAgent API Configuration${NC}"
-    echo "============================"
-    echo ""
+  echo -e "${CYAN}CodeAgent API Configuration${NC}"
+  echo "============================"
+  echo ""
 
-    if has_keyring; then
-        echo -e "Secrets stored in: ${GREEN}System Keyring${NC} (secure)"
-    else
-        echo -e "Secrets stored in: ${BLUE}$ENV_FILE${NC}"
-        log_warn "Install libsecret for more secure storage: sudo pacman -S libsecret"
-    fi
+  if has_keyring; then
+    echo -e "Secrets stored in: ${GREEN}System Keyring${NC} (secure)"
+  else
+    echo -e "Secrets stored in: ${BLUE}$ENV_FILE${NC}"
+    log_warn "Install libsecret for more secure storage: sudo pacman -S libsecret"
+  fi
 
-    # Ensure .env file exists (for fallback and non-secret config)
-    if [ ! -f "$ENV_FILE" ]; then
-        mkdir -p "$INSTALL_DIR"
-        cat > "$ENV_FILE" << 'ENVHEADER'
+  # Ensure .env file exists (for fallback and non-secret config)
+  if [ ! -f "$ENV_FILE" ]; then
+    mkdir -p "$INSTALL_DIR"
+    cat >"$ENV_FILE" <<'ENVHEADER'
 # CodeAgent API Keys
 # ===================
 ENVHEADER
-        log_info "Created $ENV_FILE"
+    log_info "Created $ENV_FILE"
+  fi
+
+  echo ""
+  echo -e "${BLUE}Required:${NC}"
+  configure_key "OPENAI_API_KEY" "needed for A-MEM metadata generation (~\$0.01/month)" "required" "sk-..."
+
+  echo ""
+  echo -e "${BLUE}Optional:${NC}"
+  configure_key "GITHUB_TOKEN" "enables GitHub MCP integration" "optional" "ghp_..."
+  configure_key "TAVILY_API_KEY" "enables web research MCP" "optional" "tvly-..."
+
+  echo ""
+  echo -e "${GREEN}Configuration complete!${NC}"
+  echo ""
+
+  # Show summary
+  echo "Current configuration:"
+  for key in OPENAI_API_KEY GITHUB_TOKEN TAVILY_API_KEY; do
+    if get_secret "$key" &>/dev/null; then
+      echo -e "  ${GREEN}✓${NC} $key: configured"
+    else
+      echo -e "  ${YELLOW}○${NC} $key: not set"
     fi
+  done
 
-    echo ""
-    echo -e "${BLUE}Required:${NC}"
-    configure_key "OPENAI_API_KEY" "needed for A-MEM metadata generation (~\$0.01/month)" "required" "sk-..."
-
-    echo ""
-    echo -e "${BLUE}Optional:${NC}"
-    configure_key "GITHUB_TOKEN" "enables GitHub MCP integration" "optional" "ghp_..."
-    configure_key "TAVILY_API_KEY" "enables web research MCP" "optional" "tvly-..."
-
-    echo ""
-    echo -e "${GREEN}Configuration complete!${NC}"
-    echo ""
-
-    # Show summary
-    echo "Current configuration:"
-    for key in OPENAI_API_KEY GITHUB_TOKEN TAVILY_API_KEY; do
-        if get_secret "$key" &>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} $key: configured"
-        else
-            echo -e "  ${YELLOW}○${NC} $key: not set"
-        fi
-    done
-
-    echo ""
-    echo -e "${CYAN}Note:${NC} Restart Docker services to apply changes:"
-    echo -e "  ${YELLOW}cd ~/.codeagent/infrastructure && docker compose restart${NC}"
+  echo ""
+  echo -e "${CYAN}Note:${NC} Restart Docker services to apply changes:"
+  echo -e "  ${YELLOW}cd ~/.codeagent/infrastructure && docker compose restart${NC}"
 }
 
 # ============================================
@@ -311,45 +311,45 @@ ENVHEADER
 # ============================================
 
 main() {
-    local command="${1:-}"
+  local command="${1:-}"
 
-    case "$command" in
-        store)
-            if [ -z "$2" ] || [ -z "$3" ]; then
-                log_error "Usage: codeagent config store <key> <value>"
-                exit 1
-            fi
-            store_secret "$2" "$3"
-            ;;
-        get)
-            if [ -z "$2" ]; then
-                log_error "Usage: codeagent config get <key>"
-                exit 1
-            fi
-            local value
-            if value=$(get_secret "$2"); then
-                echo "$value"
-            else
-                log_error "Secret '$2' not found"
-                exit 1
-            fi
-            ;;
-        list)
-            list_secrets
-            ;;
-        help|-h|--help)
-            usage
-            ;;
-        "")
-            interactive_config
-            ;;
-        *)
-            log_error "Unknown command: $command"
-            echo ""
-            usage
-            exit 1
-            ;;
-    esac
+  case "$command" in
+    store)
+      if [ -z "$2" ] || [ -z "$3" ]; then
+        log_error "Usage: codeagent config store <key> <value>"
+        exit 1
+      fi
+      store_secret "$2" "$3"
+      ;;
+    get)
+      if [ -z "$2" ]; then
+        log_error "Usage: codeagent config get <key>"
+        exit 1
+      fi
+      local value
+      if value=$(get_secret "$2"); then
+        echo "$value"
+      else
+        log_error "Secret '$2' not found"
+        exit 1
+      fi
+      ;;
+    list)
+      list_secrets
+      ;;
+    help | -h | --help)
+      usage
+      ;;
+    "")
+      interactive_config
+      ;;
+    *)
+      log_error "Unknown command: $command"
+      echo ""
+      usage
+      exit 1
+      ;;
+  esac
 }
 
 main "$@"

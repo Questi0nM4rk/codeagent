@@ -20,8 +20,8 @@ Every function has type hints. mypy --strict passes. ruff check passes.
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
+| Component   | Technology   |
+| ----------- | ------------ |
 | Version | Python 3.11+ |
 | Package Manager | uv (fast), pip |
 | Type Checking | mypy --strict |
@@ -51,7 +51,7 @@ pytest --cov=src --cov-report=term-missing
 
 ### Type Hints
 
-<Good>
+### Good Example: Generics and Protocols
 ```python
 from collections.abc import Callable, Iterable
 from typing import TypeVar
@@ -76,9 +76,8 @@ class Repository(Protocol[T]):
 - Callable with proper signature
 - Protocol for duck typing
 - Union with `|` syntax (3.10+)
-</Good>
 
-<Bad>
+### Bad Example
 ```python
 def process_items(items, func):
     return [func(item) for item in items]
@@ -86,11 +85,10 @@ def process_items(items, func):
 - No type hints
 - Unclear expected types
 - Hard to catch errors at development time
-</Bad>
 
 ### Dataclasses
 
-<Good>
+### Good Example: Frozen Dataclass with Validation
 ```python
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -108,7 +106,6 @@ class User:
 - Frozen for immutability
 - Validation in `__post_init__`
 - Default factory for mutable defaults
-</Good>
 
 ### Pydantic for Validation
 
@@ -129,7 +126,7 @@ class UserCreate(BaseModel):
 
 ### Result Pattern (No Exceptions)
 
-<Good>
+### Good Example: Result Type with Pattern Matching
 ```python
 from dataclasses import dataclass
 from typing import Generic, TypeVar
@@ -162,7 +159,6 @@ match divide(10, 2):
 - Explicit error handling
 - Pattern matching (3.10+)
 - No exception for expected failures
-</Good>
 
 ### Async Patterns
 
@@ -187,7 +183,7 @@ async def fetch_all(urls: list[str]) -> list[Response]:
 
 ## Testing
 
-<Good>
+### Good Example: Test Class with Fixtures and Mocks
 ```python
 import pytest
 from unittest.mock import Mock
@@ -226,7 +222,6 @@ class TestUserService:
 - Type hints on fixtures
 - Mock with spec for type checking
 - Arrange/Act/Assert pattern
-</Good>
 
 ### Parametrized Tests
 
@@ -242,8 +237,8 @@ def test_uppercase(input_str: str, expected: str) -> None:
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
+| Excuse   | Reality   |
+| -------- | --------- |
 | "Type hints are verbose" | They catch bugs. IDEs autocomplete them. Worth it. |
 | "Python is dynamic" | Your bugs are too. Type hints prevent them. |
 | "mypy --strict is too strict" | It catches real bugs. Fix them. |
@@ -282,8 +277,8 @@ pip-audit                             # Dependency vulnerabilities
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
+| Problem   | Solution   |
+| --------- | ---------- |
 | mypy error on library | Add type stubs or `# type: ignore[import]` with comment |
 | Complex generic types | Start simple, add generics incrementally |
 | Circular imports | Move types to separate `types.py` module |

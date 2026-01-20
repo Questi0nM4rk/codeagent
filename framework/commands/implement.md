@@ -8,7 +8,7 @@ Implements the plan or backlog task using Test-Driven Development. Automatically
 
 ## Usage
 
-```
+```text
 /implement                  # Execute plan (uses mode from /plan)
 /implement TASK-001         # Execute specific backlog task
 /implement EPIC-001         # Execute all ready tasks in epic
@@ -24,6 +24,7 @@ Implements the plan or backlog task using Test-Driven Development. Automatically
 ### Task Selection Priority
 
 When running `/implement` without arguments:
+
 1. Continue from `.planning/STATE.md` if exists
 2. Call `mcp__backlog__get_next_task()` for highest-priority ready task
 3. If no ready tasks, report backlog status
@@ -55,6 +56,7 @@ else:
 ### Task Context Loading
 
 When starting a task, full context is returned by `get_next_task()`:
+
 ```python
 task = {
     "id": "MP-TASK-001",
@@ -92,7 +94,7 @@ Reference: `@~/.claude/framework/references/execution-strategies.md`
 
 #### Strategy A: Fully Autonomous
 
-```
+```text
 Main Claude (Orchestrator) ~5% context
       │
       └─► Single subagent (suggested_model → opus)
@@ -108,7 +110,7 @@ Main Claude (Orchestrator) ~5% context
 
 #### Strategy B: Segmented Execution (Fresh Subagent Per Task)
 
-```
+```text
 Main Claude (Orchestrator) ~20% context
       │
       ├─► Subagent 1 (fresh context)
@@ -127,13 +129,14 @@ Main Claude (Orchestrator) ~20% context
 **When:** Has `checkpoint:human-verify` tasks. No decision checkpoints.
 
 **Benefits:**
+
 - Full 200k context per segment
 - No context degradation across tasks
 - Isolated failures
 
 #### Strategy C: Main Context Only
 
-```
+```text
 Main Claude (no subagents) 100% context
       │
       ├─► Execute Task 1 (auto)
@@ -150,7 +153,7 @@ Main Claude (no subagents) 100% context
 
 ### Parallel Mode
 
-```
+```text
 Main Claude (Orchestrator)
       │
       ├─► SETUP WORKTREES (before spawning agents)
@@ -182,13 +185,15 @@ Main Claude (Orchestrator)
 When PARALLEL mode is detected:
 
 1. **For each parallel task:**
+
 ```bash
 result=$(codeagent worktree setup "$TASK_ID")
 worktree_path=$(echo "$result" | jq -r '.worktree')
 task_branch=$(echo "$result" | jq -r '.branch')
 ```
 
-2. **Store in STATE.md:**
+1. **Store in STATE.md:**
+
 ```yaml
 parallel_execution:
   parent_branch: qsm/ath-256-implement-auth
@@ -203,8 +208,9 @@ parallel_execution:
       status: pending
 ```
 
-3. **Spawn implementer with pre-created paths:**
-```
+1. **Spawn implementer with pre-created paths:**
+
+```text
 working_dir: $worktree_path
 branch: $task_branch
 file_boundaries: [from orchestrator]
@@ -225,7 +231,7 @@ The `/plan` phase determines `suggested_model` based on historical performance d
 
 ### Escalation Flow
 
-```
+```text
 suggested_model (from /plan)
     │
     ├─► Attempt 1-3: Use suggested_model
@@ -246,10 +252,10 @@ suggested_model (from /plan)
 
 ### Model Usage by Phase
 
-| Phase | Model | Rationale |
-|-------|-------|-----------|
-| Test writing | opus | Correctness critical - tests define the contract |
-| Implementation | suggested_model | From task, based on historical data |
+| Phase          | Model            | Rationale                                    |
+| -------------- | ---------------- | -------------------------------------------- |
+| Test writing   | opus             | Correctness critical - tests define contract |
+| Implementation | suggested_model  | From task, based on historical data          |
 
 ### Reflection-Guided Retry
 
@@ -333,7 +339,7 @@ Run: /plan "[task]" --context="REITERATE: [summary]"
 
 ## TDD Loop (Every Step)
 
-```
+```text
 1. Write test for the behavior (opus - correctness critical)
 2. Run test → MUST FAIL
 3. Commit test
@@ -355,13 +361,13 @@ During implementation, handle unexpected situations with these rules:
 
 ### The Five Rules
 
-| Rule | Condition | Action | Document In |
-|------|-----------|--------|-------------|
-| **1** | Bug discovered | Auto-fix | STATE.md |
-| **2** | Missing security/validation | Auto-add | STATE.md |
-| **3** | Blocker with clear fix | Auto-fix | STATE.md |
-| **4** | Architectural change needed | **STOP** | Ask user |
-| **5** | Enhancement opportunity | Log only | ISSUES.md |
+| Rule | Condition                        | Action      | Document In |
+| ---- | -------------------------------- | ----------- | ----------- |
+| 1    | Bug discovered                   | Auto-fix    | STATE.md    |
+| 2    | Missing security/validation      | Auto-add    | STATE.md    |
+| 3    | Blocker with clear fix           | Auto-fix    | STATE.md    |
+| 4    | Architectural change needed      | STOP        | Ask user    |
+| 5    | Enhancement opportunity          | Log only    | ISSUES.md   |
 
 **Priority:** Rule 4 (stop) > Rules 1-3 (auto-fix) > Rule 5 (log)
 
@@ -369,11 +375,12 @@ During implementation, handle unexpected situations with these rules:
 
 ```markdown
 ## Deviations in STATE.md
-| Time | Type | Issue | Action | Files |
-|------|------|-------|--------|-------|
-| 14:32 | bug | Null check missing | Added guard clause | UserService.cs |
-| 14:45 | security | SQL injection risk | Parameterized query | SearchRepo.cs |
-| 15:01 | blocker | Missing DI registration | Added to Program.cs | Program.cs |
+
+| Time  | Type      | Issue                  | Action                   | Files          |
+| ----- | --------- | ---------------------- | ------------------------ | -------------- |
+| 14:32 | bug       | Null check missing     | Added guard clause       | UserService.cs |
+| 14:45 | security  | SQL injection risk     | Parameterized query      | SearchRepo.cs  |
+| 15:01 | blocker   | Missing DI registration| Added to Program.cs      | Program.cs     |
 ```
 
 ### STOP Example (Rule 4)
@@ -398,18 +405,20 @@ Please choose an option to proceed.
 ### Log Example (Rule 5)
 
 Add to `.planning/ISSUES.md`:
+
 ```markdown
 ## Enhancements (Not in Scope)
-| ID | Enhancement | Discovered During | Priority |
-|----|-------------|-------------------|----------|
-| ENH-001 | UserService could use caching | Add user auth | Medium |
+
+| ID      | Enhancement                    | Discovered During | Priority |
+| ------- | ------------------------------ | ----------------- | -------- |
+| ENH-001 | UserService could use caching  | Add user auth     | Medium   |
 ```
 
 ## Failure Handling
 
 The implementer agent uses reflection MCP on failures:
 
-```
+```text
 mcp__reflection__reflect_on_failure
     → Analyze what went wrong
     → Check similar past failures
@@ -536,11 +545,13 @@ Branch: checkpoint/[task]-[timestamp]
 The implementer agent uses A-MEM memory:
 
 **Before implementing:**
+
 - Queries A-MEM for architecture decisions from /plan
 - Searches for similar implementation patterns
 - Checks for project-specific conventions
 
 **After successful implementation:**
+
 - Stores novel patterns for future reference
 - A-MEM automatically links to architect's design decisions
 
@@ -567,6 +578,7 @@ After all tasks complete:
 Template: `@~/.claude/framework/templates/planning/SUMMARY.md.template`
 
 Contents:
+
 - What was done (summary description)
 - Files changed (table with actions and line counts)
 - Tests added (coverage info)
@@ -578,7 +590,8 @@ Contents:
 ### 3. Store in Memory
 
 **A-MEM (patterns for future use):**
-```
+
+```text
 mcp__amem__store_memory:
   content="## Implementation: [task name]
 Type: implementation
@@ -596,7 +609,8 @@ Context: [when this applies]
 ```
 
 **Reflection (episodes for learning):**
-```
+
+```text
 mcp__reflection__store_episode:
   task="[task description]"
   approach="[strategy used]"
@@ -613,6 +627,7 @@ mcp__reflection__store_episode:
 ### 4. Update Backlog (via backlog-mcp)
 
 **Complete task and unblock dependents:**
+
 ```python
 result = mcp__backlog__complete_task(
     task_id="MP-TASK-001",
@@ -631,10 +646,11 @@ result = mcp__backlog__complete_task(
 ```
 
 **Automatic behaviors:**
+
 - Task status → `done`
 - `completed_at` timestamp set
 - Dependent tasks with all deps done → status `ready`
-- Dashboard updates automatically (http://localhost:6791)
+- Dashboard updates automatically at [http://localhost:6791](http://localhost:6791)
 
 ### 5. Update PROJECT.md
 
@@ -760,6 +776,7 @@ mcp__backlog__update_task_status(
 ```
 
 Then create checkpoint branch:
+
 ```bash
 git checkout -b checkpoint/MP-TASK-001-$(date +%s)
 git add -A && git commit -m "checkpoint: blocked on [reason]"
@@ -773,4 +790,4 @@ git add -A && git commit -m "checkpoint: blocked on [reason]"
 - Use --continue to resume after fixing issues
 - Parallel mode requires all tasks to complete before /integrate
 - Learner agent triggers automatically after successful implementation
-- Dashboard at http://localhost:6791 shows backlog in real-time
+- Dashboard at [http://localhost:6791](http://localhost:6791) shows backlog in real-time

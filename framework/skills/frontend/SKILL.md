@@ -32,8 +32,8 @@ tsc --strict passes. No `any` escapes. Every user interaction is tested.
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
+| Component   | Technology   |
+| ----------- | ------------ |
 | Framework | React 18+ with hooks |
 | Language | TypeScript 5+ strict mode |
 | Build | Vite, Next.js |
@@ -61,7 +61,7 @@ npx playwright test
 
 ### Component Structure
 
-<Good>
+### Good Example: Typed Props with Accessibility
 ```typescript
 interface ButtonProps {
   variant: 'primary' | 'secondary';
@@ -93,9 +93,8 @@ export function Button({
 - Union types for variants
 - Accessibility attributes
 - Default values in destructuring
-</Good>
 
-<Bad>
+### Bad Example
 ```typescript
 export function Button(props: any) {
   return (
@@ -109,11 +108,10 @@ export function Button(props: any) {
 - No accessibility
 - No type documentation
 - Missing button type attribute
-</Bad>
 
 ### Custom Hooks
 
-<Good>
+### Good Example: Generic Hooks with Cleanup
 ```typescript
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -150,11 +148,10 @@ function useFetch<T>(url: string) {
 - Generic types for reusability
 - Cleanup in useEffect
 - AbortController prevents memory leaks
-</Good>
 
 ### Data Fetching (React Query)
 
-<Good>
+### Good Example: useQuery with Error Handling
 ```typescript
 interface User {
   id: string;
@@ -187,7 +184,6 @@ function UserProfile({ id }: { id: string }) {
 - Typed query function
 - Proper error handling
 - Loading states
-</Good>
 
 ### Error Boundaries
 
@@ -204,7 +200,7 @@ function UserProfile({ id }: { id: string }) {
 
 ### Form Handling
 
-<Good>
+### Good Example: Typed Form with Validation
 ```typescript
 interface FormData {
   email: string;
@@ -254,13 +250,12 @@ function LoginForm() {
 - Type-safe form data
 - Accessible error states
 - Native FormData API
-</Good>
 
 ## Testing Patterns
 
 ### Component Tests
 
-<Good>
+### Good Example: userEvent with Role Queries
 ```typescript
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -293,7 +288,6 @@ describe('Button', () => {
 - userEvent over fireEvent
 - Query by role (accessible)
 - Test disabled behavior
-</Good>
 
 ### Hook Tests
 
@@ -312,8 +306,8 @@ it('increments counter', () => {
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
+| Excuse   | Reality   |
+| -------- | --------- |
 | "`any` is faster to write" | It disables TypeScript. You'll pay in bugs later. |
 | "Testing is slow" | Debugging production is slower. Test interactions. |
 | "Strict mode is too strict" | It catches real bugs. Enable it. |
@@ -355,8 +349,8 @@ npm audit                          # Security
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
+| Problem   | Solution   |
+| --------- | ---------- |
 | Hydration mismatch | Use `useEffect` for client-only code, check `typeof window` |
 | State update on unmounted | Add cleanup, use AbortController |
 | Re-renders | Profile with React DevTools, memoize with `useMemo`/`useCallback` |
