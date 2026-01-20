@@ -8,7 +8,7 @@ Gathers context, designs solution, creates backlog items (epics/tasks), and dete
 
 ## Usage
 
-```
+```text
 /plan "Add JWT authentication"              # Standard planning
 /plan "Add users and products"              # Auto-detects if parallelizable
 /plan --sequential "Complex refactoring"    # Force sequential mode
@@ -19,7 +19,7 @@ Gathers context, designs solution, creates backlog items (epics/tasks), and dete
 
 This command spawns three agents:
 
-```
+```text
 Main Claude (Orchestrator)
       │
       ├─► researcher agent (opus)
@@ -68,6 +68,7 @@ Feature: [Feature Name]
 ```
 
 **BDD Rules:**
+
 - Write scenarios BEFORE technical design
 - Each scenario = one acceptance test
 - Use domain language, not technical terms
@@ -131,12 +132,12 @@ suggested_model = effectiveness["recommended_model"]
 
 **Selection Rules:**
 
-| Condition | Model | Reason |
-|-----------|-------|--------|
-| No historical data | haiku | Start cheap, escalate if needed |
-| Haiku success rate >= 50% | haiku | Working well enough |
-| Haiku success rate < 50% (n>=3) | opus | Historical data shows haiku struggles |
-| Complex architectural task | opus | Needs full reasoning (override) |
+| Condition                  | Model | Reason                                |
+| -------------------------- | ----- | ------------------------------------- |
+| No historical data         | haiku | Start cheap, escalate if needed       |
+| Haiku success >= 50%       | haiku | Working well enough                   |
+| Haiku success < 50% (n>=3) | opus  | Historical data shows struggles       |
+| Complex arch task          | opus  | Needs full reasoning (override)       |
 
 **Output Addition:**
 
@@ -299,30 +300,33 @@ Reference: `@~/.claude/framework/references/execution-strategies.md`
 
 ## Mode Detection Rules
 
-| Condition | Mode | Reason |
-|-----------|------|--------|
-| Single subtask | SEQUENTIAL | Nothing to parallelize |
-| `--sequential` flag | SEQUENTIAL | User forced |
-| Any file modified by 2+ subtasks | SEQUENTIAL | Conflict risk |
-| Subtask A modifies B's dependency | SEQUENTIAL | Dependency conflict |
-| Estimated speedup < 30% | SEQUENTIAL | Overhead not worth it |
-| All subtasks fully isolated | PARALLEL | Safe to proceed |
+| Condition                          | Mode       | Reason                     |
+| ---------------------------------- | ---------- | -------------------------- |
+| Single subtask                     | SEQUENTIAL | Nothing to parallelize     |
+| `--sequential` flag                | SEQUENTIAL | User forced                |
+| Any file modified by 2+ subtasks   | SEQUENTIAL | Conflict risk              |
+| Subtask A modifies B's dependency  | SEQUENTIAL | Dependency conflict        |
+| Estimated speedup < 30%            | SEQUENTIAL | Overhead not worth it      |
+| All subtasks fully isolated        | PARALLEL   | Safe to proceed            |
 
 ## A-MEM Integration
 
 The planning pipeline uses A-MEM memory throughout:
 
 **Researcher agent queries A-MEM for:**
+
 - Past similar designs (avoids reinventing)
 - Project-specific constraints and conventions
 - Previous architecture decisions
 
 **Architect agent stores:**
+
 - New design decisions (with alternatives considered)
 - Tradeoff analysis and rationale
 - Implementation notes for future reference
 
 **Orchestrator agent queries/stores:**
+
 - Past parallelization decisions
 - Known file conflict patterns
 
@@ -334,7 +338,7 @@ After planning completes, generate context files in `.planning/` directory:
 
 ### Directory Structure
 
-```
+```text
 .planning/
 ├── STATE.md       # Session state and progress tracking
 ├── PLAN.md        # Executable task definitions (XML format)
@@ -346,6 +350,7 @@ After planning completes, generate context files in `.planning/` directory:
 Generated from template: `@~/.claude/framework/templates/planning/STATE.md.template`
 
 Contents:
+
 - Session ID (timestamp-based)
 - Current position (phase, task, status)
 - Decisions table (empty, filled during /implement)
@@ -357,6 +362,7 @@ Contents:
 Generated from template: `@~/.claude/framework/templates/planning/PLAN.md.template`
 
 Contents:
+
 - Task name and metadata
 - Execution mode (SEQUENTIAL/PARALLEL)
 - Execution strategy (A/B/C)
@@ -385,6 +391,7 @@ After planning completes, create tasks in Convex via backlog-mcp.
 ### Project Setup (first time)
 
 If project doesn't exist in Convex:
+
 ```python
 mcp__backlog__create_project(
     name="MyProject",
@@ -451,11 +458,12 @@ mcp__backlog__get_backlog_summary(project="MP")
 # Returns summary with counts and ready items
 ```
 
-**Dashboard:** http://localhost:6791
+**Dashboard:** [http://localhost:6791](http://localhost:6791)
 
 ## Integration with /analyze
 
 If `/analyze` was run first:
+
 - Link epic to spike: `source.type: spike`, `source.ref: SPIKE-{N}`
 - Import findings as context
 - Reference spike output in epic description
@@ -470,4 +478,4 @@ If `/analyze` was run first:
 - Context files are generated in `.planning/` directory
 - Backlog items are created via backlog-mcp (Convex backend)
 - Maximum 2-3 tasks per plan to prevent context degradation
-- Dashboard at http://localhost:6791 for human backlog view
+- Dashboard at [http://localhost:6791](http://localhost:6791) for human backlog view

@@ -9,7 +9,7 @@ Domain knowledge for converting Figma designs to production-ready code.
 
 ## The Iron Law
 
-```
+```text
 DESIGN TOKENS FIRST + COMPONENT MAPPING + ACCESSIBILITY ALWAYS
 Extract tokens before components. Map Figma variants to props. Every interactive element is accessible.
 ```
@@ -21,12 +21,14 @@ Extract tokens before components. Map Figma variants to props. Every interactive
 ## When to Use
 
 **Always:**
+
 - Converting Figma designs to React/Vue/Svelte components
 - Building design systems from Figma
 - Extracting design tokens (colors, typography, spacing)
 - Creating component variants from Figma variants
 
 **Exceptions (ask human partner):**
+
 - Highly animated/interactive designs (may need motion design expertise)
 - Complex data visualizations (may need D3/charting library knowledge)
 
@@ -34,7 +36,7 @@ Extract tokens before components. Map Figma variants to props. Every interactive
 
 ### Step 1: Analyze Design Structure
 
-```
+```text
 1. Get file overview with get_file
 2. Identify component hierarchy
 3. Extract design tokens (colors, typography, spacing)
@@ -74,16 +76,16 @@ export const spacing = {
 
 ### Step 3: Map Components
 
-| Figma Element | React Component |
-|---------------|-----------------|
-| Frame | `div` or semantic element |
-| Auto Layout | Flexbox/Grid container |
-| Component | React component |
-| Instance | Component with props |
-| Text | `p`, `span`, `h1-h6` |
-| Rectangle | `div` with styles |
-| Image | `img` or `Image` |
-| Vector | SVG or icon component |
+| Figma Element    | React Component             |
+| :--------------- | :-------------------------- |
+| Frame            | `div` or semantic element   |
+| Auto Layout      | Flexbox/Grid container      |
+| Component        | React component             |
+| Instance         | Component with props        |
+| Text             | `p`, `span`, `h1-h6`        |
+| Rectangle        | `div` with styles           |
+| Image            | `img` or `Image`            |
+| Vector           | SVG or icon component       |
 
 ### Step 4: Build Components
 
@@ -97,7 +99,7 @@ Document deviations and accessibility considerations.
 
 Use the Figma MCP for accessing design data:
 
-```
+```bash
 # Get file data
 mcp__figma__get_file: file_key="<figma-file-key>"
 
@@ -118,7 +120,8 @@ mcp__figma__get_file_components: file_key="<key>"
 
 ### Design Token Extraction
 
-<Good>
+### Good Example: Extracted Tokens
+
 ```typescript
 // tokens/colors.ts - extracted from Figma styles
 export const colors = {
@@ -140,27 +143,29 @@ export const colors = {
 // Usage in component
 <button className="bg-primary-600 hover:bg-primary-700">
 ```
+
 - Tokens extracted from Figma styles
 - Semantic naming (primary, neutral)
 - Scale follows design system (50-900)
 - `as const` for type inference
-</Good>
 
-<Bad>
+### Bad Example: Hardcoded Colors
+
 ```typescript
 // Hardcoded colors everywhere
 <button style={{ backgroundColor: '#4F46E5' }}>
 <div className="bg-[#6366F1]">
 ```
+
 - Hardcoded hex values
 - No token system
 - Impossible to maintain or theme
 - Inconsistent with design system
-</Bad>
 
 ### Component with Variants
 
-<Good>
+### Good Example: Button Component
+
 ```tsx
 interface ButtonProps {
   variant: 'primary' | 'secondary' | 'ghost';
@@ -209,14 +214,15 @@ export function Button({
   );
 }
 ```
+
 - Props match Figma variants exactly
 - Focus states for accessibility
 - `aria-disabled` for screen readers
 - `aria-hidden` on decorative icons
 - Uses design tokens, not hardcoded values
-</Good>
 
-<Bad>
+### Bad Example: Inaccessible Button
+
 ```tsx
 function Button({ type, onClick, children }) {
   return (
@@ -232,17 +238,18 @@ function Button({ type, onClick, children }) {
   );
 }
 ```
+
 - `div` instead of `button` (not accessible)
 - Hardcoded pixels, not from design system
 - Generic color names, not semantic
 - No focus state
 - No disabled handling
 - Not keyboard accessible
-</Bad>
 
 ### Auto Layout to Flexbox
 
-<Good>
+### Good Example: Flexbox Layout
+
 ```tsx
 // Figma: Auto Layout, Horizontal, Gap 16, Padding 24
 <div className="flex flex-row gap-4 p-6">
@@ -259,23 +266,25 @@ function Button({ type, onClick, children }) {
   {children}
 </div>
 ```
+
 - Direct translation from Figma auto layout
 - Uses Tailwind spacing scale
 - `min-w-0` prevents flex overflow
-</Good>
 
-<Bad>
+### Bad Example: Inline Styles
+
 ```tsx
 <div style={{ display: 'flex', gap: '16px', padding: '24px' }}>
 ```
+
 - Inline styles, not reusable
 - Hardcoded pixels
 - No responsive consideration
-</Bad>
 
 ### Icon Extraction
 
-<Good>
+### Good Example: SVG Icon Component
+
 ```tsx
 // Exported from Figma as SVG, converted to component
 interface IconProps {
@@ -306,25 +315,27 @@ export function IconArrowRight({ className, 'aria-label': ariaLabel }: IconProps
   );
 }
 ```
+
 - `currentColor` for theming
 - `aria-hidden` when decorative
 - `aria-label` when meaningful
 - Typed props interface
-</Good>
 
-<Bad>
+### Bad Example: Raster Icon
+
 ```tsx
 <img src="/arrow.png" width="24" height="24" />
 ```
+
 - Raster image, not scalable
 - Can't change color
 - Extra HTTP request
 - No accessibility
-</Bad>
 
 ### Responsive Design
 
-<Good>
+### Good Example: Mobile-First Responsive
+
 ```tsx
 // Figma breakpoints → Tailwind
 // Mobile: 375px (default)
@@ -341,15 +352,15 @@ export function IconArrowRight({ className, 'aria-label': ariaLabel }: IconProps
   </div>
 </div>
 ```
+
 - Mobile-first approach
 - Breakpoints match Figma frames
 - Progressive enhancement
-</Good>
 
 ## Common Rationalizations
 
 | Excuse | Reality |
-|--------|---------|
+| :----- | :------ |
 | "I'll extract tokens later" | You'll hardcode everything. Extract first. |
 | "It's pixel perfect" | Pixels don't scale. Use design tokens. |
 | "Accessibility takes too long" | Lawsuits take longer. Do it now. |
@@ -422,7 +433,7 @@ When converting a Figma design, document:
 ## When Stuck
 
 | Problem | Solution |
-|---------|----------|
+| :------ | :------- |
 | Figma file too complex | Start with one component, extract tokens first |
 | No design tokens in Figma | Create tokens from repeated values in designs |
 | Variants don't match code needs | Map Figma variants to props, add missing states |

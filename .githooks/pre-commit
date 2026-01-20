@@ -14,18 +14,18 @@ echo "========================================"
 echo ""
 
 # Check if pre-commit is installed
-if ! command -v pre-commit &> /dev/null; then
-    echo "❌ pre-commit not found!"
-    echo ""
-    echo "Install with:"
-    echo "  pip install pre-commit"
-    echo "  # or"
-    echo "  uv pip install pre-commit"
-    echo ""
-    echo "Then run:"
-    echo "  pre-commit install"
-    echo ""
-    exit 1
+if ! command -v pre-commit &>/dev/null; then
+  echo "❌ pre-commit not found!"
+  echo ""
+  echo "Install with:"
+  echo "  pip install pre-commit"
+  echo "  # or"
+  echo "  uv pip install pre-commit"
+  echo ""
+  echo "Then run:"
+  echo "  pre-commit install"
+  echo ""
+  exit 1
 fi
 
 # Run pre-commit with all hooks

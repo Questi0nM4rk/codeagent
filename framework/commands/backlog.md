@@ -8,7 +8,7 @@ View and manage project backlog. Shows epics, tasks, bugs, and spike items with 
 
 ## Usage
 
-```
+```text
 /backlog                    # View backlog summary
 /backlog ready              # View ready items
 /backlog in-progress        # View items in progress
@@ -232,15 +232,18 @@ Cannot proceed without API credentials from payment vendor.
 - Root cause: Missing null check in SearchService
 
 **Command:**
-```
+
+```text
 /implement BUG-006
 ```
 
 ### Alternative
 
 If bug requires more context:
+
 - **TASK-017**: Add search to users endpoint [ready, high priority]
-```
+
+```text
 
 ### Groom View (`/backlog groom`)
 
@@ -287,21 +290,21 @@ AI-assisted backlog grooming:
 
 ## Filters
 
-| Filter | Shows |
-|--------|-------|
-| `ready` | Items ready for work |
-| `in-progress` | Currently active items |
-| `blocked` | Items waiting on something |
-| `done` | Completed items (last 10) |
-| `bugs` | All bugs |
-| `spike` | All spike items |
-| `high` | High/critical priority items |
+| Filter        | Shows                           |
+| ------------- | ------------------------------- |
+| `ready`       | Items ready for work            |
+| `in-progress` | Currently active items          |
+| `blocked`     | Items waiting on something      |
+| `done`        | Completed items (last 10)       |
+| `bugs`        | All bugs                        |
+| `spike`       | All spike items                 |
+| `high`        | High/critical priority items    |
 
 ## Item References
 
 View any item by ID:
 
-```
+```text
 /backlog EPIC-001    # Epic details
 /backlog TASK-001    # Task details
 /backlog BUG-001     # Bug details
@@ -312,7 +315,7 @@ View any item by ID:
 
 ### Update Status
 
-```
+```text
 /backlog TASK-001 --status ready       # Move to ready
 /backlog TASK-001 --status blocked     # Mark blocked
 /backlog TASK-001 --status backlog     # Deprioritize
@@ -320,13 +323,13 @@ View any item by ID:
 
 ### Add Notes
 
-```
+```text
 /backlog TASK-001 --note "Waiting on API docs"
 ```
 
 ### Link Items
 
-```
+```text
 /backlog TASK-001 --blocks TASK-002
 /backlog TASK-001 --depends-on TASK-000
 ```

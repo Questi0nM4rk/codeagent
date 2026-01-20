@@ -4,23 +4,25 @@ Three strategies for executing plans based on checkpoint types.
 
 ## Strategy Overview
 
-| Strategy | When | Behavior | Main Context Usage |
-|----------|------|----------|-------------------|
-| **A** | All tasks `type="auto"` | Single subagent executes entire plan | ~5% (orchestration only) |
-| **B** | Has `checkpoint:human-verify` | Fresh subagent per segment | ~20% (checkpoints only) |
-| **C** | Has `checkpoint:decision` | Main context only, no subagents | 100% |
+| Strategy | When                             | Behavior                                  | Main Context Usage          |
+| -------- | -------------------------------- | ----------------------------------------- | --------------------------- |
+| A        | All tasks `type="auto"`          | Single subagent executes entire plan      | ~5% (orchestration only)    |
+| B        | Has `checkpoint:human-verify`    | Fresh subagent per segment                | ~20% (checkpoints only)     |
+| C        | Has `checkpoint:decision`        | Main context only, no subagents           | 100%                        |
 
 ---
 
 ## Strategy A: Fully Autonomous
 
 ### When to Use
+
 - All tasks have `type="auto"`
 - No user verification needed
 - No decisions required during execution
 
 ### Behavior
-```
+
+```text
 Main Claude (Orchestrator)
       │
       └─► Single subagent (suggested_model → opus)
@@ -35,6 +37,7 @@ Main Claude (Orchestrator)
 ### Model Selection
 
 The `/plan` phase determines `suggested_model` based on historical performance data:
+
 - Queries `mcp__reflection__get_model_effectiveness()` for similar tasks
 - Default: `haiku` (if no historical data)
 - Upgrades to `opus` if haiku historically fails on similar tasks
@@ -42,10 +45,12 @@ The `/plan` phase determines `suggested_model` based on historical performance d
 **Escalation:** suggested_model (3 attempts) → opus (3 attempts) → REITERATE to /plan
 
 ### Token Distribution
+
 - Main context: ~5% (spawn subagent, receive results)
 - Subagent: ~95% (actual implementation)
 
 ### Example Plan
+
 ```xml
 <task type="auto">
   <name>Add unit tests for AuthService</name>
@@ -70,11 +75,13 @@ The `/plan` phase determines `suggested_model` based on historical performance d
 ## Strategy B: Segmented Execution
 
 ### When to Use
+
 - At least one task has `checkpoint:human-verify`
 - No `checkpoint:decision` tasks (those require Strategy C)
 
 ### Behavior
-```
+
+```text
 Main Claude (Orchestrator)
       │
       ├─► Subagent 1 (fresh context)
@@ -91,15 +98,18 @@ Main Claude (Orchestrator)
 ```
 
 ### Token Distribution
+
 - Main context: ~20% (checkpoints, user interaction)
 - Subagents: ~80% (implementation, split across segments)
 
 ### Fresh Subagent Benefits
+
 1. **Full context per segment** - 200k tokens available
 2. **No degradation** - Each subagent starts clean
 3. **Isolated failures** - One segment failing doesn't pollute others
 
 ### Example Plan
+
 ```xml
 <task type="auto">
   <name>Implement OAuth flow</name>
@@ -119,6 +129,7 @@ Main Claude (Orchestrator)
 ```
 
 **Execution:**
+
 1. Subagent 1: Executes "Implement OAuth flow"
 2. Subagent 1: Executes "Configure OAuth provider"
 3. **Checkpoint:** Main context asks user to verify OAuth
@@ -159,12 +170,14 @@ FORBIDDEN (don't touch): ${FORBIDDEN_FILES}
 ## Strategy C: Main Context Only
 
 ### When to Use
+
 - Any task has `checkpoint:decision`
 - Decision outcomes affect subsequent tasks
 - Tight user interaction required
 
 ### Behavior
-```
+
+```text
 Main Claude (no subagents)
       │
       ├─► Execute Task 1 (auto)
@@ -180,14 +193,17 @@ Main Claude (no subagents)
 ```
 
 ### Token Distribution
+
 - Main context: 100% (no subagents)
 
 ### When Preferred Despite Token Cost
+
 - Decisions fundamentally change subsequent tasks
 - Quick back-and-forth with user expected
 - Tasks are small enough that subagent overhead > benefit
 
 ### Example Plan
+
 ```xml
 <task type="auto">
   <name>Analyze caching requirements</name>
@@ -231,10 +247,10 @@ def select_strategy(tasks):
 **Decision Matrix:**
 
 | Has Decision? | Has Verify? | Strategy |
-|---------------|-------------|----------|
-| Yes | Any | C |
-| No | Yes | B |
-| No | No | A |
+| ------------- | ----------- | -------- |
+| Yes           | Any         | C        |
+| No            | Yes         | B        |
+| No            | No          | A        |
 
 ---
 
@@ -269,7 +285,7 @@ Add to plan output:
 
 Strategy selection happens AFTER parallelization analysis:
 
-```
+```text
 /plan
   │
   ├─► Parallelization Analysis (orchestrator)
@@ -288,17 +304,18 @@ Strategy selection happens AFTER parallelization analysis:
 
 ## Fallback Rules
 
-| Situation | Fallback |
-|-----------|----------|
-| Subagent fails 3 times with suggested_model | Escalate to opus (3 more attempts) |
-| Subagent fails 3 times with opus | REITERATE to /plan with failure context |
-| Checkpoint timeout | Ask user to continue or abort |
-| Strategy unclear | Default to Strategy C (safest) |
-| Mixed checkpoint types | Strategy C (most interactive) |
+| Situation                 | Fallback                        |
+| ------------------------- | ------------------------------- |
+| Fails 3x with suggested   | Escalate to opus (3 more)       |
+| Fails 3x with opus        | REITERATE to /plan              |
+| Checkpoint timeout        | Ask user to continue or abort   |
+| Strategy unclear          | Default to Strategy C           |
+| Mixed checkpoint types    | Strategy C (most interactive)   |
 
 ### REITERATE Protocol
 
 When opus fails 3 times:
+
 1. Store comprehensive failure analysis in reflection MCP
 2. Return REITERATE status with all 6 attempts documented
 3. Prompt user to re-run `/plan "[task]" --context="REITERATE: [summary]"`

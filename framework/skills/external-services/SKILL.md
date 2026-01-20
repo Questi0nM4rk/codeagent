@@ -9,7 +9,7 @@ Use MCPs inside the code-execution sandbox for external service interactions. Th
 
 ## The Iron Law
 
-```
+```bash
 PREFER MCP OVER CLI WHEN AN MCP EXISTS FOR THE SERVICE
 ```
 
@@ -17,16 +17,16 @@ MCPs loaded via `servers=[]` in code-execution provide structured responses and 
 
 ## Decision Matrix
 
-| Service | Approach | Package/CLI | Auth |
-|---------|----------|-------------|------|
-| GitHub | **MCP** | `@modelcontextprotocol/server-github` | `GITHUB_TOKEN` |
-| A-MEM | **MCP** | `amem-mcp` | `OPENAI_API_KEY` |
-| Tavily | **MCP** | `tavily-mcp` | `TAVILY_API_KEY` |
-| Figma | **MCP** | `figma-developer-mcp` | `FIGMA_API_KEY` |
-| Supabase | **MCP** | `@supabase/mcp-server-supabase` | `SUPABASE_ACCESS_TOKEN` |
-| AWS | **CLI** | `aws` | `~/.aws/credentials` |
-| Azure | **CLI** | `az` | `az login` |
-| Kubernetes | **CLI** | `kubectl` | `~/.kube/config` |
+| Service    | Approach | Package/CLI                            | Auth                     |
+|:-----------|:---------|:---------------------------------------|:-------------------------|
+| GitHub     | **MCP**  | `@modelcontextprotocol/server-github`  | `GITHUB_TOKEN`           |
+| A-MEM      | **MCP**  | `amem-mcp`                             | `OPENAI_API_KEY`         |
+| Tavily     | **MCP**  | `tavily-mcp`                           | `TAVILY_API_KEY`         |
+| Figma      | **MCP**  | `figma-developer-mcp`                  | `FIGMA_API_KEY`          |
+| Supabase   | **MCP**  | `@supabase/mcp-server-supabase`        | `SUPABASE_ACCESS_TOKEN`  |
+| AWS        | **CLI**  | `aws`                                  | `~/.aws/credentials`     |
+| Azure      | **CLI**  | `az`                                   | `az login`               |
+| Kubernetes | **CLI**  | `kubectl`                              | `~/.kube/config`         |
 
 ## When to Use MCP (Preferred)
 
@@ -152,7 +152,7 @@ print(f"Found {len(groups)} resource groups")
 ## Common Rationalizations
 
 | Excuse | Reality |
-|--------|---------|
+| :----- | :------ |
 | "CLI is simpler" | MCP via servers=[] is one parameter |
 | "Need CLI features" | MCPs cover most common operations |
 | "Already have CLI auth" | API tokens are more portable |
@@ -183,7 +183,7 @@ kubectl cluster-info
 ## When Stuck
 
 | Problem | Solution |
-|---------|----------|
+| :------ | :------- |
 | MCP not loading | Check `servers=[]` parameter spelling |
 | Auth failing | Verify env key is set in .env |
 | CLI not found | Service needs CLI fallback pattern |

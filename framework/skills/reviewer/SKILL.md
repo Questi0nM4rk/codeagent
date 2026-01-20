@@ -9,10 +9,10 @@ External validation methodology for code quality. Reviews must use tools - never
 
 ## The Iron Law
 
-```
+```text
 NEVER SELF-VALIDATE - USE EXTERNAL TOOLS ONLY
 LLMs miss 60-80% of errors when self-reviewing. Run linters, tests, security scanners.
-```
+```text
 
 ## Core Principle
 
@@ -21,23 +21,25 @@ LLMs miss 60-80% of errors when self-reviewing. Run linters, tests, security sca
 ## When to Use
 
 **Always:**
+
 - After implementing any feature (run tests, linters)
 - Before committing code (pre-commit checks)
 - Before merging PRs (full review suite)
 - When asked to review code
 
 **Exceptions (ask human partner):**
+
 - Quick syntax checks (still run linter anyway)
 - Documentation-only changes (still check links/spelling)
 
 ## Review Levels
 
-| Level | Scope | Time | Focus |
-|-------|-------|------|-------|
-| Quick | < 100 lines, single file | 5-15 min | Correctness |
-| Standard | 100-500 lines, multiple files | 30-60 min | Design + Security |
-| Deep | 500+ lines, architectural | 2-4 hours | Scalability + Reliability |
-| Audit | Entire project | Days | Technical debt + Compliance |
+ | Level | Scope | Time | Focus |
+ | ------- | ------- | ------ | ------- |
+ | Quick | < 100 lines, single file | 5-15 min | Correctness |
+ | Standard | 100-500 lines, multiple files | 30-60 min | Design + Security |
+ | Deep | 500+ lines, architectural | 2-4 hours | Scalability + Reliability |
+ | Audit | Entire project | Days | Technical debt + Compliance |
 
 ## Workflow
 
@@ -68,7 +70,7 @@ dotnet test
 
 # Security (all languages)
 semgrep --config auto .
-```
+```text
 
 ### Step 2: Analyze Tool Output
 
@@ -77,6 +79,7 @@ Document ALL findings. Don't dismiss warnings.
 ### Step 3: Targeted Manual Review
 
 Only review what tools can't catch:
+
 - Business logic correctness
 - Design appropriateness
 - API contracts
@@ -92,12 +95,12 @@ Use the finding format below for every issue.
 ## Review Report
 
 ### Tool Results
-| Tool | Status | Issues |
-|------|--------|--------|
-| ESLint | PASS | 0 |
-| TypeScript | PASS | 0 |
-| Semgrep | WARN | 2 findings |
-| Jest | PASS | 47/47 tests |
+ | Tool | Status | Issues |
+ | ------ | -------- | -------- |
+ | ESLint | PASS | 0 |
+ | TypeScript | PASS | 0 |
+ | Semgrep | WARN | 2 findings |
+ | Jest | PASS | 47/47 tests |
 
 ### Security Findings
 
@@ -116,14 +119,16 @@ const query = `SELECT * FROM users WHERE id = ${userId}`;
 // After (parameterized)
 const query = 'SELECT * FROM users WHERE id = $1';
 const result = await db.query(query, [userId]);
-```
+```text
 
 **Verdict**: CHANGES REQUIRED (1 HIGH severity)
-```
+```text
+
 - Used external tools first
 - Documented tool that found the issue
 - Clear before/after fix
 - Specific file:line reference
+
 </Good>
 
 <Bad>
@@ -134,11 +139,13 @@ I looked at the code and it seems fine. The logic looks correct and I don't
 see any obvious bugs. The code is well-structured and follows good practices.
 
 Approved!
-```
+```text
+
 - No tools run
 - Subjective "seems fine" assessment
 - No specific findings
 - Self-validation (LLM reviewing LLM code)
+
 </Bad>
 
 ## Finding Format
@@ -164,28 +171,29 @@ Approved!
 // After
 [fixed code]
 ```
-```
+
+```text
 
 ## Severity Levels
 
-| Level | Description | Action |
-|-------|-------------|--------|
-| CRITICAL | Security vulnerability, data loss | Block merge, fix NOW |
-| HIGH | Significant bug, security issue | Fix before merge |
-| MEDIUM | Code smell, maintainability | Should fix |
-| LOW | Style, minor improvement | Nice to have |
-| INFO | Learning opportunity | No action |
+ | Level | Description | Action |
+ | ------- | ------------- | -------- |
+ | CRITICAL | Security vulnerability, data loss | Block merge, fix NOW |
+ | HIGH | Significant bug, security issue | Fix before merge |
+ | MEDIUM | Code smell, maintainability | Should fix |
+ | LOW | Style, minor improvement | Nice to have |
+ | INFO | Learning opportunity | No action |
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "The linter is too strict" | Configure it properly, don't ignore it. |
-| "It's just a warning" | Warnings become bugs. Fix them. |
-| "I tested it manually" | Manual testing misses edge cases. Write tests. |
-| "Security scan has false positives" | Verify each one. False negatives are worse. |
-| "I know this code is correct" | Then prove it with tests. |
-| "No time for full review" | Quick review is better than none. Run tools at minimum. |
+ | Excuse | Reality |
+ | -------- | --------- |
+ | "The linter is too strict" | Configure it properly, don't ignore it. |
+ | "It's just a warning" | Warnings become bugs. Fix them. |
+ | "I tested it manually" | Manual testing misses edge cases. Write tests. |
+ | "Security scan has false positives" | Verify each one. False negatives are worse. |
+ | "I know this code is correct" | Then prove it with tests. |
+ | "No time for full review" | Quick review is better than none. Run tools at minimum. |
 
 ## Red Flags - STOP and Start Over
 
@@ -216,27 +224,27 @@ Before marking any review complete:
 
 ## Required Tools by Language
 
-| Language | Linter | Types | Security | Tests |
-|----------|--------|-------|----------|-------|
-| TypeScript | ESLint | tsc | Semgrep | Jest/Vitest |
-| Python | Ruff | mypy | Semgrep | pytest |
-| Rust | clippy | rustc | cargo-audit | cargo test |
-| C# | dotnet build | Roslyn | Semgrep | dotnet test |
-| C/C++ | cppcheck | N/A | Semgrep | ctest |
-| Lua | luacheck | N/A | Semgrep | busted |
-| Bash | shellcheck | N/A | shellcheck | bats |
-| SQL | sqlfluff | N/A | Semgrep | pgTap |
+ | Language | Linter | Types | Security | Tests |
+ | ---------- | -------- | ------- | ---------- | ------- |
+ | TypeScript | ESLint | tsc | Semgrep | Jest/Vitest |
+ | Python | Ruff | mypy | Semgrep | pytest |
+ | Rust | clippy | rustc | cargo-audit | cargo test |
+ | C# | dotnet build | Roslyn | Semgrep | dotnet test |
+ | C/C++ | cppcheck | N/A | Semgrep | ctest |
+ | Lua | luacheck | N/A | Semgrep | busted |
+ | Bash | shellcheck | N/A | shellcheck | bats |
+ | SQL | sqlfluff | N/A | Semgrep | pgTap |
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
-| Tool not installed | Install it. Don't skip the check. |
-| Too many warnings | Fix incrementally. Start with errors, then warnings. |
-| Don't understand finding | Look up the rule. Tools explain why. |
-| False positive | Document and suppress with comment explaining why. |
-| Can't run tests | Fix the test setup first. Untestable code can't be reviewed. |
-| Review too large | Split into sessions. Max 500 lines per review. |
+ | Problem | Solution |
+ | --------- | ---------- |
+ | Tool not installed | Install it. Don't skip the check. |
+ | Too many warnings | Fix incrementally. Start with errors, then warnings. |
+ | Don't understand finding | Look up the rule. Tools explain why. |
+ | False positive | Document and suppress with comment explaining why. |
+ | Can't run tests | Fix the test setup first. Untestable code can't be reviewed. |
+ | Review too large | Split into sessions. Max 500 lines per review. |
 
 ## Context Management for Large Reviews
 
@@ -256,7 +264,8 @@ Before marking any review complete:
 ### Remaining
 - [ ] Tests coverage check
 - [ ] Documentation review
-```
+
+```text
 
 ## Report Template
 
@@ -274,12 +283,12 @@ Before marking any review complete:
 
 ## Tool Results
 
-| Tool | Status | Issues |
-|------|--------|--------|
-| Linter | ✅/❌ | N |
-| Types | ✅/❌ | N |
-| Security | ✅/❌ | N |
-| Tests | ✅/❌ | N/M |
+ | Tool | Status | Issues |
+ | ------ | -------- | -------- |
+ | Linter | ✅/❌ | N |
+ | Types | ✅/❌ | N |
+ | Security | ✅/❌ | N |
+ | Tests | ✅/❌ | N/M |
 
 ## Findings by Severity
 
@@ -297,7 +306,8 @@ Before marking any review complete:
 
 ## Positive Notes
 - [What was done well]
-```
+
+```text
 
 ## Related Skills
 

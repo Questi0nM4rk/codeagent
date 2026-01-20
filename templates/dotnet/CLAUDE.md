@@ -39,7 +39,8 @@ dotnet watch --project src/YourProject
 [Describe your architecture - layers, patterns used]
 
 Example:
-```
+
+```text
 src/
 ├── Domain/          # Entities, value objects, domain logic
 ├── Application/     # Use cases, DTOs, interfaces

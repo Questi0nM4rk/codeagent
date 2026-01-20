@@ -8,7 +8,7 @@ Independent validation using external tools. NEVER relies on self-assessment - e
 
 ## Usage
 
-```
+```text
 /review                 # Standard review
 /review --security      # Extra security focus
 /review --performance   # Include performance analysis
@@ -17,7 +17,7 @@ Independent validation using external tools. NEVER relies on self-assessment - e
 
 ## Agent Pipeline
 
-```
+```text
 Main Claude (Orchestrator)
       │
       └─► reviewer agent (opus)
@@ -67,7 +67,8 @@ bandit -r src/                      # Python
 ### Pattern Consistency
 
 Uses MCPs to verify:
-```
+
+```text
 mcp__reflection__retrieve_episodes
     → Get established patterns from past implementations
 ```
@@ -135,39 +136,44 @@ Learner agent will extract patterns automatically.
 ### Security Findings
 
 #### MEDIUM: Hardcoded Secret (CWE-798)
-```
+
+```text
 File: src/Auth/JwtService.cs:45
 Code: private const string Secret = "my-secret-key";
 Fix: Use IConfiguration to load from environment/secrets
 ```
 
 ### After Fixing
+
 Run `/review` again to verify all issues resolved.
-```
 
 ## Stress Test Mode (--stress)
 
 Additional deep checks:
 
 ### Edge Cases
+
 - [ ] Null inputs handled
 - [ ] Empty collections handled
 - [ ] Maximum values handled
 - [ ] Concurrent access safe
 
 ### Error Scenarios
+
 - [ ] External service failure
 - [ ] Database unavailable
 - [ ] Invalid input rejection
 - [ ] Timeout handling
 
 ### Performance
+
 - [ ] No N+1 queries
 - [ ] No unbounded loops
 - [ ] Reasonable memory usage
 - [ ] Indexed queries
 
 ### Security Deep Dive
+
 - [ ] SQL injection vectors
 - [ ] XSS possibilities
 - [ ] Auth bypass attempts
@@ -178,22 +184,26 @@ Additional deep checks:
 The reviewer agent uses A-MEM memory:
 
 **Before reviewing:**
+
 - Queries A-MEM for common issues in this codebase
 - Checks for known code smell patterns
 - References established review standards
 
 **After review:**
+
 - Stores significant issue patterns found
 - A-MEM automatically links to related patterns
 
 ## Post-Review
 
 On APPROVED:
+
 - Learner agent automatically extracts patterns
 - Stores success episode in reflection memory
 - Updates A-MEM with new patterns (auto-links to existing)
 
 On CHANGES REQUIRED:
+
 - Fix listed issues
 - Run `/review` again
 - Repeat until APPROVED
