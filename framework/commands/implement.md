@@ -19,43 +19,69 @@ Implements the plan or backlog task using Test-Driven Development. Automatically
 /implement --task=A         # Re-run specific parallel task
 ```
 
-## Backlog Integration
+## Backlog Integration (via backlog-mcp)
 
 ### Task Selection Priority
 
 When running `/implement` without arguments:
 1. Continue from `.planning/STATE.md` if exists
-2. Pick next `ready` task from backlog (priority order)
+2. Call `mcp__backlog__get_next_task()` for highest-priority ready task
 3. If no ready tasks, report backlog status
 
 ### Picking from Backlog
 
-```
-1. Read .codeagent/backlog/tasks/*.yaml where status=ready
-2. Sort by: epic priority → task dependency order
-3. Move selected task to status: in_progress
-4. Load task context into implementer agent
+```python
+# Get next ready task with FULL context (single-task loading)
+result = mcp__backlog__get_next_task(project="MP")
+
+if result["found"]:
+    task = result["task"]
+    # task contains:
+    #   - files_exclusive, files_readonly, files_forbidden
+    #   - action (what to do)
+    #   - verify (how to verify)
+    #   - done_criteria (completion checklist)
+
+    # Mark as in_progress
+    mcp__backlog__update_task_status(
+        task_id=task["id"],
+        status="in_progress"
+    )
+else:
+    # No ready tasks
+    mcp__backlog__get_backlog_summary(project="MP")
 ```
 
 ### Task Context Loading
 
-When starting a task, load:
-```yaml
-# From task file
-implementation:
-  files: exclusive, readonly, forbidden
-  action: what to do
-  verify: how to verify
-  done: completion criteria
+When starting a task, full context is returned by `get_next_task()`:
+```python
+task = {
+    "id": "MP-TASK-001",
+    "name": "Add JWT validation middleware",
+    "type": "task",
+    "status": "ready",
+    "priority": 2,
 
-# From linked epic
-context:
-  files_to_reference: additional context files
-  patterns_to_follow: project patterns
-  constraints: what to avoid
+    # Implementation boundaries (CRITICAL for parallel execution)
+    "files_exclusive": ["src/Middleware/AuthMiddleware.cs"],
+    "files_readonly": ["src/Services/IAuthService.cs"],
+    "files_forbidden": ["src/Database/"],
 
-# From source spike (if any)
-SPIKE-XXX-output.md: detailed findings
+    # Instructions
+    "action": "1. Create AuthMiddleware...",
+    "verify": ["dotnet test --filter AuthMiddleware"],
+    "done_criteria": ["AuthMiddleware.cs created", ...],
+
+    # Dependencies
+    "depends_on": [],
+    "blocks": ["MP-TASK-002"],
+    "parent_id": "MP-EPIC-001",
+
+    # Execution
+    "execution_strategy": "A",
+    "checkpoint_type": "auto"
+}
 ```
 
 ## Agent Pipeline
@@ -69,11 +95,12 @@ Reference: `@~/.claude/framework/references/execution-strategies.md`
 ```
 Main Claude (Orchestrator) ~5% context
       │
-      └─► Single subagent (opus)
+      └─► Single subagent (suggested_model → opus)
               skills: [tdd, domain skills]
               → Executes ALL tasks sequentially
               → Full 200k context for implementation
-              → No interruptions
+              → Escalates to opus on repeated failures
+              → REITERATES if opus fails
               → Reports only on completion or block
 ```
 
@@ -185,19 +212,140 @@ file_boundaries: [from orchestrator]
 
 **Important:** Implementer agents receive `working_dir` already created. They do NOT run worktree commands themselves.
 
+## Model Selection
+
+The `/plan` phase determines `suggested_model` based on historical performance data.
+
+### At Implementation Time
+
+1. **Load task** with `suggested_model` from backlog
+2. **Use suggested model** (default: haiku if not set)
+3. **Escalate to opus** if suggested model fails 3x
+4. **Reiterate planning** if opus fails 3x
+
+### Escalation Flow
+
+```
+suggested_model (from /plan)
+    │
+    ├─► Attempt 1-3: Use suggested_model
+    │       Success → Done
+    │       Failure → Escalate
+    │
+    ├─► Attempt 4-6: Use opus
+    │       Success → Done (store lesson: "opus needed for this type")
+    │       Failure → Reiterate
+    │
+    └─► REITERATE: Return to /plan with failure context
+            → Re-analyze approach
+            → May need different architecture
+            → May need human guidance
+```
+
+**No sonnet tier.** Either haiku works (cheap/fast) or opus is needed (full reasoning). The /plan phase decides this upfront using historical data.
+
+### Model Usage by Phase
+
+| Phase | Model | Rationale |
+|-------|-------|-----------|
+| Test writing | opus | Correctness critical - tests define the contract |
+| Implementation | suggested_model | From task, based on historical data |
+
+### Reflection-Guided Retry
+
+Before each retry attempt, check for lessons from past failures:
+
+```python
+for attempt in 1..6:  # Max 6 attempts (3 suggested + 3 opus)
+    # Query past failures for THIS type of problem
+    episodes = mcp__reflection__retrieve_episodes(
+        task=current_task,
+        error_pattern=last_error
+    )
+
+    if episodes:
+        # Apply lessons learned
+        guidance = mcp__reflection__generate_improved_attempt(
+            original_output=failed_code,
+            reflection=reflection_result,
+            similar_episodes=episodes
+        )
+
+    current_model = suggested_model if attempt <= 3 else "opus"
+    result = spawn_impl_agent(prompt, model=current_model)
+
+    if result.success:
+        if lesson_applied:
+            mcp__reflection__mark_lesson_effective(episode_id, True)
+        if attempt > 3:
+            # Store lesson: opus was needed for this task type
+            mcp__reflection__store_episode(
+                task=current_task,
+                outcome="success",
+                model_used="opus",
+                reflection={"lesson": "opus needed for this task pattern"}
+            )
+        break
+
+    # Store failure for future learning
+    mcp__reflection__store_episode(
+        task=current_task,
+        outcome="failure",
+        model_used=current_model,
+        feedback=error_message,
+        feedback_type=error_type
+    )
+
+# If all 6 attempts failed → REITERATE
+if not result.success:
+    return REITERATE(task, failure_summary)
+```
+
+### Reiteration Protocol
+
+When opus fails 3x, return to planning:
+
+```markdown
+## REITERATE: Implementation Failed
+
+### Task: [task name]
+### Suggested Model: [model from plan]
+### Escalated To: opus
+
+### Failure Summary
+- Attempt 1 ([suggested]): [error]
+- Attempt 2 ([suggested]): [error]
+- Attempt 3 ([suggested]): [error]
+- Attempt 4 (opus): [error]
+- Attempt 5 (opus): [error]
+- Attempt 6 (opus): [error]
+
+### Reflection Analysis
+[From mcp__reflection__reflect_on_failure]
+
+### Recommended Action
+1. Re-run /plan with this context
+2. Consider different architectural approach
+3. May need human guidance for [specific issue]
+
+Run: /plan "[task]" --context="REITERATE: [summary]"
+```
+
 ## TDD Loop (Every Step)
 
 ```
-1. Write test for the behavior
+1. Write test for the behavior (opus - correctness critical)
 2. Run test → MUST FAIL
 3. Commit test
-4. Write minimal implementation
-5. Run test → MUST PASS (max 3 attempts)
+4. Write minimal implementation (suggested_model from task)
+5. Run test → MUST PASS (max 3 attempts, then escalate to opus)
 6. Commit implementation
 7. Run full test suite → check for regressions
 8. Refactor if needed (tests must still pass)
 9. Next step
 ```
+
+**Note:** Test writing always uses opus for correctness. Implementation uses suggested_model (from /plan's historical analysis), escalating to opus if needed.
 
 ## Deviation Handling
 
@@ -344,18 +492,23 @@ Duration: 5m 23s (vs ~12m sequential)
 Ready for /review
 ```
 
-### Blocked
+### Reiterate (All Attempts Failed)
 
 ```markdown
-## BLOCKED: Test Failure
+## REITERATE: Implementation Failed After 6 Attempts
 
-### Step: [which step]
-### Test: [test name]
+### Task: [task name]
+### Suggested Model: [from plan]
 
-### Attempts
-1. [approach] → [error]
-2. [approach] → [error]
-3. [approach] → [error]
+### Attempt History
+| # | Model | Error Type | Error |
+|---|-------|------------|-------|
+| 1 | [suggested] | [type] | [error] |
+| 2 | [suggested] | [type] | [error] |
+| 3 | [suggested] | [type] | [error] |
+| 4 | opus | [type] | [error] |
+| 5 | opus | [type] | [error] |
+| 6 | opus | [type] | [error] |
 
 ### Reflection Analysis
 [From mcp__reflection__reflect_on_failure]
@@ -363,16 +516,19 @@ Ready for /review
 ### Similar Past Issues
 [From mcp__reflection__retrieve_episodes]
 
+### Root Cause Analysis
+[Combined insights from reflection]
+
 ### Checkpoint Created
 Branch: checkpoint/[task]-[timestamp]
 
-### Options
-1. /implement --continue (after manual fix)
-2. /plan "alternative approach" (try different design)
-3. Ask for human help
+### Recommended Actions
+1. **Re-plan**: `/plan "[task]" --context="REITERATE: [summary]"`
+2. **Manual fix**: Fix issue, then `/implement --continue`
+3. **Human guidance**: [Specific question or decision needed]
 
-### Needs
-[Specific information or help needed]
+### What Went Wrong
+[Summary of why all 6 attempts failed - likely architectural issue]
 ```
 
 ## A-MEM Integration
@@ -454,39 +610,31 @@ mcp__reflection__store_episode:
   }
 ```
 
-### 4. Update Backlog
+### 4. Update Backlog (via backlog-mcp)
 
-**Update task status:**
-```yaml
-# .codeagent/backlog/tasks/TASK-XXX.yaml
-status: done
-completed_at: "[timestamp]"
-summary: "[1-2 sentence summary]"
-commits:
-  - "abc123: test(auth): add tests for JWT validation"
-  - "def456: feat(auth): implement JWT validation"
-```
+**Complete task and unblock dependents:**
+```python
+result = mcp__backlog__complete_task(
+    task_id="MP-TASK-001",
+    summary="Added AuthMiddleware using JsonWebTokenHandler for JWT validation.",
+    commits=[
+        "abc123: test(auth): add tests for JWT validation",
+        "def456: feat(auth): implement JWT validation"
+    ]
+)
 
-**Update epic progress:**
-```yaml
-# .codeagent/backlog/epics/EPIC-XXX.yaml
-progress:
-  total_tasks: 3
-  completed: 1
-  percentage: 33
+# result = {
+#   "completed": True,
+#   "id": "MP-TASK-001",
+#   "unblocked": ["MP-TASK-002"]  # Tasks now ready
+# }
 ```
 
-**Check dependent tasks:**
-```
-For each task that depends_on this task:
-  If all dependencies are done:
-    Move to status: ready
-```
-
-**Regenerate BACKLOG.md:**
-```
-Run codeagent backlog --regenerate
-```
+**Automatic behaviors:**
+- Task status → `done`
+- `completed_at` timestamp set
+- Dependent tasks with all deps done → status `ready`
+- Dashboard updates automatically (http://localhost:6791)
 
 ### 5. Update PROJECT.md
 
@@ -570,51 +718,59 @@ When implementation fails after 3 attempts:
 
 ### Option 1: Create Bug
 
-If user confirms, create bug item:
+If user confirms, create bug item via backlog-mcp:
 
-**File:** `.codeagent/backlog/bugs/BUG-XXX.yaml`
+```python
+mcp__backlog__create_task(
+    project="MP",
+    task_type="bug",
+    name="[description of failure]",
+    action="""
+    Root cause: [from reflection analysis]
 
-```yaml
-id: BUG-XXX
-type: bug
-name: "[description of failure]"
-severity: medium
-source_task: TASK-XXX
-reproduction:
-  steps: [what was attempted]
-  expected: "[expected behavior]"
-  actual: "[actual error]"
-root_cause: "[from reflection analysis]"
-attempts:
-  - approach: "[approach 1]"
-    error: "[error 1]"
-  - approach: "[approach 2]"
-    error: "[error 2]"
-  - approach: "[approach 3]"
-    error: "[error 3]"
-status: ready
+    Reproduction:
+    1. [what was attempted]
+
+    Expected: [expected behavior]
+    Actual: [actual error]
+
+    Previous attempts:
+    1. [approach 1] → [error 1]
+    2. [approach 2] → [error 2]
+    3. [approach 3] → [error 3]
+    """,
+    priority=2,  # Bugs typically high priority
+    files_exclusive=[],  # TBD during fix
+    verify=["Test that proves bug is fixed"],
+    done_criteria=["Bug no longer reproduces", "Tests pass"]
+)
 ```
 
 ### Option 2: Block Task
 
-Move task to blocked:
+Mark task as blocked via backlog-mcp:
 
-```yaml
-# Update TASK-XXX.yaml
-status: blocked
-blocker:
-  reason: "[from reflection analysis]"
-  since: "[timestamp]"
-  needs: "[what help is needed]"
-  attempts: 3
-  checkpoint_branch: "checkpoint/TASK-XXX-[timestamp]"
+```python
+mcp__backlog__update_task_status(
+    task_id="MP-TASK-001",
+    status="blocked",
+    blocker_reason="[from reflection analysis]",
+    blocker_needs="[what help is needed]"
+)
+```
+
+Then create checkpoint branch:
+```bash
+git checkout -b checkpoint/MP-TASK-001-$(date +%s)
+git add -A && git commit -m "checkpoint: blocked on [reason]"
 ```
 
 ## Notes
 
 - Always run /plan before /implement
-- /implement reads the plan from memory - don't modify manually
+- /implement uses backlog-mcp to get task context (single-task loading)
 - Commits are automatic but push is NEVER automatic
 - Use --continue to resume after fixing issues
 - Parallel mode requires all tasks to complete before /integrate
 - Learner agent triggers automatically after successful implementation
+- Dashboard at http://localhost:6791 shows backlog in real-time

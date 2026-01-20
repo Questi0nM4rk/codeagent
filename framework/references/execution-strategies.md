@@ -23,12 +23,23 @@ Three strategies for executing plans based on checkpoint types.
 ```
 Main Claude (Orchestrator)
       │
-      └─► Single subagent (opus)
+      └─► Single subagent (suggested_model → opus)
               → Executes ALL tasks sequentially
               → Full 200k context for implementation
-              → No interruptions
+              → Uses suggested_model from task (set by /plan)
+              → Escalates to opus on repeated failures
+              → REITERATES to /plan if opus fails
               → Reports only on completion or block
 ```
+
+### Model Selection
+
+The `/plan` phase determines `suggested_model` based on historical performance data:
+- Queries `mcp__reflection__get_model_effectiveness()` for similar tasks
+- Default: `haiku` (if no historical data)
+- Upgrades to `opus` if haiku historically fails on similar tasks
+
+**Escalation:** suggested_model (3 attempts) → opus (3 attempts) → REITERATE to /plan
 
 ### Token Distribution
 - Main context: ~5% (spawn subagent, receive results)
@@ -279,7 +290,16 @@ Strategy selection happens AFTER parallelization analysis:
 
 | Situation | Fallback |
 |-----------|----------|
-| Subagent fails 3 times | Escalate to main context |
+| Subagent fails 3 times with suggested_model | Escalate to opus (3 more attempts) |
+| Subagent fails 3 times with opus | REITERATE to /plan with failure context |
 | Checkpoint timeout | Ask user to continue or abort |
 | Strategy unclear | Default to Strategy C (safest) |
 | Mixed checkpoint types | Strategy C (most interactive) |
+
+### REITERATE Protocol
+
+When opus fails 3 times:
+1. Store comprehensive failure analysis in reflection MCP
+2. Return REITERATE status with all 6 attempts documented
+3. Prompt user to re-run `/plan "[task]" --context="REITERATE: [summary]"`
+4. /plan will re-analyze with failure context and may suggest different approach

@@ -2,7 +2,7 @@
 name: implementer
 description: TDD implementation specialist that writes tests first, then code. Supports parallel execution via git worktrees.
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__amem__*, mcp__reflection__*
-model: opus
+model: dynamic  # Uses task's suggested_model (from /plan), defaults to haiku. Escalates: suggested → opus → REITERATE
 skills: tdd, frontend, dotnet, rust, cpp, python, lua, bash
 ---
 
@@ -115,22 +115,47 @@ A-MEM will automatically link this to related architecture decisions.
 
 When tests fail, use reflection:
 
-```
-mcp__reflection__reflect_on_failure:
-  output="[failed code]"
-  feedback="[error message]"
-  feedback_type="test_failure"
-  context="[what you were doing]"
+```python
+# Step 1: Analyze the failure
+mcp__reflection__reflect_on_failure(
+    output="[failed code]",
+    feedback="[error message]",
+    feedback_type="test_failure",
+    context="[what you were doing]"
+)
 
-mcp__reflection__retrieve_episodes:
-  task="[current task]"
-  error_pattern="[error pattern]"
+# Step 2: Check for similar past issues
+mcp__reflection__retrieve_episodes(
+    task="[current task]",
+    error_pattern="[error pattern]"
+)
 
-mcp__reflection__generate_improved_attempt:
-  original_output="[failed code]"
-  reflection={...}
-  similar_episodes=[...]
+# Step 3: Get guidance for improvement
+mcp__reflection__generate_improved_attempt(
+    original_output="[failed code]",
+    reflection={...},
+    similar_episodes=[...]
+)
+
+# Step 4: CRITICAL - Store episode with model_used (after each failed attempt)
+mcp__reflection__store_episode(
+    task="[task description]",
+    approach="[what was tried]",
+    outcome="failure",
+    feedback="[error message]",
+    feedback_type="test_failure",
+    reflection={
+        "what_went_wrong": "[analysis]",
+        "root_cause": "[cause]",
+        "what_to_try_next": "[next approach]",
+        "general_lesson": "[lesson learned]"
+    },
+    model_used="[haiku|opus]",  # IMPORTANT: Always include current model
+    backlog_task_id="[task ID from backlog]"
+)
 ```
+
+**Note:** Always include `model_used` when storing episodes. This feeds the model effectiveness data that `/plan` uses to suggest appropriate models for similar tasks.
 
 ## Tracking Lesson Effectiveness
 
@@ -151,15 +176,51 @@ mcp__reflection__mark_lesson_effective:
 
 This closes the feedback loop - the system learns which lessons actually help.
 
+## Model Selection
+
+This agent uses the model specified in the task's `suggested_model` field (set by /plan based on historical data).
+
+**Default behavior:**
+- Use `suggested_model` from task (haiku or opus, determined by /plan)
+- If not set, default to `haiku`
+
+**Escalation:** suggested_model → opus → REITERATE
+
+| Phase | Model | Attempts | On Failure |
+|-------|-------|----------|------------|
+| Initial | suggested_model | 3 | Escalate to opus |
+| Escalated | opus | 3 | REITERATE to /plan |
+
+**No sonnet tier.** The /plan phase already determined the appropriate starting model using historical performance data.
+
+### When to Escalate
+
+After 3 failed attempts with suggested_model:
+1. Store episode with `model_used` and failure details
+2. Orchestrator respawns with `model: opus`
+3. Continue from last checkpoint
+
+### When to REITERATE
+
+After 3 failed opus attempts:
+1. Store comprehensive failure analysis with all 6 attempts
+2. Return REITERATE status to orchestrator
+3. Orchestrator prompts user to re-run /plan with failure context
+
+**Note:** Test writing always uses `opus` (correctness critical). Only implementation uses the suggested_model → opus escalation.
+
 ## After 3 Failed Attempts
 
-Output BLOCKED format:
+Output escalation request or REITERATE format:
+
+### If suggested_model failed (request escalation to opus):
 
 ```markdown
-## BLOCKED: Implementation Issue
+## ESCALATE: Suggested Model Failed
 
-### What I'm Trying To Do
-[Goal]
+### Task: [task name]
+### Current Model: [suggested_model]
+### Request: Escalate to opus
 
 ### Test That's Failing
 ```[language]
@@ -174,13 +235,41 @@ Output BLOCKED format:
 ### Reflection Analysis
 [from mcp__reflection__reflect_on_failure]
 
-### Similar Past Issues
-[from mcp__reflection__retrieve_episodes]
+### Episodes Stored
+[episode IDs for future learning]
+```
 
-### What I Need
-- [ ] Different approach
-- [ ] More context about [X]
-- [ ] Help understanding [Y]
+### If opus failed (REITERATE to planning):
+
+```markdown
+## REITERATE: Implementation Failed
+
+### Task: [task name]
+### Models Tried: [suggested_model] → opus
+
+### Test That's Failing
+```[language]
+[test code]
+```
+
+### All 6 Attempts
+| # | Model | Approach | Error |
+|---|-------|----------|-------|
+| 1 | [suggested] | [tried] | [error] |
+| 2 | [suggested] | [tried] | [error] |
+| 3 | [suggested] | [tried] | [error] |
+| 4 | opus | [tried] | [error] |
+| 5 | opus | [tried] | [error] |
+| 6 | opus | [tried] | [error] |
+
+### Reflection Analysis
+[from mcp__reflection__reflect_on_failure]
+
+### Root Cause
+[why all 6 attempts failed - likely architectural issue]
+
+### Recommended Action
+Re-run /plan with context: "[summary of failures]"
 ```
 
 ## Output During Implementation

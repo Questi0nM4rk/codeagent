@@ -171,7 +171,58 @@ Tradeoffs: [key considerations]
 This ensures future architects and implementers can understand the "why" behind decisions.
 A-MEM will automatically link this to related memories and evolve existing context.
 
-## Step 7: Generate XML Task Format
+## Step 7: Generate Specs from BDD Scenarios
+
+When BDD scenarios are provided (from /plan Phase 0), convert them to technical specifications:
+
+### BDD Scenario → Component Spec Mapping
+
+```
+Gherkin Scenario              →    Component Spec Test Case
+─────────────────────────────────────────────────────────────
+Given [precondition]          →    <given>Arrange: setup state</given>
+When [action]                 →    <when>Act: invoke method</when>
+Then [expectation]            →    <then>Assert: verify result</then>
+```
+
+### Example Conversion
+
+**BDD Scenario:**
+```gherkin
+Scenario: Successful login with valid credentials
+  Given a registered user with email "user@example.com"
+  And password "SecurePass123!"
+  When they submit the login form
+  Then they receive a valid JWT token
+  And are redirected to the dashboard
+```
+
+**Component Spec Test Case:**
+```xml
+<test-cases>
+  <test name="returns JWT token for valid credentials">
+    <given>Registered user with email "user@example.com" and hashed password</given>
+    <when>authService.login("user@example.com", "SecurePass123!") called</when>
+    <then>Returns { token: "eyJ...", redirectUrl: "/dashboard" }</then>
+  </test>
+</test-cases>
+```
+
+### Include in Design Output
+
+Add BDD traceability section:
+
+```markdown
+### BDD → Spec Traceability
+
+| Scenario | Component | Test Case |
+|----------|-----------|-----------|
+| Successful login | AuthService | returns JWT token for valid credentials |
+| Invalid password | AuthService | returns 401 for wrong password |
+| Non-existent user | AuthService | returns 401 for unknown email |
+```
+
+## Step 8: Generate XML Task Format
 
 Convert implementation steps to structured XML tasks for execution.
 

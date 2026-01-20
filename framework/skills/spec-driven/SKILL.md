@@ -35,6 +35,8 @@ Specifications are the prompt. PRD → Tech Spec → Component Spec → Code.
 ## Spec Hierarchy
 
 ```
+BDD Scenarios (Business Behavior)
+    ↓
 PRD (What & Why)
     ↓
 Technical Spec (How - Architecture)
@@ -43,6 +45,24 @@ Component Spec (How - Implementation)
     ↓
 Code (TDD from Component Spec)
 ```
+
+### BDD Integration
+
+BDD scenarios (Gherkin format) are the starting point for specs:
+
+```
+BDD Scenario           →    Component Spec Test Case    →    Unit Test
+────────────────────────────────────────────────────────────────────────
+Given [precondition]   →    <given>setup state</given>  →    // Arrange
+When [action]          →    <when>invoke method</when>  →    // Act
+Then [expectation]     →    <then>verify result</then>  →    // Assert
+```
+
+**Workflow:**
+1. `/plan` creates BDD scenarios (Phase 0)
+2. Architect converts scenarios to component spec `<test-cases>`
+3. Implementer generates tests from `<test-cases>` (TDD RED phase)
+4. Implementation makes tests pass (TDD GREEN phase)
 
 | Document | Owner | Focus | AI Role |
 |----------|-------|-------|---------|
