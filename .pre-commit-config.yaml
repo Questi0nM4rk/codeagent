@@ -1,14 +1,18 @@
 # =============================================================================
 # STRICT Pre-Commit Configuration for AI-Driven Development
 # =============================================================================
-# CodeAgent framework - Multi-language hooks (Shell, Python, Markdown, YAML)
+# CodeAgent framework - Multi-language hooks
 # All checks run in strictest mode. No exceptions. No bypasses.
 # AI agents need guardrails - this is the fence.
+#
+# Languages: Python, TypeScript, C#/.NET, Shell, Markdown
+# Dormant hooks auto-skip if no matching files exist.
 # =============================================================================
 
 fail_fast: true
 default_language_version:
   python: python3.12
+  node: "20.11.0"
 
 repos:
   # ===========================================================================
@@ -30,30 +34,10 @@ repos:
         name: "🔒 security · detect private keys"
 
   # ===========================================================================
-  # 🐚 SHELL - STRICT MODE
+  # 🐍 PYTHON - STRICT MODE (dormant if no Python files)
   # ===========================================================================
 
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-        name: "🐚 shell · shellcheck lint (strict)"
-        args: ["--severity=warning", "--shell=bash"]
-        types: [shell]
-
-  # Shell formatting
-  - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.10.0-1
-    hooks:
-      - id: shfmt
-        name: "🐚 shell · shfmt format check"
-        args: ["-i", "2", "-ci", "-bn", "-d"]  # 2-space indent, case indent, binary ops newline, diff
-
-  # ===========================================================================
-  # 🐍 PYTHON - STRICT MODE (for any Python in the project)
-  # ===========================================================================
-
-  # Ruff - Fast linter
+  # Ruff - Fast linter (replaces flake8, isort, pyupgrade, etc.)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.6
     hooks:
@@ -78,11 +62,89 @@ repos:
         exclude: ^tests/
 
   # ===========================================================================
+  # 🟦 TYPESCRIPT/JAVASCRIPT - STRICT MODE (dormant if no TS/JS files)
+  # ===========================================================================
+
+  # Biome - Fast linter + formatter (replaces ESLint + Prettier)
+  - repo: https://github.com/biomejs/pre-commit
+    rev: "v0.6.1"
+    hooks:
+      - id: biome-check
+        name: "🟦 typescript · biome lint+format (strict)"
+        additional_dependencies: ["@biomejs/biome@1.9.4"]
+        args: [
+          "--error-on-warnings",
+          "--diagnostic-level=info",
+        ]
+
+  # TypeScript type checking (local hook)
+  - repo: local
+    hooks:
+      - id: tsc
+        name: "🟦 typescript · tsc type check (strict)"
+        entry: npx tsc
+        args: ["--noEmit", "--strict", "--skipLibCheck"]
+        language: system
+        types: [ts, tsx]
+        pass_filenames: false
+
+  # ===========================================================================
+  # 🟪 C# / .NET - STRICT MODE (dormant if no .cs files)
+  # ===========================================================================
+
+  - repo: local
+    hooks:
+      # dotnet format - Code style enforcement
+      - id: dotnet-format
+        name: "🟪 csharp · dotnet format (strict)"
+        entry: dotnet format
+        args: [
+          "--verify-no-changes",
+          "--verbosity", "normal",
+          "--severity", "info",
+        ]
+        language: system
+        types: [c#]
+        pass_filenames: false
+
+      # dotnet build - Compilation check (catches errors + warnings as errors)
+      - id: dotnet-build
+        name: "🟪 csharp · dotnet build (warnings as errors)"
+        entry: dotnet build
+        args: [
+          "--no-restore",
+          "-warnaserror",
+          "-c", "Release",
+        ]
+        language: system
+        types: [c#]
+        pass_filenames: false
+
+  # ===========================================================================
+  # 🐚 SHELL - STRICT MODE
+  # ===========================================================================
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        name: "🐚 shell · shellcheck lint"
+        args: ["--severity=warning"]
+
+  # Shell formatting
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.10.0-1
+    hooks:
+      - id: shfmt
+        name: "🐚 shell · shfmt format check"
+        args: ["-i", "2", "-ci", "-bn", "-d"]
+
+  # ===========================================================================
   # 📝 MARKDOWN - STRICT MODE
   # ===========================================================================
 
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.43.0
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.17.2
     hooks:
       - id: markdownlint-cli2
         name: "📝 markdown · markdownlint"
@@ -125,6 +187,8 @@ repos:
         name: "🔧 syntax · check json"
       - id: check-toml
         name: "🔧 syntax · check toml"
+      - id: check-xml
+        name: "🔧 syntax · check xml"
 
       # Git hygiene
       - id: check-merge-conflict
@@ -150,4 +214,6 @@ repos:
 # CI Note: This config is also used in GitHub Actions
 # Install: pip install pre-commit && pre-commit install
 # Run all: pre-commit run --all-files
+#
+# Dormant hooks (TS, C#, Python) auto-skip if no matching files exist.
 # =============================================================================
