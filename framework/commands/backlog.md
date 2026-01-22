@@ -242,8 +242,7 @@ Cannot proceed without API credentials from payment vendor.
 If bug requires more context:
 
 - **TASK-017**: Add search to users endpoint [ready, high priority]
-
-```text
+```
 
 ### Groom View (`/backlog groom`)
 

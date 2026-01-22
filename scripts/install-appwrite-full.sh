@@ -194,6 +194,10 @@ main() {
         shift
         ;;
       --version)
+        if [ -z "$2" ] || [[ "$2" == --* ]]; then
+          log_error "--version requires a value"
+          exit 1
+        fi
         APPWRITE_VERSION="$2"
         shift 2
         ;;

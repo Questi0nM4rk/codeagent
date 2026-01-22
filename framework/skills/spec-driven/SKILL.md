@@ -50,7 +50,7 @@ Code (TDD from Component Spec)
 
 BDD scenarios (Gherkin format) are the starting point for specs:
 
-```
+```text
 BDD Scenario           →    Component Spec Test Case    →    Unit Test
 ────────────────────────────────────────────────────────────────────────
 Given [precondition]   →    <given>setup state</given>  →    // Arrange

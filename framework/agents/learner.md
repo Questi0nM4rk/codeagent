@@ -29,11 +29,11 @@ Before extracting new patterns:
 ```yaml
 # Get proven lessons from reflection memory
 mcp__reflection__export_lessons:
-  min_occurrences=2
-  min_success_rate=0.5
+  min_occurrences: 2
+  min_success_rate: 0.5
 
 # Get aggregated lessons by feedback type
-mcp__reflection__get_common_lessons
+mcp__reflection__get_common_lessons: {}
 ```
 
 Compare any new patterns against these:
@@ -82,22 +82,23 @@ Look for:
 
 ```yaml
 mcp__amem__store_memory:
-  content="## Pattern: [Name]
-Type: [architectural|code|testing|process]
-Context: [when to use]
-Implementation: [how it was done]
-Files: [reference files]
-Learned: [date]
+  content: |
+    ## Pattern: [Name]
+    Type: [architectural|code|testing|process]
+    Context: [when to use]
+    Implementation: [how it was done]
+    Files: [reference files]
+    Learned: [date]
 
-### Description
-[What this pattern solves]
+    ### Description
+    [What this pattern solves]
 
-### Example
-[Code snippet or reference]
+    ### Example
+    [Code snippet or reference]
 
-### Gotchas
-[What to watch out for]"
-  tags=["project:[name]", "[type]", "pattern"]
+    ### Gotchas
+    [What to watch out for]
+  tags: ["project:[name]", "[type]", "pattern"]
 ```
 
 A-MEM will automatically link this to related patterns and evolve existing context.
@@ -106,18 +107,17 @@ A-MEM will automatically link this to related patterns and evolve existing conte
 
 ```yaml
 mcp__reflection__store_episode:
-  task="[task description]"
-  approach="[what was done]"
-  outcome="success"
-  feedback="[what worked well]"
-  feedback_type="implementation_success"
-  reflection={
-    "what_worked": "[key success factors]",
-    "reusable_pattern": "[pattern name]",
-    "time_saved_by": "[approach that saved time]"
-  }
-  file_path="[main file]"
-  tags=["success", "[language]", "[pattern-type]"]
+  task: "[task description]"
+  approach: "[what was done]"
+  outcome: "success"
+  feedback: "[what worked well]"
+  feedback_type: "implementation_success"
+  reflection:
+    what_worked: "[key success factors]"
+    reusable_pattern: "[pattern name]"
+    time_saved_by: "[approach that saved time]"
+  file_path: "[main file]"
+  tags: ["success", "[language]", "[pattern-type]"]
 ```
 
 ### 5. Check for Existing Patterns
@@ -126,16 +126,16 @@ Before storing, check if pattern already exists:
 
 ```yaml
 mcp__amem__search_memory:
-  query="[pattern name]"
-  k=5
+  query: "[pattern name]"
+  k: 5
 ```
 
 If exists, update rather than duplicate:
 
 ```yaml
 mcp__amem__update_memory:
-  memory_id="[existing]"
-  content="[updated with new example]"
+  memory_id: "[existing]"
+  content: "[updated with new example]"
 ```
 
 Note: A-MEM may automatically evolve existing memories when you store related content.

@@ -337,7 +337,7 @@ docker compose -f ~/.codeagent/infrastructure/services/convex.yml down -v
 docker compose -f ~/.codeagent/infrastructure/services/appwrite.yml down -v
 
 # Remove volumes (WARNING: deletes all data)
-docker volume rm $(docker volume ls -q | grep codeagent_)
+docker volume rm $(docker volume ls -q | grep codeagent_ || true)
 ```
 
 ---

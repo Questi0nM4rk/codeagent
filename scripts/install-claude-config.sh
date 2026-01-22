@@ -287,22 +287,22 @@ check_existing_state() {
     EXISTING_SETTINGS=true
   fi
 
-  if [ -d "$CLAUDE_DIR/skills" ] && [ "$(ls -A $CLAUDE_DIR/skills 2>/dev/null)" ]; then
+  if [ -d "$CLAUDE_DIR/skills" ] && [ "$(ls -A "$CLAUDE_DIR/skills" 2>/dev/null)" ]; then
     has_config=true
     EXISTING_SKILLS=$(ls -d "$CLAUDE_DIR/skills"/*/ 2>/dev/null | wc -l)
   fi
 
-  if [ -d "$CLAUDE_DIR/commands" ] && [ "$(ls -A $CLAUDE_DIR/commands/*.md 2>/dev/null)" ]; then
+  if [ -d "$CLAUDE_DIR/commands" ] && [ "$(ls -A "$CLAUDE_DIR/commands"/*.md 2>/dev/null)" ]; then
     has_config=true
     EXISTING_COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l)
   fi
 
-  if [ -d "$CLAUDE_DIR/hooks" ] && [ "$(ls -A $CLAUDE_DIR/hooks/*.sh 2>/dev/null)" ]; then
+  if [ -d "$CLAUDE_DIR/hooks" ] && [ "$(ls -A "$CLAUDE_DIR/hooks"/*.sh 2>/dev/null)" ]; then
     has_config=true
     EXISTING_HOOKS=$(ls "$CLAUDE_DIR/hooks"/*.sh 2>/dev/null | wc -l)
   fi
 
-  if [ -d "$CLAUDE_DIR/agents" ] && [ "$(ls -A $CLAUDE_DIR/agents/*.md 2>/dev/null)" ]; then
+  if [ -d "$CLAUDE_DIR/agents" ] && [ "$(ls -A "$CLAUDE_DIR/agents"/*.md 2>/dev/null)" ]; then
     has_config=true
     EXISTING_AGENTS=$(ls "$CLAUDE_DIR/agents"/*.md 2>/dev/null | wc -l)
   fi

@@ -162,10 +162,10 @@ main() {
   echo ""
   check_infrastructure_status || true
 
-  # Export counters
-  echo "DOCKER_INSTALLED=$DOCKER_INSTALLED"
-  echo "DOCKER_SKIPPED=$DOCKER_SKIPPED"
-  echo "DOCKER_FAILED=$DOCKER_FAILED"
+  # Export counters (without DOCKER_ prefix for parent script)
+  echo "INSTALLED=$DOCKER_INSTALLED"
+  echo "SKIPPED=$DOCKER_SKIPPED"
+  echo "FAILED=$DOCKER_FAILED"
 }
 
 # Run if executed directly

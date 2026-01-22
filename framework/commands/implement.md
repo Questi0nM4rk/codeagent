@@ -424,7 +424,7 @@ mcp__reflection__reflect_on_failure
     → Check similar past failures
     → Generate improved attempt
 
-After 3 failures:
+After 6 failures (3 suggested + 3 opus):
     → Create checkpoint branch
     → Output BLOCKED status
     → Store episode in reflection memory
@@ -730,7 +730,7 @@ Positioned after UseRouting, before UseAuthorization.
 
 ## Failure Handling with Backlog
 
-When implementation fails after 3 attempts:
+When implementation fails after 6 attempts (3 suggested + 3 opus):
 
 ### Option 1: Create Bug
 

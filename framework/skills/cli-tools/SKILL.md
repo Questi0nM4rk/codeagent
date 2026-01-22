@@ -72,15 +72,15 @@ Use this pattern when:
 import subprocess
 import json
 
-# List issues with JSON output
+# List issues with JSON output (include labels for filtering)
 result = subprocess.run(
-    ['gh', 'issue', 'list', '--repo', 'owner/repo', '--json', 'number,title,state'],
+    ['gh', 'issue', 'list', '--repo', 'owner/repo', '--json', 'number,title,state,labels'],
     capture_output=True, text=True
 )
 issues = json.loads(result.stdout)
 
-# Filter in sandbox - only summary returns to context
-open_bugs = [i for i in issues if 'bug' in i.get('labels', [])]
+# Filter in sandbox - labels is a list of objects with 'name' key
+open_bugs = [i for i in issues if any(l.get('name') == 'bug' for l in i.get('labels', []))]
 print(f"Found {len(open_bugs)} open bugs")
 ```
 Uses existing auth, filters in sandbox, minimal context return
