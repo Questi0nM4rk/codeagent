@@ -9,10 +9,10 @@ Methodology for writing tests before implementation. Every line of production co
 
 ## The Iron Law
 
-```text
+```
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 No exceptions. No "just this once." No "it's too simple."
-```text
+```
 
 ## Core Principle
 
@@ -20,13 +20,13 @@ No exceptions. No "just this once." No "it's too simple."
 
 ## The TDD Cycle
 
-```text
+```
 RED → GREEN → REFACTOR
 
 1. RED: Write a failing test (must fail for right reason)
 2. GREEN: Write MINIMAL code to pass (nothing more)
 3. REFACTOR: Improve without changing behavior (tests stay green)
-```text
+```
 
 ## When to Use
 
@@ -53,9 +53,9 @@ Requirements:
 - Test MUST fail initially (if it passes, something is wrong)
 - Failure message should be meaningful
 
-```text
+```
 Arrange → Act → Assert
-```text
+```
 
 <Good>
 ```typescript
@@ -71,7 +71,7 @@ describe('Calculator', () => {
     expect(result).toBe(5);
   });
 });
-```text
+```
 
 - Clear test name describes behavior
 - Single assertion
@@ -89,7 +89,7 @@ it('test calculator', () => {
   expect(calc.multiply(2, 3)).toBe(6);
   expect(calc.divide(6, 2)).toBe(3);
 });
-```text
+```
 
 - Vague test name
 - Multiple unrelated assertions
@@ -114,7 +114,7 @@ Requirements:
 add(a: number, b: number): number {
   return a + b;
 }
-```text
+```
 Minimal code that passes the test.
 </Good>
 
@@ -135,7 +135,7 @@ add(a: number, b: number): number {
   }
   return result;
 }
-```text
+```
 
 - Adds untested error handling
 - Handles cases no test requires
@@ -230,7 +230,7 @@ Model is determined at plan-time, not implementation-time. The `/plan` command q
 
 Simple two-tier escalation:
 
-```text
+```
 suggested_model (attempts 1-3)
        │
        ▼ fails
@@ -238,7 +238,7 @@ suggested_model (attempts 1-3)
        │
        ▼ fails
     REITERATE (return to /plan)
-```text
+```
 
 **Rationale:** The /plan phase queries historical data to pick the right starting model. If that fails, opus is the fallback. If opus fails, the approach is wrong—not the model.
 
@@ -275,7 +275,7 @@ STOP and REITERATE to /plan:
 
 ### Recommendation
 Re-run /plan with this context to explore alternative approaches
-```text
+```
 
 ## BDD to Test Conversion
 
@@ -283,13 +283,13 @@ When implementing from BDD scenarios (from /plan), convert Gherkin to tests:
 
 ### Conversion Pattern
 
-```text
+```
 Gherkin                          Test Code
 ─────────────────────────────────────────────────────
 Given [precondition]    →    // Arrange
 When [action]           →    // Act
 Then [expectation]      →    // Assert
-```text
+```
 
 ### Example
 
@@ -301,7 +301,7 @@ Scenario: Successful login with valid credentials
   When they submit the login form
   Then they receive a valid JWT token
   And are redirected to the dashboard
-```text
+```
 
 **Generated Test:**
 ```typescript
@@ -325,7 +325,7 @@ describe('AuthService', () => {
     expect(result.redirectUrl).toBe('/dashboard');
   });
 });
-```text
+```
 
 ### BDD Scenario Coverage
 

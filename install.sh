@@ -713,12 +713,17 @@ verify_installation() {
     all_ok=false
   fi
 
-  # Check custom MCPs (reflection is the only custom Python MCP)
-  if [ -f "$INSTALL_DIR/mcps/reflection-mcp/pyproject.toml" ]; then
-    log_success "Custom MCPs installed (reflection)"
+  # Check custom MCPs are installed in venv (external packages)
+  if "$INSTALL_DIR/venv/bin/python" -c "import reflection_mcp" 2>/dev/null; then
+    log_success "Reflection MCP installed"
   else
-    log_warn "Custom MCPs not found"
-    all_ok=false
+    log_warn "Reflection MCP not found (install from ~/Projects/reflection-mcp)"
+  fi
+
+  if "$INSTALL_DIR/venv/bin/python" -c "import amem_mcp" 2>/dev/null; then
+    log_success "A-MEM MCP installed"
+  else
+    log_warn "A-MEM MCP not found (install from ~/Projects/amem-mcp)"
   fi
 
   echo ""

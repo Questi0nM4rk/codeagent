@@ -14,10 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Validate shell scripts
 shellcheck install.sh bin/* framework/hooks/*.sh
 
-# Test reflection MCP
-cd mcps/reflection-mcp && ~/.codeagent/venv/bin/python -m pytest
+# Test reflection MCP (external repo)
+cd ~/Projects/reflection-mcp && ~/.codeagent/venv/bin/python -m pytest
 
-# Run reflection MCP standalone (for debugging)
+# Run reflection MCP standalone (requires package installed in venv)
 ~/.codeagent/venv/bin/python -m reflection_mcp
 
 # Infrastructure control
@@ -89,7 +89,7 @@ Defines all MCPs with their installation requirements:
 
 ### Custom MCP: Reflection
 
-**Location**: `mcps/reflection-mcp/src/reflection_mcp/server.py`
+**Location**: `~/Projects/reflection-mcp/src/reflection_mcp/server.py` (external repo)
 
 Implements Reflexion pattern (NeurIPS 2023) for +21% accuracy on code tasks.
 
@@ -100,6 +100,10 @@ Implements Reflexion pattern (NeurIPS 2023) for +21% accuracy on code tasks.
 - `generate_improved_attempt` - Guidance based on past lessons
 - `mark_lesson_effective` - Track if applying lesson led to success
 - `export_lessons` - Export for learner skill integration
+- `get_model_effectiveness` - Get model success rates for intelligent model selection
+- `get_reflection_history` - View reflection history for a task
+- `get_common_lessons` - Get aggregated lessons by feedback type
+- `get_episode_stats` - Get statistics about episodic memory
 
 **Data storage**: `~/.codeagent/data/reflection-episodes/`
 
@@ -276,7 +280,7 @@ cd ~/.codeagent/infrastructure && docker compose down && docker compose up -d
 # Check storage directory
 ls -la ~/.codeagent/memory/
 
-# Test MCP
+# Test MCP (requires pip install -e ~/Projects/amem-mcp in venv)
 ~/.codeagent/venv/bin/python -c "from amem_mcp import server; print('OK')"
 ```
 
@@ -288,7 +292,7 @@ claude mcp list                           # Check registered MCPs
 
 ### Reflection MCP issues
 ```bash
-# Test standalone
+# Test standalone (requires pip install -e ~/Projects/reflection-mcp in venv)
 ~/.codeagent/venv/bin/python -c "from reflection_mcp import server; print('OK')"
 
 # Check data directory

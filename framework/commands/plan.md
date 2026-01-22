@@ -77,7 +77,7 @@ Feature: [Feature Name]
 
 **Output:** Include scenarios in plan output:
 
-```markdown
+```gherkin
 ### Behaviors (BDD)
 
 Feature: User Authentication

@@ -121,7 +121,7 @@ if [ "$READY_COUNT" -gt 0 ]; then
     for file in $(grep -l "status: ready" "$BACKLOG_DIR/bugs"/*.yaml 2>/dev/null || true); do
       ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
       NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || true)
-      SEVERITY=$(grep -oP 'severity: \K\S+' "$file" 2>/dev/null || "medium")
+      SEVERITY=$(grep -oP 'severity: \K\S+' "$file" 2>/dev/null || echo "medium")
       echo -e "  ${RED}!${NC} $ID: $NAME ${YELLOW}[$SEVERITY]${NC}"
     done
   fi

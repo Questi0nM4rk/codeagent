@@ -82,21 +82,24 @@
 		{
 			"name": "reflection",
 			"module": "reflection_mcp.server",
-			"path": "mcps/reflection-mcp",
-			"required": true
+			"install_from": "~/Projects/reflection-mcp",
+			"install_method": "pip install -e",
+			"required": true,
+			"description": "Self-reflection and episodic memory for learning from failures"
 		},
 		{
 			"name": "amem",
 			"module": "amem_mcp.server",
-			"path": "mcps/amem-mcp",
-			"extras": "full",
+			"install_from": "~/Projects/amem-mcp",
+			"install_method": "pip install -e .[full]",
 			"required": true,
 			"description": "Brain-like memory with automatic linking and evolution (A-MEM)"
 		},
 		{
 			"name": "codebase",
 			"module": "codebase_rag.server",
-			"path": "mcps/codebase-rag",
+			"install_from": "~/Projects/codebase-rag",
+			"install_method": "pip install -e",
 			"required": false,
 			"description": "Codebase indexing with Merkle tree, Tree-sitter, and Qdrant hybrid search",
 			"env": {

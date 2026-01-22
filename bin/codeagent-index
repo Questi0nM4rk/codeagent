@@ -102,6 +102,7 @@ echo ""
 
 # Update manifest with stub data
 TIMESTAMP=$(date -Iseconds)
+mkdir -p "$(dirname "$MANIFEST")"
 cat >"$MANIFEST" <<EOF
 {
   "version": 1,

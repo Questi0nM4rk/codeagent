@@ -2,7 +2,7 @@ Comment Types & Severity Levels
 
 1. Issue Comments
 
-**Severity:** Critical | High | Medium | Low
+**Severity:** Major | Minor | Nitpick
 **Category:** <category_name>
 
 <description_of_issue>
@@ -11,10 +11,9 @@ Comment Types & Severity Levels
 
 Severity Levels:
 
-    Critical: Security vulnerabilities, data loss risks, system crashes
-    High: Logic errors, major bugs, significant performance issues
-    Medium: Code quality issues, maintainability concerns, potential bugs
-    Low: Minor improvements, style inconsistencies, optimization opportunities
+    Major: Security vulnerabilities, data loss risks, system crashes, logic errors, significant bugs
+    Minor: Code quality issues, maintainability concerns, potential bugs, minor improvements
+    Nitpick: Style inconsistencies, formatting, minor optimization opportunities
 
 2. Suggestion Comments
 
@@ -63,10 +62,9 @@ At the PR level, I provide:
 ## Summary
 
 - **Total Comments:** X
-- **Critical:** X
-- **High:** X
-- **Medium:** X
-- **Low:** X
+- **Major:** X
+- **Minor:** X
+- **Nitpick:** X
 - **Suggestions:** X
 
 Code Suggestion Format

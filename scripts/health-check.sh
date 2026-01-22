@@ -38,7 +38,8 @@ check_container() {
       echo -e "${GREEN}✓${NC} $name container running"
       return 0
     else
-      echo -e "${YELLOW}○${NC} $name container status: $health"
+      echo -e "${RED}✗${NC} $name container status: $health"
+      all_healthy=false
       return 1
     fi
   else
