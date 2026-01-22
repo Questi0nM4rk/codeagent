@@ -19,6 +19,7 @@ INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 BIN_DIR="$HOME/.local/bin"
 REPO_URL="${CODEAGENT_REPO:-https://github.com/Questi0nM4rk/codeagent.git}"
 VERSION="0.1.0"
+AI_GUARDRAILS_DIR="${AI_GUARDRAILS_HOME:-$HOME/.ai-guardrails}"
 
 # ============================================
 # Banner
@@ -128,6 +129,17 @@ check_requirements() {
     log_success "Docker Compose v2 found"
   else
     log_error "Docker Compose v2 not found"
+    failed=true
+  fi
+
+  # ai-guardrails (shared linting/hooks infrastructure)
+  if [ -d "$AI_GUARDRAILS_DIR" ]; then
+    log_success "ai-guardrails found"
+  else
+    log_error "ai-guardrails not found at $AI_GUARDRAILS_DIR"
+    log_info "Install first:"
+    log_info "  git clone https://github.com/Questi0nM4rk/ai-guardrails ~/.ai-guardrails"
+    log_info "  cd ~/.ai-guardrails && ./install.sh"
     failed=true
   fi
 
@@ -326,6 +338,51 @@ configure_shell() {
   # Export for current session
   export CODEAGENT_HOME="$INSTALL_DIR"
   export PATH="$BIN_DIR:$PATH"
+}
+
+# ============================================
+# ai-guardrails Integration
+# ============================================
+setup_ai_guardrails_integration() {
+  log_info "Setting up ai-guardrails integration..."
+
+  local hooks_dir="$INSTALL_DIR/framework/hooks"
+  mkdir -p "$hooks_dir"
+
+  # Symlink shared hooks from ai-guardrails
+  local shared_hooks=(
+    "dangerous-command-check.sh"
+    "auto-format.sh"
+    "pre-commit.sh"
+    "pre-push.sh"
+  )
+
+  for hook in "${shared_hooks[@]}"; do
+    local source="$AI_GUARDRAILS_DIR/lib/hooks/$hook"
+    local target="$hooks_dir/$hook"
+
+    if [ -f "$source" ]; then
+      ln -sf "$source" "$target"
+      log_success "  Linked: $hook"
+    else
+      log_warn "  Not found: $source"
+    fi
+  done
+
+  # Copy pre-commit config for reference (projects can use it)
+  if [ -f "$AI_GUARDRAILS_DIR/templates/pre-commit-config.yaml" ]; then
+    cp "$AI_GUARDRAILS_DIR/templates/pre-commit-config.yaml" \
+      "$INSTALL_DIR/.pre-commit-config.yaml"
+    log_success "  Copied: .pre-commit-config.yaml"
+  fi
+
+  # Copy ruff.toml for MCP linting
+  if [ -f "$AI_GUARDRAILS_DIR/configs/ruff.toml" ]; then
+    cp "$AI_GUARDRAILS_DIR/configs/ruff.toml" "$INSTALL_DIR/mcps/ruff.toml"
+    log_success "  Copied: mcps/ruff.toml"
+  fi
+
+  log_success "ai-guardrails integration complete"
 }
 
 # ============================================
@@ -791,6 +848,7 @@ main() {
 
   check_requirements
   install_codeagent
+  setup_ai_guardrails_integration
   configure_shell
 
   # Pass auto-yes to sub-scripts
