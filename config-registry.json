@@ -79,28 +79,28 @@
 		{
 			"name": "dangerous-command-check",
 			"description": "Block dangerous bash commands (sudo, chmod 777, fork bombs)",
-			"source": "framework/hooks/dangerous-command-check.sh",
+			"source": "external:ai-guardrails/lib/hooks/dangerous-command-check.sh",
 			"event": "PreToolUse",
 			"matcher": "Bash"
 		},
 		{
 			"name": "pre-commit",
 			"description": "Validate before git commit",
-			"source": "framework/hooks/pre-commit.sh",
+			"source": "external:ai-guardrails/lib/hooks/pre-commit.sh",
 			"event": "PreToolUse",
 			"matcher": "Bash(git commit:*)"
 		},
 		{
 			"name": "pre-push",
 			"description": "Security scan and tests before push",
-			"source": "framework/hooks/pre-push.sh",
+			"source": "external:ai-guardrails/lib/hooks/pre-push.sh",
 			"event": "PreToolUse",
 			"matcher": "Bash(git push:*)"
 		},
 		{
 			"name": "auto-format",
 			"description": "Auto-format files after write/edit",
-			"source": "framework/hooks/auto-format.sh",
+			"source": "external:ai-guardrails/lib/hooks/auto-format.sh",
 			"event": "PostToolUse",
 			"matcher": "Write|Edit"
 		},

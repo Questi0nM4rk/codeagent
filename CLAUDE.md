@@ -64,10 +64,10 @@ User: /scan → /plan → /implement → /integrate → /review
 
 | Directory | Purpose |
 |-----------|---------|
-| `bin/` | CLI entry points (8 executables) |
+| `bin/` | CLI entry points (12 executables) |
 | `framework/skills/` | Skill definitions (SKILL.md each) |
 | `framework/commands/` | Slash command specs (5 commands) |
-| `framework/hooks/` | Pre/post tool hooks (8 scripts) |
+| `framework/hooks/` | Pre/post tool hooks (4 CodeAgent + 4 ai-guardrails) |
 | `framework/agents/` | Agent definitions for Task tool |
 | `mcps/` | Custom Python MCP servers + installers |
 | `mcps/installers/` | Per-MCP installation scripts |
@@ -193,14 +193,16 @@ Skills auto-activate based on file types and context. Each skill has a SKILL.md 
 
 ## Hooks
 
-| Hook | Trigger | File |
-|------|---------|------|
-| `dangerous-command-check` | PreToolUse:Bash | `framework/hooks/dangerous-command-check.sh` |
-| `pre-commit` | PreToolUse:Bash(git commit) | `framework/hooks/pre-commit.sh` |
-| `pre-push` | PreToolUse:Bash(git push) | `framework/hooks/pre-push.sh` |
-| `auto-format` | PostToolUse:Write/Edit | `framework/hooks/auto-format.sh` |
-| `index-file` | PostToolUse:Write/Edit | `framework/hooks/index-file.sh` |
-| `session-end` | Stop | `framework/hooks/session-end.sh` |
+| Hook | Trigger | Source |
+|------|---------|--------|
+| `dangerous-command-check` | PreToolUse:Bash | ai-guardrails |
+| `pre-commit` | PreToolUse:Bash(git commit) | ai-guardrails |
+| `pre-push` | PreToolUse:Bash(git push) | ai-guardrails |
+| `auto-format` | PostToolUse:Write/Edit | ai-guardrails |
+| `index-file` | PostToolUse:Write/Edit | CodeAgent |
+| `session-end` | Stop | CodeAgent |
+
+**Note**: Shared hooks are symlinked from `~/.ai-guardrails/lib/hooks/` at install time.
 
 ## Infrastructure
 
