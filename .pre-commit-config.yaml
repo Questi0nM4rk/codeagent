@@ -1,7 +1,7 @@
 # =============================================================================
 # STRICT Pre-Commit Configuration for AI-Driven Development
 # =============================================================================
-# CodeAgent framework - Multi-language hooks
+# AI Guardrails - Multi-language hooks
 # All checks run in strictest mode. No exceptions. No bypasses.
 # AI agents need guardrails - this is the fence.
 #

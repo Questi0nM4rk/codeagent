@@ -9,7 +9,7 @@ Domain knowledge for Lua scripting and Neovim plugin development.
 
 ## The Iron Law
 
-```
+```text
 LOCAL EVERYTHING + LUACHECK CLEAN + STYLUA FORMATTED
 All variables are local. luacheck passes. stylua --check passes.
 ```
@@ -21,25 +21,27 @@ All variables are local. luacheck passes. stylua --check passes.
 ## When to Use
 
 **Always:**
+
 - Writing Lua scripts or modules
 - Developing Neovim plugins
 - Working with game scripting (Love2D, Defold)
 - Creating Lua-based configurations
 
 **Exceptions (ask human partner):**
+
 - Legacy codebases without luacheck
 - Embedded Lua with constrained environments
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
-| Version | Lua 5.4, LuaJIT |
-| Testing | busted, luaunit |
-| Linting | luacheck |
-| Formatting | stylua |
-| Package Manager | luarocks |
-| LSP | lua-language-server |
+| Component       | Technology             |
+| :-------------- | :--------------------- |
+| Version         | Lua 5.4, LuaJIT        |
+| Testing         | busted, luaunit        |
+| Linting         | luacheck               |
+| Formatting      | stylua                 |
+| Package Manager | luarocks               |
+| LSP             | lua-language-server    |
 
 ## Essential Commands
 
@@ -61,7 +63,8 @@ stylua . && stylua --check .
 
 ### Module Pattern
 
-<Good>
+### Good Example: Module with Local Functions
+
 ```lua
 local M = {}
 
@@ -85,12 +88,13 @@ end
 
 return M
 ```
+
 - All functions local or namespaced to M
 - LuaLS annotations for types
 - Explicit nil handling with `or {}`
-</Good>
 
-<Bad>
+### Bad Example: Global Functions
+
 ```lua
 function process(data)
     return data * 2
@@ -98,14 +102,15 @@ end
 
 helper = function(x) return x end
 ```
+
 - Global functions pollute namespace
 - No type annotations
 - Hard to test and maintain
-</Bad>
 
 ### Class-like Pattern
 
-<Good>
+### Good Example: Class with Metatables
+
 ```lua
 ---@class User
 ---@field name string
@@ -130,10 +135,10 @@ end
 
 return User
 ```
+
 - LuaLS class annotations
 - Proper metatable usage
 - Method uses `:` (implicit self)
-</Good>
 
 ### Error Handling
 
@@ -184,7 +189,8 @@ return M
 
 ### busted
 
-<Good>
+### Good Example: busted Test Suite
+
 ```lua
 describe("User", function()
     local User
@@ -208,10 +214,10 @@ describe("User", function()
     end)
 end)
 ```
+
 - Descriptive nested structure
 - Setup in before_each
 - Clear assertion messages
-</Good>
 
 ### Mocking
 
@@ -233,7 +239,7 @@ end)
 ## Common Rationalizations
 
 | Excuse | Reality |
-|--------|---------|
+| :----- | :------ |
 | "Globals are easier" | They cause bugs. Local is 30% faster. |
 | "luacheck is too strict" | It catches real bugs. Configure it properly. |
 | "Types are optional" | Annotations prevent runtime errors. Add them. |
@@ -272,7 +278,7 @@ busted --coverage                  # Tests with coverage
 ## When Stuck
 
 | Problem | Solution |
-|---------|----------|
+| :------ | :------- |
 | "undefined global" warning | Add `local` or configure `.luacheckrc` for vim globals |
 | Circular require | Move shared code to separate module |
 | Metatable confusion | Use `__index = ClassName` pattern consistently |

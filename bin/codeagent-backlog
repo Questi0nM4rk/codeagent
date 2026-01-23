@@ -19,39 +19,39 @@ MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 usage() {
-    echo -e "${CYAN}CodeAgent Backlog${NC} - View project backlog"
-    echo ""
-    echo "Usage: codeagent backlog [filter]"
-    echo ""
-    echo "Filters:"
-    echo "  (none)        Show summary"
-    echo "  ready         Show items ready for work"
-    echo "  in-progress   Show items in progress"
-    echo "  blocked       Show blocked items"
-    echo "  EPIC-001      Show specific epic"
-    echo "  TASK-001      Show specific task"
-    echo ""
+  echo -e "${CYAN}CodeAgent Backlog${NC} - View project backlog"
+  echo ""
+  echo "Usage: codeagent backlog [filter]"
+  echo ""
+  echo "Filters:"
+  echo "  (none)        Show summary"
+  echo "  ready         Show items ready for work"
+  echo "  in-progress   Show items in progress"
+  echo "  blocked       Show blocked items"
+  echo "  EPIC-001      Show specific epic"
+  echo "  TASK-001      Show specific task"
+  echo ""
 }
 
 # Check for .codeagent directory
 if [ ! -d ".codeagent" ]; then
-    echo -e "${RED}Error: Not a CodeAgent project${NC}"
-    echo "Run 'codeagent init' first"
-    exit 1
+  echo -e "${RED}Error: Not a CodeAgent project${NC}"
+  echo "Run 'codeagent init' first"
+  exit 1
 fi
 
 BACKLOG_DIR=".codeagent/backlog"
 
 # Count items by type and status
 count_by_status() {
-    local dir="$1"
-    local status="$2"
+  local dir="$1"
+  local status="$2"
 
-    if [ -d "$dir" ]; then
-        grep -l "status: $status" "$dir"/*.yaml 2>/dev/null | wc -l | tr -d ' '
-    else
-        echo "0"
-    fi
+  if [ -d "$dir" ]; then
+    grep -l "status: $status" "$dir"/*.yaml 2>/dev/null | wc -l | tr -d ' '
+  else
+    echo "0"
+  fi
 }
 
 # Get project name from config
@@ -99,72 +99,72 @@ echo ""
 
 # Show in-progress items
 if [ -d "$BACKLOG_DIR/tasks" ]; then
-    IN_PROGRESS=$(grep -l "status: in_progress" "$BACKLOG_DIR/tasks"/*.yaml 2>/dev/null || true)
-    if [ -n "$IN_PROGRESS" ]; then
-        echo -e "${BLUE}In Progress${NC}"
-        for file in $IN_PROGRESS; do
-            ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
-            NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || "")
-            echo -e "  ${GREEN}+${NC} $ID: $NAME"
-        done
-        echo ""
-    fi
+  IN_PROGRESS=$(grep -l "status: in_progress" "$BACKLOG_DIR/tasks"/*.yaml 2>/dev/null || true)
+  if [ -n "$IN_PROGRESS" ]; then
+    echo -e "${BLUE}In Progress${NC}"
+    for file in $IN_PROGRESS; do
+      ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
+      NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || true)
+      echo -e "  ${GREEN}+${NC} $ID: $NAME"
+    done
+    echo ""
+  fi
 fi
 
 # Show ready items
 READY_COUNT=$((TASK_READY + BUG_READY))
 if [ "$READY_COUNT" -gt 0 ]; then
-    echo -e "${BLUE}Ready for Work${NC}"
+  echo -e "${BLUE}Ready for Work${NC}"
 
-    # Show ready bugs first (higher priority)
-    if [ -d "$BACKLOG_DIR/bugs" ]; then
-        for file in $(grep -l "status: ready" "$BACKLOG_DIR/bugs"/*.yaml 2>/dev/null || true); do
-            ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
-            NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || "")
-            SEVERITY=$(grep -oP 'severity: \K\S+' "$file" 2>/dev/null || "medium")
-            echo -e "  ${RED}!${NC} $ID: $NAME ${YELLOW}[$SEVERITY]${NC}"
-        done
-    fi
+  # Show ready bugs first (higher priority)
+  if [ -d "$BACKLOG_DIR/bugs" ]; then
+    for file in $(grep -l "status: ready" "$BACKLOG_DIR/bugs"/*.yaml 2>/dev/null || true); do
+      ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
+      NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || true)
+      SEVERITY=$(grep -oP 'severity: \K\S+' "$file" 2>/dev/null || echo "medium")
+      echo -e "  ${RED}!${NC} $ID: $NAME ${YELLOW}[$SEVERITY]${NC}"
+    done
+  fi
 
-    # Show ready tasks
-    if [ -d "$BACKLOG_DIR/tasks" ]; then
-        for file in $(grep -l "status: ready" "$BACKLOG_DIR/tasks"/*.yaml 2>/dev/null || true); do
-            ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
-            NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || "")
-            EPIC=$(grep -oP 'epic: \K\S+' "$file" 2>/dev/null || "")
-            if [ -n "$EPIC" ]; then
-                echo -e "  ${GREEN}+${NC} $ID: $NAME ${CYAN}[$EPIC]${NC}"
-            else
-                echo -e "  ${GREEN}+${NC} $ID: $NAME"
-            fi
-        done
-    fi
-    echo ""
+  # Show ready tasks
+  if [ -d "$BACKLOG_DIR/tasks" ]; then
+    for file in $(grep -l "status: ready" "$BACKLOG_DIR/tasks"/*.yaml 2>/dev/null || true); do
+      ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
+      NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || true)
+      EPIC=$(grep -oP 'epic: \K\S+' "$file" 2>/dev/null || true)
+      if [ -n "$EPIC" ]; then
+        echo -e "  ${GREEN}+${NC} $ID: $NAME ${CYAN}[$EPIC]${NC}"
+      else
+        echo -e "  ${GREEN}+${NC} $ID: $NAME"
+      fi
+    done
+  fi
+  echo ""
 fi
 
 # Show blocked items
 if [ -d "$BACKLOG_DIR/tasks" ]; then
-    BLOCKED=$(grep -l "status: blocked" "$BACKLOG_DIR/tasks"/*.yaml 2>/dev/null || true)
-    if [ -n "$BLOCKED" ]; then
-        echo -e "${RED}Blocked${NC}"
-        for file in $BLOCKED; do
-            ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
-            NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || "")
-            echo -e "  ${RED}x${NC} $ID: $NAME"
-        done
-        echo ""
-    fi
+  BLOCKED=$(grep -l "status: blocked" "$BACKLOG_DIR/tasks"/*.yaml 2>/dev/null || true)
+  if [ -n "$BLOCKED" ]; then
+    echo -e "${RED}Blocked${NC}"
+    for file in $BLOCKED; do
+      ID=$(grep -oP 'id: \K\S+' "$file" 2>/dev/null || basename "$file" .yaml)
+      NAME=$(grep -oP 'name: "\K[^"]+' "$file" 2>/dev/null || true)
+      echo -e "  ${RED}x${NC} $ID: $NAME"
+    done
+    echo ""
+  fi
 fi
 
 # If nothing in backlog
 TOTAL=$((EPIC_BACKLOG + EPIC_READY + EPIC_PROGRESS + TASK_BACKLOG + TASK_READY + TASK_PROGRESS + TASK_BLOCKED + BUG_BACKLOG + BUG_READY + BUG_PROGRESS + SPIKE_BACKLOG + SPIKE_PROGRESS))
 if [ "$TOTAL" -eq 0 ]; then
-    echo -e "${YELLOW}Backlog is empty.${NC}"
-    echo ""
-    echo "Get started:"
-    echo "  /analyze \"topic\"   Research before planning"
-    echo "  /plan \"feature\"    Create epics/tasks"
-    echo ""
+  echo -e "${YELLOW}Backlog is empty.${NC}"
+  echo ""
+  echo "Get started:"
+  echo "  /analyze \"topic\"   Research before planning"
+  echo "  /plan \"feature\"    Create epics/tasks"
+  echo ""
 fi
 
 echo -e "${CYAN}Commands${NC}"

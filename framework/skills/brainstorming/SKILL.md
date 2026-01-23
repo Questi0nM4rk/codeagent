@@ -9,10 +9,10 @@ Creative exploration methodology for generating multiple approaches before selec
 
 ## The Iron Law
 
-```
+```text
 DIVERGE BEFORE CONVERGE - QUANTITY BEFORE QUALITY
 Generate at least 5 options before evaluating ANY of them. Premature evaluation kills creativity.
-```
+```text
 
 ## Core Principle
 
@@ -21,6 +21,7 @@ Generate at least 5 options before evaluating ANY of them. Premature evaluation 
 ## When to Use
 
 **Always:**
+
 - Designing new features or systems
 - Solving problems with no obvious solution
 - Exploring architectural decisions
@@ -29,20 +30,21 @@ Generate at least 5 options before evaluating ANY of them. Premature evaluation 
 - When current approach isn't working
 
 **Exceptions (ask human partner):**
+
 - Bug with obvious root cause (use systematic-debugging instead)
 - Standard CRUD operations with established patterns
 - Direct implementation of well-defined spec
 
 ## The Brainstorming Phases
 
-```
+```text
 DIVERGE → INCUBATE → CONVERGE → SELECT
 
 1. DIVERGE: Generate ideas without judgment (5+ minimum)
 2. INCUBATE: Let ideas sit, combine, mutate
 3. CONVERGE: Evaluate against criteria
 4. SELECT: Choose best option(s) to pursue
-```
+```text
 
 ## Workflow
 
@@ -59,11 +61,12 @@ Before generating solutions, ensure the problem is well-defined.
 **Assumptions**: [Things we believe to be true - challenge these]
 
 **Problem Statement**: How might we [achieve desired state] given [constraints]?
-```
+```text
 
 ### Step 2: Diverge (GENERATE)
 
 Rules during divergence:
+
 - NO evaluation or criticism
 - Quantity over quality
 - Build on others' ideas ("Yes, and...")
@@ -79,7 +82,8 @@ Generate ideas using these techniques:
 - Technical constraints → "If any technology existed..."
 - Resource constraints → "If we had unlimited budget..."
 - Political constraints → "If everyone agreed..."
-```
+
+```text
 
 **Technique 2: Analogies**
 ```markdown
@@ -88,7 +92,8 @@ Generate ideas using these techniques:
 - How would [company/person] approach this?
 - How does nature solve this?
 - How did this work in [historical context]?
-```
+
+```text
 
 **Technique 3: Crazy 8s**
 ```markdown
@@ -101,7 +106,7 @@ Generate ideas using these techniques:
 6. [what would [expert] do?]
 7. [what if constraint X didn't exist?]
 8. [combine ideas 2 and 4]
-```
+```text
 
 **Technique 4: Six Thinking Hats**
 ```markdown
@@ -112,7 +117,8 @@ Generate ideas using these techniques:
 - YELLOW (benefits): What are the advantages?
 - GREEN (creativity): What new ideas emerge?
 - BLUE (process): What's our next step?
-```
+
+```text
 
 **Technique 5: SCAMPER**
 ```markdown
@@ -124,11 +130,13 @@ Generate ideas using these techniques:
 - Put to other use: How else could this be used?
 - Eliminate: What can we remove?
 - Reverse: What if we did the opposite?
-```
+
+```text
 
 ### Step 3: Incubate
 
 After generating 5+ ideas:
+
 - Take a mental break (even 5 minutes helps)
 - Review ideas for combinations
 - Let subconscious process
@@ -141,18 +149,19 @@ Only NOW apply judgment. Evaluate against criteria:
 ```markdown
 ## Evaluation Matrix
 
-| Idea | Feasibility (1-5) | Impact (1-5) | Effort (1-5) | Risk (1-5) | Score |
-|------|-------------------|--------------|--------------|------------|-------|
-| [1]  | 4 | 5 | 3 | 2 | 14 |
-| [2]  | 3 | 4 | 4 | 3 | 14 |
-| [3]  | 5 | 3 | 5 | 1 | 14 |
-| [4]  | 2 | 5 | 2 | 4 | 13 |
-| [5]  | 4 | 4 | 3 | 2 | 13 |
-```
+ | Idea | Feasibility (1-5) | Impact (1-5) | Effort (1-5) | Risk (1-5) | Score |
+ | ------ | ------------------- | -------------- | -------------- | ------------ | ------- |
+ | [1] | 4 | 5 | 3 | 2 | 14 |
+ | [2] | 3 | 4 | 4 | 3 | 14 |
+ | [3] | 5 | 3 | 5 | 1 | 14 |
+ | [4] | 2 | 5 | 2 | 4 | 13 |
+ | [5] | 4 | 4 | 3 | 2 | 13 |
+```text
 
 ### Step 5: Select
 
 Choose based on:
+
 - Highest score with acceptable risk
 - Prototype-ability (can we test quickly?)
 - Reversibility (can we change our mind?)
@@ -188,22 +197,24 @@ Choose based on:
 - 6 + 9: Circuit breaker with client backoff
 
 ### Evaluation
-| Idea | Feasibility | Impact | Effort | Risk | Score |
-|------|-------------|--------|--------|------|-------|
-| Token bucket + tiers | 5 | 4 | 3 | 1 | 13 |
-| Adaptive + patterns | 3 | 5 | 2 | 3 | 13 |
-| Sliding window | 4 | 4 | 4 | 2 | 14 |
-| Circuit + backoff | 4 | 3 | 4 | 2 | 13 |
+ | Idea | Feasibility | Impact | Effort | Risk | Score |
+ | ------ | ------------- | -------- | -------- | ------ | ------- |
+ | Token bucket + tiers | 5 | 4 | 3 | 1 | 13 |
+ | Adaptive + patterns | 3 | 5 | 2 | 3 | 13 |
+ | Sliding window | 4 | 4 | 4 | 2 | 14 |
+ | Circuit + backoff | 4 | 3 | 4 | 2 | 13 |
 
 ### Selection
 **Primary**: Token bucket + tiers (proven, low risk, good enough)
 **Consider for v2**: Adaptive limits once we have usage data
-```
+```text
+
 - Problem framed before solutions
 - Generated 10+ ideas without judgment
 - Combined ideas to create new options
 - Evaluated systematically
 - Selected with rationale
+
 </Good>
 
 <Bad>
@@ -214,24 +225,26 @@ Solution: We should use token bucket algorithm because it's the standard
 approach. Here's the implementation...
 
 [proceeds to implement immediately]
-```
+```text
+
 - No divergent phase
 - First idea accepted without alternatives
 - No evaluation criteria
 - Missed potentially better options
 - No consideration of problem framing
+
 </Bad>
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "I already know the best solution" | You might. Generate alternatives anyway to confirm. |
-| "We don't have time to brainstorm" | Bad solutions cost more time than brainstorming saves. |
-| "The options are obvious" | Obvious to you isn't obvious to everyone. Make them explicit. |
-| "My first idea is usually right" | Confirmation bias. Test it against alternatives. |
-| "This problem is too simple" | Simple problems have multiple solutions. Explore them. |
-| "Brainstorming is fluffy/soft" | It's structured creativity with measurable output. |
+ | Excuse | Reality |
+ | -------- | --------- |
+ | "I already know the best solution" | You might. Generate alternatives anyway to confirm. |
+ | "We don't have time to brainstorm" | Bad solutions cost more time than brainstorming saves. |
+ | "The options are obvious" | Obvious to you isn't obvious to everyone. Make them explicit. |
+ | "My first idea is usually right" | Confirmation bias. Test it against alternatives. |
+ | "This problem is too simple" | Simple problems have multiple solutions. Explore them. |
+ | "Brainstorming is fluffy/soft" | It's structured creativity with measurable output. |
 
 ## Red Flags - STOP and Start Over
 
@@ -263,14 +276,14 @@ Before selecting a solution:
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
-| Can't think of ideas | Use SCAMPER on existing solutions. Try analogies. |
-| All ideas seem bad | You're still judging. Generate more without evaluating. |
-| Ideas too similar | Add constraints or remove them. Try opposite approaches. |
-| Paralyzed by options | Use evaluation matrix. Score and rank. |
-| Team can't agree | Vote independently first, then discuss outliers. |
-| Time pressure | Timebox: 5 min diverge, 2 min evaluate, decide. |
+ | Problem | Solution |
+ | --------- | ---------- |
+ | Can't think of ideas | Use SCAMPER on existing solutions. Try analogies. |
+ | All ideas seem bad | You're still judging. Generate more without evaluating. |
+ | Ideas too similar | Add constraints or remove them. Try opposite approaches. |
+ | Paralyzed by options | Use evaluation matrix. Score and rank. |
+ | Team can't agree | Vote independently first, then discuss outliers. |
+ | Time pressure | Timebox: 5 min diverge, 2 min evaluate, decide. |
 
 ## Facilitation Tips
 
@@ -285,7 +298,7 @@ For brainstorming with others:
 5. Combine and cluster (3 min)
 6. Evaluate against criteria (5 min)
 7. Select and assign (2 min)
-```
+```text
 
 ## Idea Documentation Template
 
@@ -311,8 +324,8 @@ For brainstorming with others:
 - [criterion 2]: weight Y
 
 ## Evaluation Matrix
-| Idea | C1 | C2 | ... | Score |
-|------|----|----|-----|-------|
+ | Idea | C1 | C2 | ... | Score |
+ | ------ | ---- | ---- | ----- | ------- |
 
 ## Selected Approach
 **Primary**: [choice] because [rationale]
@@ -320,7 +333,8 @@ For brainstorming with others:
 
 ## Parking Lot (for future consideration)
 - [idea not selected but worth remembering]
-```
+
+```text
 
 ## Related Skills
 

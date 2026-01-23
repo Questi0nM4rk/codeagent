@@ -5,6 +5,7 @@ Isolated Docker-in-Docker (dind) testing environment for CodeAgent installation.
 ## Key Feature: Complete Isolation
 
 All tests run inside Docker-in-Docker. This means:
+
 - **Your host Docker is never touched**
 - Infrastructure containers (Qdrant) run inside dind
 - A-MEM uses local file storage (no container needed)
@@ -34,19 +35,19 @@ cd tests/sandbox
 
 ## Test Scenarios
 
-| Scenario | Description | Time |
-|----------|-------------|------|
-| `source` | Shellcheck, file validation | ~30s |
-| `install` | Full installation from GitHub | ~3min |
-| `mcp` | MCP registration verification | ~4min |
-| `infra` | Infrastructure startup/shutdown | ~5min |
-| `cli` | CLI command testing | ~4min |
-| `config` | Config store/get operations | ~4min |
-| `all` | All scenarios (default) | ~10min |
+| Scenario  | Description                    | Time  |
+| :-------- | :----------------------------- | :---- |
+| `source`  | Shellcheck, file validation    | ~30s  |
+| `install` | Full installation from GitHub  | ~3min |
+| `mcp`     | MCP registration verification  | ~4min |
+| `infra`   | Infrastructure startup/shutdown| ~5min |
+| `cli`     | CLI command testing            | ~4min |
+| `config`  | Config store/get operations    | ~4min |
+| `all`     | All scenarios (default)        | ~10min|
 
 ## How It Works
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │  Your Host System (completely untouched)            │
 │                                                      │
@@ -137,6 +138,7 @@ exit
 ## Fake API Keys
 
 Tests use fake API keys to ensure all optional MCPs get installed:
+
 - `OPENAI_API_KEY=sk-test-fake-key-for-testing-only`
 - `TAVILY_API_KEY=tvly-test-fake-key-for-testing`
 - `FIGMA_API_KEY=figd_test_fake_key_for_testing`
@@ -165,7 +167,7 @@ jobs:
 
 ## Architecture
 
-```
+```text
 tests/sandbox/
 ├── docker-compose.yml   # dind + test services
 ├── Dockerfile           # Arch Linux test container

@@ -20,48 +20,50 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 FULL_INDEX=false
+# shellcheck disable=SC2034  # VERBOSE used in future implementation
 VERBOSE=false
 
 usage() {
-    echo -e "${CYAN}CodeAgent Index${NC} - Rebuild codebase index"
-    echo ""
-    echo "Usage: codeagent index [options]"
-    echo ""
-    echo "Options:"
-    echo "  --full        Force full re-index (ignore Merkle tree cache)"
-    echo "  --verbose     Show detailed progress"
-    echo "  -h, --help    Show this help"
-    echo ""
+  echo -e "${CYAN}CodeAgent Index${NC} - Rebuild codebase index"
+  echo ""
+  echo "Usage: codeagent index [options]"
+  echo ""
+  echo "Options:"
+  echo "  --full        Force full re-index (ignore Merkle tree cache)"
+  echo "  --verbose     Show detailed progress"
+  echo "  -h, --help    Show this help"
+  echo ""
 }
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --full)
-            FULL_INDEX=true
-            shift
-            ;;
-        --verbose|-v)
-            VERBOSE=true
-            shift
-            ;;
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}Unknown option: $1${NC}"
-            usage
-            exit 1
-            ;;
-    esac
+  case $1 in
+    --full)
+      FULL_INDEX=true
+      shift
+      ;;
+    --verbose | -v)
+      # shellcheck disable=SC2034  # VERBOSE used in future implementation
+      VERBOSE=true
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      usage
+      exit 1
+      ;;
+  esac
 done
 
 # Check for .codeagent directory
 if [ ! -d ".codeagent" ]; then
-    echo -e "${RED}Error: Not a CodeAgent project${NC}"
-    echo "Run 'codeagent init' first"
-    exit 1
+  echo -e "${RED}Error: Not a CodeAgent project${NC}"
+  echo "Run 'codeagent init' first"
+  exit 1
 fi
 
 echo -e "${CYAN}Indexing codebase...${NC}"
@@ -70,19 +72,20 @@ echo ""
 # Read manifest
 MANIFEST=".codeagent/index/manifest.json"
 if [ -f "$MANIFEST" ]; then
-    LAST_HASH=$(jq -r '.root_hash // empty' "$MANIFEST" 2>/dev/null || echo "")
-    LAST_FILES=$(jq -r '.stats.indexed_files // 0' "$MANIFEST" 2>/dev/null || echo "0")
-    LAST_CHUNKS=$(jq -r '.stats.total_chunks // 0' "$MANIFEST" 2>/dev/null || echo "0")
+  LAST_HASH=$(jq -r '.root_hash // empty' "$MANIFEST" 2>/dev/null || echo "")
+  LAST_FILES=$(jq -r '.stats.indexed_files // 0' "$MANIFEST" 2>/dev/null || echo "0")
+  LAST_CHUNKS=$(jq -r '.stats.total_chunks // 0' "$MANIFEST" 2>/dev/null || echo "0")
 
-    if [ "$FULL_INDEX" = true ]; then
-        echo -e "${YELLOW}!${NC} Full re-index requested"
-        LAST_HASH=""
-    else
-        echo -e "${BLUE}Previous index:${NC} $LAST_FILES files, $LAST_CHUNKS chunks"
-    fi
-else
-    echo -e "${YELLOW}!${NC} No previous index found"
+  if [ "$FULL_INDEX" = true ]; then
+    echo -e "${YELLOW}!${NC} Full re-index requested"
     LAST_HASH=""
+  else
+    echo -e "${BLUE}Previous index:${NC} $LAST_FILES files, $LAST_CHUNKS chunks"
+  fi
+else
+  echo -e "${YELLOW}!${NC} No previous index found"
+  # shellcheck disable=SC2034  # LAST_HASH used in future implementation
+  LAST_HASH=""
 fi
 
 # TODO: Implement actual indexing in Phase 4
@@ -99,7 +102,8 @@ echo ""
 
 # Update manifest with stub data
 TIMESTAMP=$(date -Iseconds)
-cat > "$MANIFEST" <<EOF
+mkdir -p "$(dirname "$MANIFEST")"
+cat >"$MANIFEST" <<EOF
 {
   "version": 1,
   "created": "$(jq -r '.created // "'"$TIMESTAMP"'"' "$MANIFEST" 2>/dev/null || echo "$TIMESTAMP")",

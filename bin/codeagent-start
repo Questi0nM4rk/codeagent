@@ -9,7 +9,6 @@ set -e
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 
 # Colors
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
@@ -22,12 +21,12 @@ echo ""
 # Check if .env file exists with API keys
 ENV_FILE="$INSTALL_DIR/.env"
 if [ -f "$ENV_FILE" ] && grep -q "OPENAI_API_KEY=" "$ENV_FILE"; then
-    echo -e "${GREEN}✓${NC} API keys configured in $ENV_FILE"
+  echo -e "${GREEN}✓${NC} API keys configured in $ENV_FILE"
 else
-    echo -e "${YELLOW}Warning: OPENAI_API_KEY not found in $ENV_FILE${NC}"
-    echo "Memory embeddings will not work without it."
-    echo "Run './install.sh' to configure API keys."
-    echo ""
+  echo -e "${YELLOW}Warning: OPENAI_API_KEY not found in $ENV_FILE${NC}"
+  echo "Memory embeddings will not work without it."
+  echo "Run './install.sh' to configure API keys."
+  echo ""
 fi
 
 # Start Docker services (Docker Compose reads .env automatically via env_file directive)
@@ -46,27 +45,27 @@ attempt=0
 services_ready=false
 
 while [ $attempt -lt $max_attempts ] && [ "$services_ready" = false ]; do
-    attempt=$((attempt + 1))
+  attempt=$((attempt + 1))
 
-    qdrant_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_found")
+  qdrant_ready=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_found")
 
-    if [ "$qdrant_ready" = "healthy" ]; then
-        services_ready=true
-    else
-        printf "\r  Waiting... (%d/%d) Qdrant: %s    " \
-            "$attempt" "$max_attempts" "$qdrant_ready"
-        sleep 2
-    fi
+  if [ "$qdrant_ready" = "healthy" ]; then
+    services_ready=true
+  else
+    printf "\r  Waiting... (%d/%d) Qdrant: %s    " \
+      "$attempt" "$max_attempts" "$qdrant_ready"
+    sleep 2
+  fi
 done
 
 echo ""
 echo ""
 
 if [ "$services_ready" = true ]; then
-    echo -e "${GREEN}All services are healthy!${NC}"
+  echo -e "${GREEN}All services are healthy!${NC}"
 else
-    echo -e "${YELLOW}Some services may still be starting...${NC}"
-    echo "Run 'codeagent status' to check."
+  echo -e "${YELLOW}Some services may still be starting...${NC}"
+  echo "Run 'codeagent status' to check."
 fi
 
 # Run health check
@@ -74,10 +73,10 @@ echo ""
 "$INSTALL_DIR/scripts/health-check.sh"
 
 # Install MCPs if Claude Code is available
-if command -v claude &> /dev/null; then
-    echo ""
-    echo -e "${BLUE}Configuring MCP servers...${NC}"
-    "$INSTALL_DIR/mcps/install-mcps.sh" 2>/dev/null || true
+if command -v claude &>/dev/null; then
+  echo ""
+  echo -e "${BLUE}Configuring MCP servers...${NC}"
+  "$INSTALL_DIR/mcps/install-mcps.sh" 2>/dev/null || true
 fi
 
 echo ""

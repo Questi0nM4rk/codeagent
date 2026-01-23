@@ -10,15 +10,15 @@ echo "Running post-implementation tasks..."
 MODIFIED_FILES=$(git diff --name-only HEAD~1 2>/dev/null || git diff --name-only --cached 2>/dev/null || echo "")
 
 if [ -z "$MODIFIED_FILES" ]; then
-    echo "  No modified files detected"
-    exit 0
+  echo "  No modified files detected"
+  exit 0
 fi
 
 echo "  Modified files:"
 for file in $MODIFIED_FILES; do
-    if [ -f "$file" ]; then
-        echo "    - $file"
-    fi
+  if [ -f "$file" ]; then
+    echo "    - $file"
+  fi
 done
 
 # Pattern extraction will be handled by learner agent
