@@ -81,8 +81,9 @@ def assemble_config(
             continue
 
         lang_template = load_template(template_path)
-        repos = lang_template.get("repos") or []
-        config["repos"].extend(repos)
+        repos = lang_template.get("repos")
+        if isinstance(repos, list):
+            config["repos"].extend(repos)
 
     return config
 
@@ -95,6 +96,7 @@ def write_config(config: dict[str, Any], output_path: Path) -> None:
         output_path: Path to write .pre-commit-config.yaml
 
     """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         f.write("# ===========================================================================\n")
         f.write("# CodeAgent - Auto-Generated Pre-Commit Configuration\n")

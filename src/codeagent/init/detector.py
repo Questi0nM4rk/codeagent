@@ -62,7 +62,7 @@ def detect_languages(project_dir: Path, registry: dict[str, Any]) -> list[str]:
         patterns = rules.get("patterns", [])
         for pattern in patterns:
             recursive_pattern = f"**/{pattern}"
-            if list(project_dir.glob(recursive_pattern)):
+            if any(project_dir.glob(recursive_pattern)):
                 detected.append(lang)
                 break
         else:

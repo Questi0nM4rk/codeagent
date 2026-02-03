@@ -33,6 +33,15 @@ def run_init(
 
     """
     project_path = Path(project_dir).resolve()
+
+    # Validate project path exists and is a directory
+    if not project_path.exists():
+        console.print(f"[red]Error: Directory does not exist: {project_path}[/]")
+        return
+    if not project_path.is_dir():
+        console.print(f"[red]Error: Path is not a directory: {project_path}[/]")
+        return
+
     console.print(f"[bold blue]Initializing CodeAgent in {project_path}[/]")
 
     configs_dir = get_configs_dir()
@@ -70,6 +79,7 @@ def run_init(
                 src = configs_dir / config_file
                 dst = project_path / config_file
                 if src.exists() and (not dst.exists() or force):
+                    dst.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy(src, dst)
                     console.print(f"[green]✓[/] Copied {config_file}")
 
@@ -106,25 +116,29 @@ def run_init(
     # Install pre-commit hooks
     if not skip_precommit:
         try:
-            subprocess.run(
+            result = subprocess.run(
                 ["pre-commit", "install"],
                 cwd=project_path,
                 check=False,
                 capture_output=True,
             )
-            console.print("[green]✓[/] Installed pre-commit hooks")
+            if result.returncode == 0:
+                console.print("[green]✓[/] Installed pre-commit hooks")
+            else:
+                console.print("[yellow]⚠[/] Failed to install pre-commit hooks")
         except FileNotFoundError:
             console.print("[yellow]⚠[/] pre-commit not found, skipping hook install")
 
     # Initialize secrets baseline
     try:
-        subprocess.run(
+        result = subprocess.run(
             ["detect-secrets", "scan", "--baseline", ".secrets.baseline"],
             cwd=project_path,
             check=False,
             capture_output=True,
         )
-        console.print("[green]✓[/] Initialized secrets baseline")
+        if result.returncode == 0:
+            console.print("[green]✓[/] Initialized secrets baseline")
     except FileNotFoundError:
         pass  # Silent skip if detect-secrets not installed
 

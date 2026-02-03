@@ -59,18 +59,21 @@ def init(
 @app.command()
 def start() -> None:
     """Start CodeAgent services (SurrealDB)."""
+    # TODO(Epic 5): Implement SurrealDB startup via docker compose
     console.print("[yellow]Not implemented yet[/]")
 
 
 @app.command()
 def stop() -> None:
     """Stop CodeAgent services."""
+    # TODO(Epic 5): Implement service shutdown via docker compose
     console.print("[yellow]Not implemented yet[/]")
 
 
 @app.command()
 def status() -> None:
     """Show CodeAgent service status."""
+    # TODO(Epic 5): Implement health check for SurrealDB
     console.print("[yellow]Not implemented yet[/]")
 
 

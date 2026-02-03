@@ -14,7 +14,16 @@ def get_codeagent_dir() -> Path:
 
 @lru_cache
 def get_package_dir() -> Path:
-    """Get the package root directory."""
+    """Get the package root directory (where pyproject.toml lives).
+
+    Searches upward from this file to find pyproject.toml, making this
+    robust to package restructuring.
+    """
+    current = Path(__file__).resolve().parent
+    for parent in [current, *current.parents]:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    # Fallback to 4 levels up if pyproject.toml not found
     return Path(__file__).parent.parent.parent.parent
 
 
