@@ -113,11 +113,12 @@ def run_init(
     decisions_dir = project_path / "docs" / "decisions"
     decisions_dir.mkdir(parents=True, exist_ok=True)
 
-    # Install pre-commit hooks
+    # Install pre-commit hooks (resolve absolute path to mitigate PATH hijacking)
     if not skip_precommit:
-        try:
+        precommit_bin = shutil.which("pre-commit")
+        if precommit_bin:
             result = subprocess.run(
-                ["pre-commit", "install"],
+                [precommit_bin, "install"],
                 cwd=project_path,
                 check=False,
                 capture_output=True,
@@ -126,20 +127,19 @@ def run_init(
                 console.print("[green]✓[/] Installed pre-commit hooks")
             else:
                 console.print("[yellow]⚠[/] Failed to install pre-commit hooks")
-        except FileNotFoundError:
+        else:
             console.print("[yellow]⚠[/] pre-commit not found, skipping hook install")
 
-    # Initialize secrets baseline
-    try:
+    # Initialize secrets baseline (resolve absolute path to mitigate PATH hijacking)
+    detect_secrets_bin = shutil.which("detect-secrets")
+    if detect_secrets_bin:
         result = subprocess.run(
-            ["detect-secrets", "scan", "--baseline", ".secrets.baseline"],
+            [detect_secrets_bin, "scan", "--baseline", ".secrets.baseline"],
             cwd=project_path,
             check=False,
             capture_output=True,
         )
         if result.returncode == 0:
             console.print("[green]✓[/] Initialized secrets baseline")
-    except FileNotFoundError:
-        pass  # Silent skip if detect-secrets not installed
 
     console.print("\n[bold green]CodeAgent initialized successfully![/]")
