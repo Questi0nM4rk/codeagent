@@ -14,17 +14,22 @@ def get_codeagent_dir() -> Path:
 
 @lru_cache
 def get_package_dir() -> Path:
-    """Get the package root directory (where pyproject.toml lives).
+    """Get the package root directory for development fallback.
 
-    Searches upward from this file to find pyproject.toml, making this
-    robust to package restructuring.
+    This is used ONLY as a fallback when the global install directory
+    (~/.codeagent/) doesn't contain the requested resources. In production,
+    resources are installed to ~/.codeagent/ by the install script.
+
+    For development, searches upward to find pyproject.toml. Falls back to
+    parents[1] if pyproject.toml not found (installed environment).
     """
     current = Path(__file__).resolve().parent
     for parent in [current, *current.parents]:
         if (parent / "pyproject.toml").exists():
             return parent
-    # Fallback to 4 levels up if pyproject.toml not found
-    return Path(__file__).parent.parent.parent.parent
+    # In installed environments, return package root (parents[1] from this file)
+    # This won't have bundled resources, but global path should be primary
+    return Path(__file__).resolve().parents[1]
 
 
 @lru_cache
