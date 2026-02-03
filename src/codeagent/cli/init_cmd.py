@@ -73,15 +73,15 @@ def run_init(
             write_config(config, precommit_path)
             console.print("[green]✓[/] Generated .pre-commit-config.yaml")
 
-        # Copy language configs
-        for lang in detected:
-            for config_file in registry.get(lang, {}).get("configs", []):
-                src = configs_dir / config_file
-                dst = project_path / config_file
-                if src.exists() and (not dst.exists() or force):
-                    dst.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy(src, dst)
-                    console.print(f"[green]✓[/] Copied {config_file}")
+    # Copy language configs (always, regardless of skip_precommit)
+    for lang in detected:
+        for config_file in registry.get(lang, {}).get("configs", []):
+            src = configs_dir / config_file
+            dst = project_path / config_file
+            if src.exists() and (not dst.exists() or force):
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(src, dst)
+                console.print(f"[green]✓[/] Copied {config_file}")
 
     # Setup CodeRabbit
     if not skip_coderabbit:
