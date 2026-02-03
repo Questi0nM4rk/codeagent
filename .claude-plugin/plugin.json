@@ -1,0 +1,44 @@
+{
+  "name": "codeagent",
+  "version": "0.1.0",
+  "description": "Accuracy-optimized AI coding framework with persistent memory and TDD",
+  "commands": [
+    {
+      "name": "scan",
+      "description": "Build complete knowledge base of your codebase",
+      "file": "commands/scan.md"
+    },
+    {
+      "name": "plan",
+      "description": "Research, design, and create implementation approach",
+      "file": "commands/plan.md"
+    },
+    {
+      "name": "implement",
+      "description": "Execute plan using TDD workflow",
+      "file": "commands/implement.md"
+    },
+    {
+      "name": "integrate",
+      "description": "Integrate parallel work streams and validate consistency",
+      "file": "commands/integrate.md"
+    },
+    {
+      "name": "review",
+      "description": "Validate implementation with external tools",
+      "file": "commands/review.md"
+    }
+  ],
+  "skills": {
+    "directory": "skills",
+    "subdirectories": ["languages", "methodologies", "workflow"]
+  },
+  "agents": {
+    "directory": "agents"
+  },
+  "mcp": {
+    "name": "codeagent",
+    "command": "codeagent-mcp",
+    "description": "Unified MCP server for memory, reflection, codebase, and backlog"
+  }
+}
