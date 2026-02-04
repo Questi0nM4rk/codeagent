@@ -7,7 +7,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import Any
 
-from surrealdb import Surreal
+from surrealdb import AsyncSurreal
 
 
 class SurrealDBClient:
@@ -43,7 +43,7 @@ class SurrealDBClient:
         self._password = password
         self._namespace = namespace
         self._database = database
-        self._client = Surreal()
+        self._client = AsyncSurreal(self._url)
 
     async def connect(self) -> None:
         """Establish connection to SurrealDB.
@@ -77,20 +77,20 @@ class SurrealDBClient:
         """Async context manager exit."""
         await self.close()
 
-    async def initialize_schema(self, schema_path: Path) -> list[Any]:
+    async def initialize_schema(self, schema_path: Path) -> Any:
         """Load and execute a SurQL schema file.
 
         Args:
             schema_path: Path to the .surql schema file
 
         Returns:
-            List of query results from schema execution
+            Query results from schema execution
         """
         loop = asyncio.get_running_loop()
         schema_content = await loop.run_in_executor(None, schema_path.read_text)
         return await self._client.query(schema_content)
 
-    async def create(self, table: str, data: dict[str, Any]) -> list[dict[str, Any]]:
+    async def create(self, table: str, data: dict[str, Any]) -> Any:
         """Insert a new record into a table.
 
         Args:
@@ -98,22 +98,22 @@ class SurrealDBClient:
             data: Record data as a dictionary
 
         Returns:
-            List containing the created record(s)
+            The created record(s) from SurrealDB
         """
         return await self._client.create(table, data)
 
-    async def select(self, thing: str) -> list[dict[str, Any]]:
+    async def select(self, thing: str) -> Any:
         """Retrieve records from a table or a specific record by ID.
 
         Args:
             thing: Table name or record ID (e.g., "memory" or "memory:abc123")
 
         Returns:
-            List of matching records
+            Matching records from SurrealDB
         """
         return await self._client.select(thing)
 
-    async def update(self, thing: str, data: dict[str, Any]) -> list[dict[str, Any]]:
+    async def update(self, thing: str, data: dict[str, Any]) -> Any:
         """Update an existing record.
 
         Args:
@@ -121,22 +121,22 @@ class SurrealDBClient:
             data: New data to merge into the record
 
         Returns:
-            List containing the updated record(s)
+            The updated record(s) from SurrealDB
         """
         return await self._client.update(thing, data)
 
-    async def delete(self, thing: str) -> list[dict[str, Any]]:
+    async def delete(self, thing: str) -> Any:
         """Delete a record or all records from a table.
 
         Args:
             thing: Table name or record ID to delete
 
         Returns:
-            List containing the deleted record(s)
+            The deleted record(s) from SurrealDB
         """
         return await self._client.delete(thing)
 
-    async def query(self, surql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    async def query(self, surql: str, params: dict[str, Any] | None = None) -> Any:
         """Execute raw SurQL query.
 
         Args:
@@ -144,6 +144,6 @@ class SurrealDBClient:
             params: Optional query parameters for variable substitution
 
         Returns:
-            List of query results
+            Query results from SurrealDB
         """
         return await self._client.query(surql, params)

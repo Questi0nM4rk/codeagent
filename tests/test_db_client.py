@@ -34,7 +34,7 @@ class TestSurrealDBClient:
         """Test that connect() establishes a connection to SurrealDB."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
 
@@ -47,7 +47,7 @@ class TestSurrealDBClient:
         """Test that connect() uses custom URL when provided."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient(url="ws://custom:8080")
             await client.connect()
 
@@ -58,7 +58,7 @@ class TestSurrealDBClient:
         """Test that close() properly closes the connection."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             await client.close()
@@ -70,7 +70,7 @@ class TestSurrealDBClient:
         """Test that async context manager properly manages connection lifecycle."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             async with SurrealDBClient() as client:
                 assert client is not None
                 mock_surreal.connect.assert_called_once()
@@ -90,7 +90,7 @@ class TestSurrealDBClient:
 
         mock_surreal.query = AsyncMock(return_value=[{}])
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             result = await client.initialize_schema(schema_file)
@@ -105,7 +105,7 @@ class TestSurrealDBClient:
 
         mock_surreal.create = AsyncMock(return_value=[{"id": "test:1", "name": "test"}])
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             result = await client.create("test", {"name": "test"})
@@ -120,7 +120,7 @@ class TestSurrealDBClient:
 
         mock_surreal.select = AsyncMock(return_value=[{"id": "test:1"}])
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             result = await client.select("test")
@@ -135,7 +135,7 @@ class TestSurrealDBClient:
 
         mock_surreal.update = AsyncMock(return_value=[{"id": "test:1", "name": "updated"}])
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             result = await client.update("test:1", {"name": "updated"})
@@ -150,7 +150,7 @@ class TestSurrealDBClient:
 
         mock_surreal.delete = AsyncMock(return_value=[{"id": "test:1"}])
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             result = await client.delete("test:1")
@@ -165,7 +165,7 @@ class TestSurrealDBClient:
 
         mock_surreal.query = AsyncMock(return_value=[{"result": [{"id": "test:1"}]}])
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
             result = await client.query("SELECT * FROM test WHERE id = $id", {"id": "test:1"})
@@ -180,7 +180,7 @@ class TestSurrealDBClient:
         """Test that default credentials are used for signin."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
 
@@ -191,7 +191,7 @@ class TestSurrealDBClient:
         """Test that custom credentials can be provided."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient(username="admin", password="secret")  # noqa: S106 - Test credential
             await client.connect()
 
@@ -202,7 +202,7 @@ class TestSurrealDBClient:
         """Test that default namespace and database are used."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
 
@@ -213,7 +213,7 @@ class TestSurrealDBClient:
         """Test that custom namespace and database can be provided."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient(namespace="custom_ns", database="custom_db")
             await client.connect()
 
@@ -226,7 +226,7 @@ class TestSurrealDBClient:
 
         mock_surreal.signin = AsyncMock(side_effect=Exception("Auth failed"))
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             with pytest.raises(Exception, match="Auth failed"):
                 await client.connect()
@@ -241,7 +241,7 @@ class TestSurrealDBClient:
 
         mock_surreal.use = AsyncMock(side_effect=Exception("NS not found"))
 
-        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+        with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             with pytest.raises(Exception, match="NS not found"):
                 await client.connect()
