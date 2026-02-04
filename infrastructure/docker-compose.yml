@@ -1,4 +1,29 @@
 services:
+  # Multi-model database for all CodeAgent data
+  # Unified storage: memory, episodes, chunks, backlog
+  surrealdb:
+    image: surrealdb/surrealdb:v2.1
+    container_name: codeagent-surrealdb
+    command: start --user root --pass root file:/data/codeagent.db
+    ports:
+      - "8000:8000"  # HTTP/WebSocket API
+    volumes:
+      - ${HOME}/.codeagent/data/surrealdb:/data
+    healthcheck:
+      test: ["CMD", "/surreal", "isready", "--conn", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 256M
+    restart: unless-stopped
+
   # Vector store for embeddings (used by reflection MCP)
   # Optimized for OpenAI embeddings (1536 dimensions)
   qdrant:
@@ -65,7 +90,8 @@ services:
 volumes:
   codeagent_qdrant_data:
     name: codeagent_qdrant_data
-  # A-MEM uses local file storage at ~/.codeagent/memory/
+  # SurrealDB uses host-mounted directory for persistence
+  # Data at: ~/.codeagent/data/surrealdb/
   # Uncomment if using Ollama
   # codeagent_ollama_data:
   #   name: codeagent_ollama_data
