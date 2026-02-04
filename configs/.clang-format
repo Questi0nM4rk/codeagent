@@ -90,9 +90,9 @@ AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: None
+BreakAfterReturnType: Automatic
 AlwaysBreakBeforeMultilineStrings: true
-AlwaysBreakTemplateDeclarations: Yes
+BreakTemplateDeclarations: Yes
 BreakBeforeBinaryOperators: None
 BreakBeforeConceptDeclarations: Always
 BreakBeforeTernaryOperators: true

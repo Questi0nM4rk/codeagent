@@ -22,8 +22,8 @@ repos:
         # Add --globals vim for Neovim projects
         args: [
           "--std", "luajit",
-          "--max-line-length", "100",
-          "--max-code-line-length", "100",
+          "--max-line-length", "120",
+          "--max-code-line-length", "120",
           "--codes",  # Show error codes for clarity
         ]
         language: system

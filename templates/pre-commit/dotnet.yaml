@@ -27,7 +27,7 @@ repos:
       - id: dotnet-build
         name: "csharp - dotnet build (warnings as errors)"
         entry: dotnet build
-        args: ["--no-restore", "-warnaserror", "-c", "Release"]
+        args: ["--no-restore", "/warnaserror", "-c", "Release"]
         language: system
         types: [c#]
         pass_filenames: false

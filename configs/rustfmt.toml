@@ -26,7 +26,6 @@ struct_lit_single_line = true
 
 # Function signatures
 fn_params_layout = "Tall"
-fn_args_layout = "Tall"
 
 # Comments
 comment_width = 80

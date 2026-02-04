@@ -8,17 +8,18 @@
 
 repos:
   # Bandit - Security linter (runs first per policy)
+  # Note: pre-commit passes filenames by default, so no -r flag needed
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.0
     hooks:
       - id: bandit
         name: "python - bandit security scan"
-        args: ["-ll", "-ii", "-r"]
+        args: ["-ll", "-ii"]
         exclude: ^tests/
 
   # Ruff - Lint with ALL rules enabled
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.15.0
     hooks:
       - id: ruff
         name: "python - ruff lint (pedantic)"
