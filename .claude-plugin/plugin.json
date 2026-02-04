@@ -29,12 +29,61 @@
       "file": "commands/review.md"
     }
   ],
+  "skills_dir": "skills",
+  "commands_dir": "commands",
+  "agents_dir": "agents",
   "skills": {
-    "directory": "skills",
-    "subdirectories": ["languages", "methodologies", "workflow"]
+    "researcher": {
+      "description": "Memory-first context gathering before implementation",
+      "activation": ["need context", "gather information", "research"]
+    },
+    "architect": {
+      "description": "Solution design with Tree-of-Thought exploration",
+      "activation": ["design", "architecture", "how should we"]
+    },
+    "orchestrator": {
+      "description": "Parallel execution analysis",
+      "activation": ["parallel", "concurrent", "isolation"]
+    },
+    "implementer": {
+      "description": "TDD implementation with test-first workflow",
+      "activation": ["implement", "code", "write", "build"]
+    },
+    "reviewer": {
+      "description": "External validation specialist",
+      "activation": ["review", "validate", "check"]
+    },
+    "learner": {
+      "description": "Pattern extraction after successful implementations",
+      "activation": ["extract patterns", "what did we learn"]
+    }
   },
   "agents": {
-    "directory": "agents"
+    "researcher": {
+      "model": "opus",
+      "skills": ["researcher"]
+    },
+    "architect": {
+      "model": "opus",
+      "thinking": "ultrathink",
+      "skills": ["architect", "spec-driven"]
+    },
+    "orchestrator": {
+      "model": "opus",
+      "skills": ["orchestrator"]
+    },
+    "implementer": {
+      "model": "opus",
+      "skills": ["implementer", "tdd"]
+    },
+    "reviewer": {
+      "model": "opus",
+      "skills": ["reviewer"]
+    },
+    "learner": {
+      "model": "sonnet",
+      "skills": ["learner"]
+    }
   },
   "mcp": {
     "name": "codeagent",
