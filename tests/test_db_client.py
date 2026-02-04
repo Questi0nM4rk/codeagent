@@ -66,9 +66,7 @@ class TestSurrealDBClient:
             mock_surreal.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_context_manager_connects_and_closes(
-        self, mock_surreal: MagicMock
-    ) -> None:
+    async def test_context_manager_connects_and_closes(self, mock_surreal: MagicMock) -> None:
         """Test that async context manager properly manages connection lifecycle."""
         from codeagent.mcp.db.client import SurrealDBClient
 
@@ -185,9 +183,7 @@ class TestSurrealDBClient:
             client = SurrealDBClient()
             await client.connect()
 
-            mock_surreal.signin.assert_called_once_with(
-                {"username": "root", "password": "root"}
-            )
+            mock_surreal.signin.assert_called_once_with({"username": "root", "password": "root"})
 
     @pytest.mark.asyncio
     async def test_custom_credentials(self, mock_surreal: MagicMock) -> None:
@@ -195,12 +191,10 @@ class TestSurrealDBClient:
         from codeagent.mcp.db.client import SurrealDBClient
 
         with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
-            client = SurrealDBClient(username="admin", password="secret")
+            client = SurrealDBClient(username="admin", password="secret")  # noqa: S106 - Test credential
             await client.connect()
 
-            mock_surreal.signin.assert_called_once_with(
-                {"username": "admin", "password": "secret"}
-            )
+            mock_surreal.signin.assert_called_once_with({"username": "admin", "password": "secret"})
 
     @pytest.mark.asyncio
     async def test_default_namespace_and_database(self, mock_surreal: MagicMock) -> None:
