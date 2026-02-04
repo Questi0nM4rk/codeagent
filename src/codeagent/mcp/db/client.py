@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
+from types import TracebackType
 from typing import Any
 
 from surrealdb import Surreal
@@ -47,10 +49,15 @@ class SurrealDBClient:
         """Establish connection to SurrealDB.
 
         Connects to the server, authenticates, and selects namespace/database.
+        Cleans up connection on authentication or namespace selection failure.
         """
         await self._client.connect(self._url)
-        await self._client.signin({"username": self._username, "password": self._password})
-        await self._client.use(self._namespace, self._database)
+        try:
+            await self._client.signin({"username": self._username, "password": self._password})
+            await self._client.use(self._namespace, self._database)
+        except Exception:
+            await self._client.close()
+            raise
 
     async def close(self) -> None:
         """Close the connection to SurrealDB."""
@@ -65,7 +72,7 @@ class SurrealDBClient:
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
-        exc_tb: Any,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Async context manager exit."""
         await self.close()
@@ -79,7 +86,8 @@ class SurrealDBClient:
         Returns:
             List of query results from schema execution
         """
-        schema_content = schema_path.read_text()
+        loop = asyncio.get_running_loop()
+        schema_content = await loop.run_in_executor(None, schema_path.read_text)
         return await self._client.query(schema_content)
 
     async def create(self, table: str, data: dict[str, Any]) -> list[dict[str, Any]]:

@@ -74,7 +74,7 @@ DEFINE FIELD tags ON episode TYPE array<string>
 
 DEFINE FIELD model_used ON episode TYPE option<string>;
 
-DEFINE FIELD backlog_task_id ON episode TYPE option<string>;
+DEFINE FIELD backlog_task_id ON episode TYPE option<record<backlog>>;
 
 DEFINE FIELD effectiveness_score ON episode TYPE option<float>;
 
@@ -126,7 +126,7 @@ DEFINE FIELD project ON chunk TYPE string
     ASSERT $value != NONE AND $value != "";
 
 DEFINE FIELD hash ON chunk TYPE string
-    DEFAULT "";
+    ASSERT $value != NONE AND $value != "";
 
 DEFINE FIELD created_at ON chunk TYPE datetime
     DEFAULT time::now();

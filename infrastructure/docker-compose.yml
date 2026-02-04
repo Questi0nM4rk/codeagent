@@ -4,9 +4,9 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v2.1
     container_name: codeagent-surrealdb
-    command: start --user root --pass root file:/data/codeagent.db
+    command: start --user ${SURREAL_USER:-root} --pass ${SURREAL_PASS:-root} file:/data/codeagent.db
     ports:
-      - "8000:8000"  # HTTP/WebSocket API
+      - "127.0.0.1:8000:8000"  # HTTP/WebSocket API (localhost only)
     volumes:
       - ${HOME}/.codeagent/data/surrealdb:/data
     healthcheck:

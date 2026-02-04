@@ -93,9 +93,10 @@ class TestSurrealDBClient:
         with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
-            await client.initialize_schema(schema_file)
+            result = await client.initialize_schema(schema_file)
 
-            mock_surreal.query.assert_called()
+            mock_surreal.query.assert_called_once_with(schema_content)
+            assert result == [{}]
 
     @pytest.mark.asyncio
     async def test_create_inserts_record(self, mock_surreal: MagicMock) -> None:
@@ -217,3 +218,34 @@ class TestSurrealDBClient:
             await client.connect()
 
             mock_surreal.use.assert_called_once_with("custom_ns", "custom_db")
+
+    @pytest.mark.asyncio
+    async def test_connect_closes_on_signin_failure(self, mock_surreal: MagicMock) -> None:
+        """Test that connect() closes connection if signin fails."""
+        from codeagent.mcp.db.client import SurrealDBClient
+
+        mock_surreal.signin = AsyncMock(side_effect=Exception("Auth failed"))
+
+        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+            client = SurrealDBClient()
+            with pytest.raises(Exception, match="Auth failed"):
+                await client.connect()
+
+            mock_surreal.connect.assert_called_once()
+            mock_surreal.close.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_connect_closes_on_use_failure(self, mock_surreal: MagicMock) -> None:
+        """Test that connect() closes connection if namespace selection fails."""
+        from codeagent.mcp.db.client import SurrealDBClient
+
+        mock_surreal.use = AsyncMock(side_effect=Exception("NS not found"))
+
+        with patch("codeagent.mcp.db.client.Surreal", return_value=mock_surreal):
+            client = SurrealDBClient()
+            with pytest.raises(Exception, match="NS not found"):
+                await client.connect()
+
+            mock_surreal.connect.assert_called_once()
+            mock_surreal.signin.assert_called_once()
+            mock_surreal.close.assert_called_once()
