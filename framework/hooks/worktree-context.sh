@@ -9,6 +9,12 @@
 
 set -euo pipefail
 
+# Check for required tools - exit gracefully if missing (don't break the hook system)
+if ! command -v jq &>/dev/null; then
+  # jq not installed, skip context output silently
+  exit 0
+fi
+
 # Get git root (worktree root)
 WORKTREE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 CONTEXT_FILE="$WORKTREE_ROOT/.worktree-context.json"
@@ -18,16 +24,16 @@ if [[ ! -f "$CONTEXT_FILE" ]]; then
   exit 0
 fi
 
-# Parse context file
-BRANCH=$(jq -r '.branch // "unknown"' "$CONTEXT_FILE")
-PR_NUM=$(jq -r '.pr_number // empty' "$CONTEXT_FILE")
-PR_TITLE=$(jq -r '.pr_title // empty' "$CONTEXT_FILE")
-DESCRIPTION=$(jq -r '.description // empty' "$CONTEXT_FILE")
-TASK_ID=$(jq -r '.task_id // empty' "$CONTEXT_FILE")
+# Parse context file with error handling
+BRANCH=$(jq -r '.branch // "unknown"' "$CONTEXT_FILE" 2>/dev/null) || BRANCH="unknown"
+PR_NUM=$(jq -r '.pr_number // empty' "$CONTEXT_FILE" 2>/dev/null) || PR_NUM=""
+PR_TITLE=$(jq -r '.pr_title // empty' "$CONTEXT_FILE" 2>/dev/null) || PR_TITLE=""
+DESCRIPTION=$(jq -r '.description // empty' "$CONTEXT_FILE" 2>/dev/null) || DESCRIPTION=""
+TASK_ID=$(jq -r '.task_id // empty' "$CONTEXT_FILE" 2>/dev/null) || TASK_ID=""
 
 # Build output
 echo "<worktree-context>"
-echo "📍 Worktree: $WORKTREE_ROOT"
+echo "Worktree: $WORKTREE_ROOT"
 echo "   Branch: $BRANCH"
 
 if [[ -n "$PR_NUM" ]]; then

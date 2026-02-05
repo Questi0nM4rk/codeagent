@@ -27,7 +27,7 @@ codeagent-wt new feat/my-feature "Implement the new feature"
 codeagent-wt list
 
 # After creating a PR, update the context
-codeagent-wt update-context
+codeagent-wt update
 
 # Switch between worktrees
 wt switch feat/my-feature
@@ -103,7 +103,7 @@ codeagent-wt new feat/epic6-consolidate "Consolidate MCPs into unified package"
 gh pr create --title "feat: consolidate MCPs" --body "..."
 
 # 4. Update context with PR info
-codeagent-wt update-context
+codeagent-wt update
 
 # 5. After PR is merged, cleanup
 wt merge main  # or wt remove if merged via GitHub

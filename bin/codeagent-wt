@@ -30,30 +30,55 @@ check_wt() {
   fi
 }
 
-# Create worktree context file
+# Check if jq is installed
+check_jq() {
+  if ! command -v jq &>/dev/null; then
+    echo -e "${RED}Error: jq not found${NC}" >&2
+    echo "Install: pacman -S jq (Arch) or apt install jq (Debian)" >&2
+    exit 1
+  fi
+}
+
+# Check if gh is installed
+check_gh() {
+  if ! command -v gh &>/dev/null; then
+    echo -e "${RED}Error: gh (GitHub CLI) not found${NC}" >&2
+    echo "Install: pacman -S github-cli (Arch) or apt install gh (Debian)" >&2
+    exit 1
+  fi
+}
+
+# Create worktree context file using jq for proper JSON escaping
 create_context() {
   local worktree_path="$1"
   local branch="$2"
   local description="${3:-}"
 
   local context_file="$worktree_path/.worktree-context.json"
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-  cat >"$context_file" <<EOF
-{
-  "branch": "$branch",
-  "pr_number": null,
-  "pr_title": null,
-  "description": "$description",
-  "task_id": null,
-  "created": "$(date -Iseconds)"
-}
-EOF
+  jq -n \
+    --arg branch "$branch" \
+    --arg desc "$description" \
+    --arg ts "$timestamp" \
+    '{
+      branch: $branch,
+      pr_number: null,
+      pr_title: null,
+      description: $desc,
+      task_id: null,
+      created: $ts
+    }' >"$context_file"
 
   echo -e "${GREEN}✓${NC} Created context: $context_file"
 }
 
 # Update context with PR info
 update_context() {
+  check_jq
+  check_gh
+
   local context_file
   context_file="$(git rev-parse --show-toplevel 2>/dev/null)/.worktree-context.json"
 
@@ -85,6 +110,8 @@ update_context() {
 
 # Show current worktree context
 show_context() {
+  check_jq
+
   local worktree_root
   worktree_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
     echo -e "${RED}✗${NC} Not in a git repository"
@@ -115,6 +142,8 @@ show_context() {
 
 # List worktrees with context
 list_worktrees() {
+  check_jq
+
   echo -e "${BLUE}Worktrees:${NC}"
   echo ""
 
@@ -145,6 +174,21 @@ list_worktrees() {
   done
 }
 
+# Find worktree path for a branch from git worktree list --porcelain
+find_worktree_path() {
+  local target_branch="$1"
+  local worktree_path=""
+
+  git worktree list --porcelain | while IFS= read -r line; do
+    if [[ "$line" == worktree\ * ]]; then
+      worktree_path="${line#worktree }"
+    elif [[ "$line" == "branch refs/heads/$target_branch" ]]; then
+      echo "$worktree_path"
+      return 0
+    fi
+  done
+}
+
 # Create new worktree with context
 cmd_new() {
   local branch="${1:-}"
@@ -156,14 +200,21 @@ cmd_new() {
   fi
 
   check_wt
+  check_jq
 
   # Create worktree using wt
   echo -e "${BLUE}Creating worktree for: $branch${NC}"
   wt switch --create "$branch"
 
-  # Get the new worktree path and create context
+  # Find the worktree path from git worktree list
   local worktree_path
-  worktree_path=$(git rev-parse --show-toplevel)
+  worktree_path=$(find_worktree_path "$branch")
+
+  if [[ -z "$worktree_path" ]]; then
+    # Fallback to git rev-parse if the above fails
+    worktree_path=$(git rev-parse --show-toplevel)
+  fi
+
   create_context "$worktree_path" "$branch" "$description"
 }
 
