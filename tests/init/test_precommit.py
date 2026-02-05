@@ -174,5 +174,7 @@ class TestWriteConfig:
         write_config(config, output_path)
 
         content = output_path.read_text()
-        # Block style uses | indicator
-        assert "|" in content or "line1" in content
+        # Block style uses | indicator and preserves multiline content
+        assert "entry: |" in content, "Multiline strings should use block style (|)"
+        assert "echo 'line1'" in content, "First line of multiline content should be preserved"
+        assert "echo 'line2'" in content, "Second line of multiline content should be preserved"
