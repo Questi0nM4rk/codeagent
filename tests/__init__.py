@@ -1,3 +1,1 @@
-"""CodeAgent tests."""
-
-from __future__ import annotations
+"""CodeAgent test suite."""
