@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class TestSurrealDBClient:
     """Tests for the SurrealDB client wrapper."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_surreal(self) -> MagicMock:
         """Create a mock Surreal client."""
         mock = MagicMock()
@@ -29,8 +29,10 @@ class TestSurrealDBClient:
         mock.delete = AsyncMock()
         return mock
 
-    @pytest.mark.asyncio
-    async def test_connect_establishes_connection(self, mock_surreal: MagicMock) -> None:
+    @pytest.mark.asyncio()
+    async def test_connect_establishes_connection(
+        self, mock_surreal: MagicMock
+    ) -> None:
         """Test that connect() establishes a connection to SurrealDB."""
         from codeagent.mcp.db.client import SurrealDBClient
 
@@ -42,7 +44,7 @@ class TestSurrealDBClient:
             mock_surreal.signin.assert_called_once()
             mock_surreal.use.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_connect_uses_custom_url(self, mock_surreal: MagicMock) -> None:
         """Test that connect() uses custom URL when provided."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -53,7 +55,7 @@ class TestSurrealDBClient:
 
             mock_surreal.connect.assert_called_once_with("ws://custom:8080")
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_close_closes_connection(self, mock_surreal: MagicMock) -> None:
         """Test that close() properly closes the connection."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -65,8 +67,10 @@ class TestSurrealDBClient:
 
             mock_surreal.close.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_context_manager_connects_and_closes(self, mock_surreal: MagicMock) -> None:
+    @pytest.mark.asyncio()
+    async def test_context_manager_connects_and_closes(
+        self, mock_surreal: MagicMock
+    ) -> None:
         """Test that async context manager properly manages connection lifecycle."""
         from codeagent.mcp.db.client import SurrealDBClient
 
@@ -77,7 +81,7 @@ class TestSurrealDBClient:
 
             mock_surreal.close.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_initialize_schema_runs_schema_file(
         self, mock_surreal: MagicMock, tmp_path: Path
     ) -> None:
@@ -98,7 +102,7 @@ class TestSurrealDBClient:
             mock_surreal.query.assert_called_once_with(schema_content)
             assert result == [{}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_inserts_record(self, mock_surreal: MagicMock) -> None:
         """Test that create() inserts a new record."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -113,7 +117,7 @@ class TestSurrealDBClient:
             mock_surreal.create.assert_called_once_with("test", {"name": "test"})
             assert result == [{"id": "test:1", "name": "test"}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_select_retrieves_records(self, mock_surreal: MagicMock) -> None:
         """Test that select() retrieves records by table or ID."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -128,12 +132,14 @@ class TestSurrealDBClient:
             mock_surreal.select.assert_called_once_with("test")
             assert result == [{"id": "test:1"}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_update_modifies_record(self, mock_surreal: MagicMock) -> None:
         """Test that update() modifies an existing record."""
         from codeagent.mcp.db.client import SurrealDBClient
 
-        mock_surreal.update = AsyncMock(return_value=[{"id": "test:1", "name": "updated"}])
+        mock_surreal.update = AsyncMock(
+            return_value=[{"id": "test:1", "name": "updated"}]
+        )
 
         with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
@@ -143,7 +149,7 @@ class TestSurrealDBClient:
             mock_surreal.update.assert_called_once_with("test:1", {"name": "updated"})
             assert result == [{"id": "test:1", "name": "updated"}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_delete_removes_record(self, mock_surreal: MagicMock) -> None:
         """Test that delete() removes a record."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -158,7 +164,7 @@ class TestSurrealDBClient:
             mock_surreal.delete.assert_called_once_with("test:1")
             assert result == [{"id": "test:1"}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_query_executes_raw_surql(self, mock_surreal: MagicMock) -> None:
         """Test that query() executes raw SurQL and returns results."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -168,14 +174,17 @@ class TestSurrealDBClient:
         with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
             client = SurrealDBClient()
             await client.connect()
-            result = await client.query("SELECT * FROM test WHERE id = $id", {"id": "test:1"})
+            result = await client.query(
+                "SELECT * FROM test WHERE id = $id",
+                {"id": "test:1"},
+            )
 
             mock_surreal.query.assert_called_once_with(
                 "SELECT * FROM test WHERE id = $id", {"id": "test:1"}
             )
             assert result == [{"result": [{"id": "test:1"}]}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_default_credentials(self, mock_surreal: MagicMock) -> None:
         """Test that default credentials are used for signin."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -184,21 +193,30 @@ class TestSurrealDBClient:
             client = SurrealDBClient()
             await client.connect()
 
-            mock_surreal.signin.assert_called_once_with({"username": "root", "password": "root"})
+            mock_surreal.signin.assert_called_once_with(
+                {"username": "root", "password": "root"}
+            )
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_custom_credentials(self, mock_surreal: MagicMock) -> None:
         """Test that custom credentials can be provided."""
         from codeagent.mcp.db.client import SurrealDBClient
 
         with patch("codeagent.mcp.db.client.AsyncSurreal", return_value=mock_surreal):
-            client = SurrealDBClient(username="admin", password="secret")  # noqa: S106 - Test credential
+            client = SurrealDBClient(
+                username="admin",
+                password="secret",  # noqa: S106
+            )
             await client.connect()
 
-            mock_surreal.signin.assert_called_once_with({"username": "admin", "password": "secret"})
+            mock_surreal.signin.assert_called_once_with(
+                {"username": "admin", "password": "secret"}
+            )
 
-    @pytest.mark.asyncio
-    async def test_default_namespace_and_database(self, mock_surreal: MagicMock) -> None:
+    @pytest.mark.asyncio()
+    async def test_default_namespace_and_database(
+        self, mock_surreal: MagicMock
+    ) -> None:
         """Test that default namespace and database are used."""
         from codeagent.mcp.db.client import SurrealDBClient
 
@@ -208,7 +226,7 @@ class TestSurrealDBClient:
 
             mock_surreal.use.assert_called_once_with("codeagent", "codeagent")
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_custom_namespace_and_database(self, mock_surreal: MagicMock) -> None:
         """Test that custom namespace and database can be provided."""
         from codeagent.mcp.db.client import SurrealDBClient
@@ -219,8 +237,10 @@ class TestSurrealDBClient:
 
             mock_surreal.use.assert_called_once_with("custom_ns", "custom_db")
 
-    @pytest.mark.asyncio
-    async def test_connect_closes_on_signin_failure(self, mock_surreal: MagicMock) -> None:
+    @pytest.mark.asyncio()
+    async def test_connect_closes_on_signin_failure(
+        self, mock_surreal: MagicMock
+    ) -> None:
         """Test that connect() closes connection if signin fails."""
         from codeagent.mcp.db.client import SurrealDBClient
 
@@ -234,7 +254,7 @@ class TestSurrealDBClient:
             mock_surreal.connect.assert_called_once()
             mock_surreal.close.assert_called_once()
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_connect_closes_on_use_failure(self, mock_surreal: MagicMock) -> None:
         """Test that connect() closes connection if namespace selection fails."""
         from codeagent.mcp.db.client import SurrealDBClient

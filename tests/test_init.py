@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from codeagent.init.detector import LanguageRegistry
 
 from codeagent.init.detector import detect_languages, load_registry
 
 
-@pytest.fixture
-def sample_registry(tmp_path: Path) -> dict:
+@pytest.fixture()
+def sample_registry(tmp_path: Path) -> LanguageRegistry:
     """Create a sample registry for testing."""
     registry_content = """
 python:
@@ -59,14 +64,20 @@ def test_load_registry_invalid(tmp_path: Path) -> None:
         load_registry(registry_path)
 
 
-def test_detect_python_by_file(tmp_path: Path, sample_registry: dict) -> None:
+def test_detect_python_by_file(
+    tmp_path: Path,
+    sample_registry: LanguageRegistry,
+) -> None:
     """Test detecting Python via pyproject.toml."""
     (tmp_path / "pyproject.toml").touch()
     detected = detect_languages(tmp_path, sample_registry)
     assert "python" in detected
 
 
-def test_detect_python_by_pattern(tmp_path: Path, sample_registry: dict) -> None:
+def test_detect_python_by_pattern(
+    tmp_path: Path,
+    sample_registry: LanguageRegistry,
+) -> None:
     """Test detecting Python via .py files."""
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "main.py").touch()
@@ -74,14 +85,14 @@ def test_detect_python_by_pattern(tmp_path: Path, sample_registry: dict) -> None
     assert "python" in detected
 
 
-def test_detect_rust(tmp_path: Path, sample_registry: dict) -> None:
+def test_detect_rust(tmp_path: Path, sample_registry: LanguageRegistry) -> None:
     """Test detecting Rust via Cargo.toml."""
     (tmp_path / "Cargo.toml").touch()
     detected = detect_languages(tmp_path, sample_registry)
     assert "rust" in detected
 
 
-def test_detect_multiple(tmp_path: Path, sample_registry: dict) -> None:
+def test_detect_multiple(tmp_path: Path, sample_registry: LanguageRegistry) -> None:
     """Test detecting multiple languages."""
     (tmp_path / "pyproject.toml").touch()
     (tmp_path / "Cargo.toml").touch()
@@ -90,7 +101,7 @@ def test_detect_multiple(tmp_path: Path, sample_registry: dict) -> None:
     assert "rust" in detected
 
 
-def test_detect_none(tmp_path: Path, sample_registry: dict) -> None:
+def test_detect_none(tmp_path: Path, sample_registry: LanguageRegistry) -> None:
     """Test detecting no languages in empty directory."""
     detected = detect_languages(tmp_path, sample_registry)
     assert detected == []

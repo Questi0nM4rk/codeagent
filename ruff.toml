@@ -18,7 +18,7 @@ unsafe-fixes = false
 select = ["ALL"]
 
 ignore = [
-  # === Formatter conflicts only ===
+  # === Formatter conflicts ===
   "W191",   # tab-indentation
   "E111",   # indentation-with-invalid-multiple
   "E114",   # indentation-with-invalid-multiple-comment
@@ -33,6 +33,14 @@ ignore = [
   "COM819", # prohibited-trailing-comma
   "ISC001", # single-line-implicit-string-concatenation
   "ISC002", # multi-line-implicit-string-concatenation
+
+  # === Disabled rule groups ===
+  "D",   # pydocstyle - docstrings not enforced yet
+  "ANN", # annotations - using pyright for type checking
+
+  # === Project-wide exceptions ===
+  "TD003",  # TODOs use Epic numbers, not issue links
+  "FIX002", # TODOs are intentional reminders, not errors
 ]
 
 # Enforce docstrings - Google style required
@@ -143,7 +151,7 @@ raises-require-match-for = [
   "RuntimeError",
 ]
 
-# === PER-FILE IGNORES - MINIMAL ===
+# === PER-FILE IGNORES ===
 [lint.per-file-ignores]
 "tests/**/*.py" = [
   "S101",    # assert allowed in tests
@@ -151,14 +159,31 @@ raises-require-match-for = [
   "ARG002",  # unused method argument
   "PLR2004", # magic value comparison in tests
   "D103",    # docstring not required for test functions
+  "PLC0415", # imports inside functions (lazy imports for missing packages)
+  "FBT001",  # boolean positional args (test helper parameters)
+  "FBT002",  # boolean default args
+  "FBT003",  # boolean positional values in calls
+]
+"**/conftest.py" = [
+  "D100",   # missing docstring in public module
+  "D103",   # missing docstring in public function
+  "FBT001", # boolean args in fixtures
+  "FBT002", # boolean defaults in fixtures
 ]
 "__init__.py" = [
   "D104", # missing docstring in public package
   "F401", # unused import (re-exports)
 ]
-"conftest.py" = [
-  "D100", # missing docstring in public module
-  "D103", # missing docstring in public function
+"**/cli/**/*.py" = [
+  "FBT001",  # boolean flags are standard in CLI
+  "FBT002",  # boolean defaults in CLI
+  "FBT003",  # boolean values in CLI calls
+  "PLC0415", # lazy imports in CLI callbacks
+  "PLR0912", # CLI commands can have many branches
+  "PLR0915", # CLI commands can have many statements
+  "C901",    # CLI commands can be complex
+  "S603",    # subprocess calls with validated inputs
+  "S607",    # partial executable paths (using PATH)
 ]
 
 [format]

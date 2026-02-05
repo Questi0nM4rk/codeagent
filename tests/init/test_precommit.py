@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import yaml
@@ -15,6 +15,8 @@ from codeagent.init.precommit import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from codeagent.init.detector import LanguageRegistry
 
 
 class TestLoadTemplate:
@@ -49,7 +51,7 @@ class TestLoadTemplate:
 class TestAssembleConfig:
     """Tests for assemble_config function."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def templates_dir(self, tmp_path: Path) -> Path:
         """Create templates directory with base and language templates."""
         templates = tmp_path / "templates"
@@ -75,12 +77,14 @@ class TestAssembleConfig:
 
         # Rust template
         (templates / "rust.yaml").write_text(
-            "repos:\n" "  - repo: local\n" "    hooks:\n" "      - id: cargo-fmt\n"
+            "repos:\n  - repo: local\n    hooks:\n      - id: cargo-fmt\n"
         )
 
         return templates
 
-    def test_assemble_base_only(self, templates_dir: Path, sample_registry: dict) -> None:
+    def test_assemble_base_only(
+        self, templates_dir: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test assembling config with no languages uses base only."""
         result = assemble_config([], sample_registry, templates_dir)
 
@@ -88,7 +92,9 @@ class TestAssembleConfig:
         assert len(result["repos"]) == 1
         assert "pre-commit-hooks" in result["repos"][0]["repo"]
 
-    def test_assemble_with_python(self, templates_dir: Path, sample_registry: dict) -> None:
+    def test_assemble_with_python(
+        self, templates_dir: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test assembling config includes Python template."""
         result = assemble_config(["python"], sample_registry, templates_dir)
 
@@ -96,14 +102,19 @@ class TestAssembleConfig:
         repos = [r["repo"] for r in result["repos"]]
         assert any("ruff" in r for r in repos)
 
-    def test_assemble_multiple_languages(self, templates_dir: Path, sample_registry: dict) -> None:
+    def test_assemble_multiple_languages(
+        self, templates_dir: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test assembling config with multiple languages."""
         result = assemble_config(["python", "rust"], sample_registry, templates_dir)
 
         assert len(result["repos"]) == 3
 
     def test_assemble_missing_template_warns(
-        self, templates_dir: Path, sample_registry: dict, capsys: pytest.CaptureFixture
+        self,
+        templates_dir: Path,
+        sample_registry: LanguageRegistry,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         """Test missing language template prints warning but continues."""
         # node template doesn't exist
@@ -132,7 +143,7 @@ class TestWriteConfig:
     def test_write_config_has_header(self, tmp_path: Path) -> None:
         """Test written config has CodeAgent header."""
         output_path = tmp_path / ".pre-commit-config.yaml"
-        config = {"repos": []}
+        config: dict[str, Any] = {"repos": []}
 
         write_config(config, output_path)
 
@@ -149,14 +160,16 @@ class TestWriteConfig:
 
         # Should be parseable YAML (skip header lines starting with #)
         content = output_path.read_text()
-        yaml_content = "\n".join(line for line in content.split("\n") if not line.startswith("#"))
+        yaml_content = "\n".join(
+            line for line in content.split("\n") if not line.startswith("#")
+        )
         parsed = yaml.safe_load(yaml_content)
         assert parsed["repos"][0]["repo"] == "test"
 
     def test_write_config_creates_parent_dirs(self, tmp_path: Path) -> None:
         """Test write_config creates parent directories."""
         output_path = tmp_path / "deep" / "nested" / ".pre-commit-config.yaml"
-        config = {"repos": []}
+        config: dict[str, Any] = {"repos": []}
 
         write_config(config, output_path)
 
@@ -167,7 +180,15 @@ class TestWriteConfig:
         output_path = tmp_path / ".pre-commit-config.yaml"
         config = {
             "repos": [
-                {"repo": "test", "hooks": [{"id": "test", "entry": "echo 'line1'\necho 'line2'"}]}
+                {
+                    "repo": "test",
+                    "hooks": [
+                        {
+                            "id": "test",
+                            "entry": "echo 'line1'\necho 'line2'",
+                        }
+                    ],
+                }
             ]
         }
 
@@ -176,5 +197,9 @@ class TestWriteConfig:
         content = output_path.read_text()
         # Block style uses | indicator and preserves multiline content
         assert "entry: |" in content, "Multiline strings should use block style (|)"
-        assert "echo 'line1'" in content, "First line of multiline content should be preserved"
-        assert "echo 'line2'" in content, "Second line of multiline content should be preserved"
+        assert "echo 'line1'" in content, (
+            "First line of multiline content should be preserved"
+        )
+        assert "echo 'line2'" in content, (
+            "Second line of multiline content should be preserved"
+        )

@@ -12,6 +12,8 @@ from codeagent.init.detector import detect_languages, load_registry
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from codeagent.init.detector import LanguageRegistry
+
 
 class TestLoadRegistry:
     """Tests for load_registry function."""
@@ -54,26 +56,32 @@ class TestLoadRegistry:
 class TestDetectLanguages:
     """Tests for detect_languages function."""
 
-    def test_detect_python_by_file(self, python_project: Path, sample_registry: dict) -> None:
+    def test_detect_python_by_file(
+        self, python_project: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test detecting Python by pyproject.toml presence."""
         result = detect_languages(python_project, sample_registry)
 
         assert "python" in result
 
-    def test_detect_rust_by_file(self, rust_project: Path, sample_registry: dict) -> None:
+    def test_detect_rust_by_file(
+        self, rust_project: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test detecting Rust by Cargo.toml presence."""
         result = detect_languages(rust_project, sample_registry)
 
         assert "rust" in result
 
-    def test_detect_node_by_file(self, node_project: Path, sample_registry: dict) -> None:
+    def test_detect_node_by_file(
+        self, node_project: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test detecting Node.js by package.json presence."""
         result = detect_languages(node_project, sample_registry)
 
         assert "node" in result
 
     def test_detect_shell_by_pattern(
-        self, multi_language_project: Path, sample_registry: dict
+        self, multi_language_project: Path, sample_registry: LanguageRegistry
     ) -> None:
         """Test detecting shell scripts by *.sh pattern."""
         result = detect_languages(multi_language_project, sample_registry)
@@ -81,7 +89,7 @@ class TestDetectLanguages:
         assert "shell" in result
 
     def test_detect_multiple_languages(
-        self, multi_language_project: Path, sample_registry: dict
+        self, multi_language_project: Path, sample_registry: LanguageRegistry
     ) -> None:
         """Test detecting multiple languages in one project."""
         result = detect_languages(multi_language_project, sample_registry)
@@ -90,13 +98,17 @@ class TestDetectLanguages:
         assert "rust" in result
         assert "shell" in result
 
-    def test_detect_no_languages(self, temp_project: Path, sample_registry: dict) -> None:
+    def test_detect_no_languages(
+        self, temp_project: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test empty project returns empty list."""
         result = detect_languages(temp_project, sample_registry)
 
         assert result == []
 
-    def test_detect_by_nested_pattern(self, tmp_path: Path, sample_registry: dict) -> None:
+    def test_detect_by_nested_pattern(
+        self, tmp_path: Path, sample_registry: LanguageRegistry
+    ) -> None:
         """Test detecting by recursive file pattern."""
         project = tmp_path / "nested"
         project.mkdir()
@@ -112,7 +124,9 @@ class TestDetectLanguages:
         project = tmp_path / "dir-project"
         project.mkdir()
         (project / "vendor").mkdir()
-        registry = {"vendorlang": {"detect": {"directories": ["vendor"]}}}
+        registry: LanguageRegistry = {
+            "vendorlang": {"detect": {"directories": ["vendor"]}},
+        }
 
         result = detect_languages(project, registry)
 
@@ -123,7 +137,9 @@ class TestDetectLanguages:
         project = tmp_path / "file-project"
         project.mkdir()
         (project / "vendor").write_text("not a directory")  # File, not dir
-        registry = {"vendorlang": {"detect": {"directories": ["vendor"]}}}
+        registry: LanguageRegistry = {
+            "vendorlang": {"detect": {"directories": ["vendor"]}},
+        }
 
         result = detect_languages(project, registry)
 
