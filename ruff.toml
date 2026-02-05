@@ -36,14 +36,14 @@ ignore = [
 
   # === Disabled rule groups ===
   "D",   # pydocstyle - docstrings not enforced yet
-  "ANN", # annotations - using pyright for type checking
+  "ANN", # annotations - using mypy --strict for type checking
 
   # === Project-wide exceptions ===
   "TD003",  # TODOs use Epic numbers, not issue links
   "FIX002", # TODOs are intentional reminders, not errors
 ]
 
-# Enforce docstrings - Google style required
+# Docstring style (applies when D rules are re-enabled)
 [lint.pydocstyle]
 convention = "google"
 
@@ -64,7 +64,7 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 [lint.isort]
 force-single-line = false
 force-sort-within-sections = true
-known-first-party = []
+known-first-party = ["codeagent"]
 combine-as-imports = true
 split-on-trailing-comma = true
 force-to-top = ["__future__"]
@@ -158,20 +158,16 @@ raises-require-match-for = [
   "ARG001",  # unused function argument (fixtures)
   "ARG002",  # unused method argument
   "PLR2004", # magic value comparison in tests
-  "D103",    # docstring not required for test functions
   "PLC0415", # imports inside functions (lazy imports for missing packages)
   "FBT001",  # boolean positional args (test helper parameters)
   "FBT002",  # boolean default args
   "FBT003",  # boolean positional values in calls
 ]
 "**/conftest.py" = [
-  "D100",   # missing docstring in public module
-  "D103",   # missing docstring in public function
   "FBT001", # boolean args in fixtures
   "FBT002", # boolean defaults in fixtures
 ]
 "__init__.py" = [
-  "D104", # missing docstring in public package
   "F401", # unused import (re-exports)
 ]
 "**/cli/**/*.py" = [
