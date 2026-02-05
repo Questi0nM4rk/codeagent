@@ -47,13 +47,8 @@ ignore = [
 [lint.pydocstyle]
 convention = "google"
 
-# === TYPE ANNOTATIONS - MANDATORY ===
-[lint.flake8-annotations]
-allow-star-arg-any = false
-ignore-fully-untyped = false
-mypy-init-return = true
-suppress-dummy-args = false
-suppress-none-returning = false
+# Annotation config (applies when ANN rules are re-enabled)
+# [lint.flake8-annotations]
 
 # Strict type checking hints
 [lint.flake8-type-checking]
