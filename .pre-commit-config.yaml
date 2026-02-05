@@ -54,7 +54,15 @@ repos:
       - id: detect-secrets
         name: "🔒 security · detect-secrets - enhanced"
         args: ["--baseline", ".secrets.baseline"]
-        exclude: package-lock\.json|\.secrets\.baseline
+        # Exclude lock files, baseline itself, and documentation with example credentials
+        exclude: >
+          (?x)^(
+            package-lock\.json|
+            \.secrets\.baseline|
+            framework/skills/.*/SKILL\.md|
+            framework/commands/.*\.md|
+            tests/test_.*\.py
+          )$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
