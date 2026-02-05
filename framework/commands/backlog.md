@@ -231,11 +231,7 @@ Cannot proceed without API credentials from payment vendor.
 - Related: TASK-012
 - Root cause: Missing null check in SearchService
 
-**Command:**
-
-```text
-/implement BUG-006
-```
+**Command:** `/implement BUG-006`
 
 ### Alternative
 

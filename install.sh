@@ -829,6 +829,7 @@ main() {
   # Export flags for sub-scripts
   export CODEAGENT_FORCE_REINSTALL="$force_reinstall"
   export CODEAGENT_RESET="$reset_data"
+  export CODEAGENT_LOCAL="$local_install"
 
   print_banner
 

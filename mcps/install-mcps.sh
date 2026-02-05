@@ -11,6 +11,7 @@ INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 FORCE="${CODEAGENT_FORCE:-false}"
 RESET="${CODEAGENT_RESET:-false}" # Delete data volumes (agents, memories)
 NO_DOCKER="${CODEAGENT_NO_DOCKER:-false}"
+LOCAL="${CODEAGENT_LOCAL:-false}" # Install from local paths (editable) instead of GitHub
 REGISTRY_FILE="$INSTALL_DIR/mcps/mcp-registry.json"
 INSTALLERS_DIR="$INSTALL_DIR/mcps/installers"
 
@@ -50,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-docker)
       NO_DOCKER=true
+      shift
+      ;;
+    --local | -l)
+      LOCAL=true
       shift
       ;;
     *)
@@ -143,6 +148,7 @@ run_installer() {
   export CODEAGENT_FORCE="$FORCE"
   export CODEAGENT_RESET="$RESET"
   export CODEAGENT_NO_DOCKER="$NO_DOCKER"
+  export CODEAGENT_LOCAL="$LOCAL"
   export CODEAGENT_REGISTRY="$REGISTRY_FILE"
 
   # Run and capture output
@@ -384,6 +390,12 @@ main() {
 
   if [ "$FORCE" = "true" ]; then
     log_warn "Force mode: reinstalling all CodeAgent MCPs"
+  fi
+
+  if [ "$LOCAL" = "true" ]; then
+    log_warn "Local mode: installing Python MCPs from local paths (editable)"
+  else
+    log_info "Production mode: installing Python MCPs from GitHub"
   fi
 
   # Pre-flight checks

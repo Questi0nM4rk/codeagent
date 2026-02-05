@@ -119,10 +119,11 @@ Query historical performance to determine suggested model for implementation:
 ```python
 # Extract task keywords from research phase
 task_keywords = extract_keywords(task_description)  # e.g., "auth", "database", "api"
+primary_pattern = task_keywords[0] if task_keywords else "general"
 
 # Query reflection for model effectiveness on similar tasks
 effectiveness = mcp__reflection__get_model_effectiveness(
-    task_pattern=task_keywords[0],  # Primary task domain
+    task_pattern=primary_pattern,  # Primary task domain
     feedback_type=None  # Or specific type if known from research
 )
 

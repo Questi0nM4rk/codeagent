@@ -9,7 +9,7 @@ Development methodology using structured specifications as AI prompts. Specs def
 
 ## The Iron Law
 
-```
+```text
 NO IMPLEMENTATION WITHOUT A SPECIFICATION FIRST
 Specifications are the prompt. PRD → Tech Spec → Component Spec → Code.
 ```
@@ -34,7 +34,7 @@ Specifications are the prompt. PRD → Tech Spec → Component Spec → Code.
 
 ## Spec Hierarchy
 
-```
+```text
 BDD Scenarios (Business Behavior)
     ↓
 PRD (What & Why)

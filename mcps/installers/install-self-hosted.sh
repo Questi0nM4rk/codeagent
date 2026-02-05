@@ -57,7 +57,10 @@ pull_images() {
   local service_name="$2"
 
   log_info "Pulling images for $service_name..."
-  docker compose -f "$compose_file" pull --quiet 2>/dev/null || true
+  if ! docker compose -f "$compose_file" pull --quiet 2>/dev/null; then
+    log_error "Failed to pull images for $service_name"
+    return 1
+  fi
 }
 
 # ============================================

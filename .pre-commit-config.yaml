@@ -1,11 +1,20 @@
 # =============================================================================
-# STRICT Pre-Commit Configuration for AI-Driven Development
+# PEDANTIC Pre-Commit Configuration for AI-Driven Development
 # =============================================================================
-# AI Guardrails - Multi-language hooks
-# All checks run in strictest mode. No exceptions. No bypasses.
-# AI agents need guardrails - this is the fence.
+# AI Guardrails - Multi-language strict enforcement
 #
-# Languages: Python, TypeScript, C#/.NET, Shell, Markdown
+# Philosophy: AI agents need hard stops. No warnings, no suggestions.
+# Everything is an error or it's ignored. Black/white only.
+#
+# Requirements enforced:
+# - Type annotations (Python, TypeScript)
+# - Documentation (docstrings, XML comments, JSDoc)
+# - Consistent formatting (via language-specific configs)
+# - Static analysis (strict mode, warnings as errors)
+# - Security scanning (secrets, vulnerabilities, SAST)
+# - Commit message format (conventional commits)
+#
+# Languages: Python, TypeScript/JS, C#/.NET, Rust, C/C++, Lua, Shell
 # Dormant hooks auto-skip if no matching files exist.
 # =============================================================================
 
@@ -13,71 +22,163 @@ fail_fast: true
 default_language_version:
   python: python3.12
   node: "20.11.0"
+  rust: stable
 
 repos:
+  # ===========================================================================
+  # 🔧 FORMAT & STAGE - Auto-fix before checks (skipped in CI)
+  # ===========================================================================
+
+  - repo: local
+    hooks:
+      - id: format-and-stage
+        name: "🔧 format · auto-fix and stage"
+        entry: lib/hooks/format-and-stage.sh
+        language: script
+        always_run: true
+        pass_filenames: false
+
   # ===========================================================================
   # 🔒 SECURITY - CRITICAL (runs first, fails fast)
   # ===========================================================================
 
-  # Detect hardcoded secrets, API keys, passwords
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.21.2
     hooks:
       - id: gitleaks
         name: "🔒 security · gitleaks - detect secrets"
 
-  # Detect private keys
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: "🔒 security · detect-secrets - enhanced"
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: package-lock\.json|\.secrets\.baseline
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: detect-private-key
         name: "🔒 security · detect private keys"
 
+  # Semgrep - SAST security patterns
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.149.0
+    hooks:
+      - id: semgrep
+        name: "🔒 security · semgrep SAST scan"
+        # --jobs 1: avoid io_uring limits locally; CI runs semgrep separately with full parallelism
+        args: ["--config", "auto", "--error", "--jobs", "1"]
+        exclude: ^tests/
+
   # ===========================================================================
-  # 🐍 PYTHON - STRICT MODE (dormant if no Python files)
+  # 📝 COMMIT MESSAGE - CONVENTIONAL COMMITS REQUIRED
   # ===========================================================================
 
-  # Ruff - Fast linter (replaces flake8, isort, pyupgrade, etc.)
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.3.0
+    hooks:
+      - id: conventional-pre-commit
+        name: "📝 commit · conventional commit format"
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert]
+
+  # ===========================================================================
+  # 🔤 SPELLING - TYPO DETECTION
+  # ===========================================================================
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        name: "🔤 spelling · codespell typo check"
+        args: ["--check-filenames"]
+        exclude: ^(poetry\.lock|package-lock\.json|\.secrets\.baseline)$
+
+  # ===========================================================================
+  # 🐍 PYTHON - PEDANTIC (requires types + docstrings)
+  # ===========================================================================
+
+  # Ruff - Lint with ALL rules enabled (uses ruff.toml if present)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.6
     hooks:
       - id: ruff
-        name: "🐍 python · ruff lint (strict)"
-        args: [
-          "--fix",
-          "--exit-non-zero-on-fix",
-          "--select=ALL",
-          "--ignore=D,ANN,COM812,ISC001",
-        ]
+        name: "🐍 python · ruff lint (pedantic)"
+        args: ["--no-fix"]
       - id: ruff-format
         name: "🐍 python · ruff format"
+        args: ["--check"]
 
-  # Bandit - Security linter for Python
+  # Mypy - Static type checking (strict mode)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        name: "🐍 python · mypy type check (strict)"
+        args: [
+          "--strict",
+          "--warn-unreachable",
+          "--warn-redundant-casts",
+          "--warn-unused-ignores",
+          "--no-implicit-reexport",
+          "--disallow-untyped-decorators",
+        ]
+        additional_dependencies: []
+
+  # Bandit - Security linter
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.0
     hooks:
       - id: bandit
         name: "🐍 python · bandit security scan"
-        args: ["-ll", "-ii"]
+        args: ["-ll", "-ii", "-r"]
         exclude: ^tests/
 
+  # Vulture - Dead code detection (static analysis)
+  # Catches unused functions, variables, imports without running code
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: v2.14
+    hooks:
+      - id: vulture
+        name: "🐍 python · vulture dead code"
+        args: ["--min-confidence", "80", "src/", "lib/"]
+        pass_filenames: false
+
+  # pip-audit: Auto-configured by ai-guardrails-init based on detected dependency tool
+  # Or manually enable based on your setup:
+  #
+  # For uv:
+  #   args: ["--strict", "--progress-spinner", "off", "--locked", "."]
+  #
+  # For pip + requirements.txt:
+  #   args: ["--strict", "--progress-spinner", "off", "-r", "requirements.txt"]
+  #
+  # For pip + pyproject.toml:
+  #   args: ["--strict", "--progress-spinner", "off", "--locked", "."]
+  #
+  # See README.md section "CVE Scanning with pip-audit" for details.
+  #
+  # - repo: https://github.com/pypa/pip-audit
+  #   rev: v2.10.0
+  #   hooks:
+  #     - id: pip-audit
+  #       name: "🐍 python · pip-audit CVE scan"
+  #       args: ["--strict", "--progress-spinner", "off"]  # Configure based on tool!
+
   # ===========================================================================
-  # 🟦 TYPESCRIPT/JAVASCRIPT - STRICT MODE (dormant if no TS/JS files)
+  # 🟦 TYPESCRIPT/JAVASCRIPT - PEDANTIC (uses biome.json if present)
   # ===========================================================================
 
-  # Biome - Fast linter + formatter (replaces ESLint + Prettier)
   - repo: https://github.com/biomejs/pre-commit
     rev: "v0.6.1"
     hooks:
       - id: biome-check
-        name: "🟦 typescript · biome lint+format (strict)"
+        name: "🟦 typescript · biome lint+format (pedantic)"
         additional_dependencies: ["@biomejs/biome@1.9.4"]
-        args: [
-          "--error-on-warnings",
-          "--diagnostic-level=info",
-        ]
+        args: ["--error-on-warnings"]
 
-  # TypeScript type checking (local hook)
   - repo: local
     hooks:
       - id: tsc
@@ -88,37 +189,125 @@ repos:
         types: [ts, tsx]
         pass_filenames: false
 
+      - id: npm-audit
+        name: "🟦 typescript · npm audit CVE scan"
+        entry: npm audit
+        args: ["--audit-level=moderate"]
+        language: system
+        files: package\.json$
+        pass_filenames: false
+
   # ===========================================================================
-  # 🟪 C# / .NET - STRICT MODE (dormant if no .cs files)
+  # 🟪 C# / .NET - PEDANTIC (uses .globalconfig + Directory.Build.props)
   # ===========================================================================
 
   - repo: local
     hooks:
-      # dotnet format - Code style enforcement
       - id: dotnet-format
-        name: "🟪 csharp · dotnet format (strict)"
+        name: "🟪 csharp · dotnet format (pedantic)"
         entry: dotnet format
-        args: [
-          "--verify-no-changes",
-          "--verbosity", "normal",
-          "--severity", "info",
-        ]
+        args: ["--verify-no-changes", "--severity", "info"]
         language: system
         types: [c#]
         pass_filenames: false
 
-      # dotnet build - Compilation check (catches errors + warnings as errors)
       - id: dotnet-build
         name: "🟪 csharp · dotnet build (warnings as errors)"
         entry: dotnet build
-        args: [
-          "--no-restore",
-          "-warnaserror",
-          "-c", "Release",
-        ]
+        args: ["--no-restore", "-warnaserror", "-c", "Release"]
         language: system
         types: [c#]
         pass_filenames: false
+
+  # ===========================================================================
+  # 🦀 RUST - PEDANTIC (uses rustfmt.toml + clippy)
+  # ===========================================================================
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: "🦀 rust · cargo fmt check"
+        entry: cargo fmt
+        args: ["--all", "--check"]
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: "🦀 rust · clippy (pedantic)"
+        entry: cargo clippy
+        args: [
+          "--all-targets",
+          "--all-features",
+          "--",
+          "-D", "warnings",
+          "-D", "clippy::pedantic",
+          "-D", "clippy::nursery",
+          "-A", "clippy::module_name_repetitions",
+        ]
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-doc
+        name: "🦀 rust · cargo doc (error on missing docs)"
+        entry: env RUSTDOCFLAGS="-D missing_docs -D rustdoc::broken_intra_doc_links" cargo doc
+        args: ["--no-deps", "--all-features"]
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-audit
+        name: "🦀 rust · cargo audit CVE scan"
+        entry: cargo audit
+        args: ["--deny", "warnings"]
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # ===========================================================================
+  # 🔷 C/C++ - PEDANTIC (uses .clang-format + clang-tidy)
+  # ===========================================================================
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.6
+    hooks:
+      - id: clang-format
+        name: "🔷 cpp · clang-format check"
+        args: ["--dry-run", "--Werror"]
+        types_or: [c, c++, cuda]
+
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: "🔷 cpp · clang-tidy (pedantic)"
+        entry: clang-tidy
+        args: [
+          "--warnings-as-errors=*",
+          "-checks=*,-llvmlibc-*,-fuchsia-*,-altera-*",
+        ]
+        language: system
+        types_or: [c, c++]
+
+  # ===========================================================================
+  # 🌙 LUA - PEDANTIC (uses stylua.toml)
+  # ===========================================================================
+
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: v2.0.2
+    hooks:
+      - id: stylua
+        name: "🌙 lua · stylua format check"
+        args: ["--check"]
+
+  - repo: local
+    hooks:
+      - id: luacheck
+        name: "🌙 lua · luacheck lint"
+        entry: luacheck
+        args: ["--globals", "vim", "--no-unused-args", "--std", "luajit"]
+        language: system
+        types: [lua]
 
   # ===========================================================================
   # 🐚 SHELL - STRICT MODE
@@ -129,9 +318,8 @@ repos:
     hooks:
       - id: shellcheck
         name: "🐚 shell · shellcheck lint"
-        args: ["--severity=warning"]
+        args: ["--severity=info"]
 
-  # Shell formatting
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: v3.10.0-1
     hooks:
@@ -158,9 +346,16 @@ repos:
     hooks:
       - id: check-github-workflows
         name: "🐙 github · validate workflow files"
-        args: ["--verbose"]
       - id: check-github-actions
         name: "🐙 github · validate action files"
+
+  # TOML validation and formatting
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+        name: "📋 toml · taplo format check"
+        args: ["--check"]
 
   # ===========================================================================
   # 🔧 UNIVERSAL QUALITY CHECKS
@@ -210,10 +405,31 @@ repos:
       - id: check-shebang-scripts-are-executable
         name: "🔧 files · shebang scripts executable"
 
+      # Python-specific
+      - id: check-ast
+        name: "🐍 python · check ast syntax"
+      - id: debug-statements
+        name: "🐍 python · no debug statements"
+      - id: name-tests-test
+        name: "🐍 python · test files named test_*"
+        args: [--pytest-test-first]
+
 # =============================================================================
-# CI Note: This config is also used in GitHub Actions
-# Install: pip install pre-commit && pre-commit install
-# Run all: pre-commit run --all-files
+# INSTALLATION
+# =============================================================================
+# pip install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg
 #
-# Dormant hooks (TS, C#, Python) auto-skip if no matching files exist.
+# Also copy the language-specific configs to project root:
+#   - .editorconfig (all languages)
+#   - ruff.toml (Python)
+#   - biome.json (TypeScript/JavaScript)
+#   - .clang-format (C/C++)
+#   - stylua.toml (Lua)
+#   - rustfmt.toml (Rust)
+#   - Directory.Build.props + .globalconfig (C#)
+#
+# For detect-secrets, initialize baseline:
+#   detect-secrets scan > .secrets.baseline
+#
+# Dormant hooks auto-skip if no matching files exist.
 # =============================================================================

@@ -1,7 +1,7 @@
 {
-	"version": "1.0",
+	"version": "1.1",
 	"prefix": "codeagent-",
-	"description": "Registry of CodeAgent-managed MCPs. Force reinstall only affects MCPs listed here.",
+	"description": "Registry of CodeAgent-managed MCPs. All Python MCPs install from GitHub by default. Use --local flag for editable development installs.",
 	"docker": [
 		{
 			"name": "qdrant",
@@ -76,36 +76,76 @@
 			"description": "Zero-context code execution sandbox. Runs Python/CLIs in isolated Docker containers.",
 			"prerequisites": ["docker", "uv"],
 			"docker_image": "python:3.13-slim"
+		},
+		{
+			"name": "notebooklm",
+			"command": "uvx",
+			"args": ["--from", "notebooklm-mcp-cli", "notebooklm-mcp"],
+			"env": {},
+			"required": false,
+			"description": "Google NotebookLM integration with 29 tools for notebook management, audio generation, and research automation. Requires Chrome and Google account setup via 'nlm setup'.",
+			"prerequisites": ["uv", "google-chrome"],
+			"setup_command": "uvx --from notebooklm-mcp-cli nlm setup"
 		}
 	],
 	"python": [
 		{
 			"name": "reflection",
+			"type": "python",
+			"package": "reflection-mcp",
 			"module": "reflection_mcp.server",
-			"install_from": "~/Projects/reflection-mcp",
-			"install_method": "pip install -e",
+			"github": "Questi0nM4rk/reflection-mcp",
+			"branch": "main",
+			"extras": "",
+			"local_path": "~/Projects/reflection-mcp",
 			"required": true,
+			"env": {},
+			"dependencies": [],
 			"description": "Self-reflection and episodic memory for learning from failures"
 		},
 		{
 			"name": "amem",
+			"type": "python",
+			"package": "amem-mcp",
 			"module": "amem_mcp.server",
-			"install_from": "~/Projects/amem-mcp",
-			"install_method": "pip install -e .[full]",
+			"github": "Questi0nM4rk/amem-mcp",
+			"branch": "main",
+			"extras": "full",
+			"local_path": "~/Projects/amem-mcp",
 			"required": true,
+			"env": {},
+			"dependencies": [],
 			"description": "Brain-like memory with automatic linking and evolution (A-MEM)"
 		},
 		{
 			"name": "codebase",
+			"type": "python",
+			"package": "codebase-rag",
 			"module": "codebase_rag.server",
-			"install_from": "~/Projects/codebase-rag",
-			"install_method": "pip install -e",
+			"github": "Questi0nM4rk/codebase-mcp",
+			"branch": "main",
+			"extras": "",
+			"local_path": "~/Projects/codebase-mcp",
 			"required": false,
-			"description": "Codebase indexing with Merkle tree, Tree-sitter, and Qdrant hybrid search",
 			"env": {
-				"QDRANT_HOST": "localhost",
-				"QDRANT_PORT": "6333"
-			}
+				"OPENAI_API_KEY": "${OPENAI_API_KEY}"
+			},
+			"dependencies": [],
+			"description": "Codebase indexing with Tree-sitter parsing and libSQL hybrid search"
+		},
+		{
+			"name": "backlog",
+			"type": "python",
+			"package": "backlog-mcp",
+			"module": "backlog_mcp.server",
+			"github": "Questi0nM4rk/backlog-mcp",
+			"branch": "main",
+			"extras": "",
+			"local_path": "~/Projects/backlog-mcp",
+			"required": false,
+			"env": {},
+			"dependencies": [],
+			"description": "Task and sprint management with single-task loading to prevent scope creep"
 		}
 	]
 }

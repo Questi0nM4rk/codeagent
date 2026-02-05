@@ -9,7 +9,7 @@ Methodology for writing tests before implementation. Every line of production co
 
 ## The Iron Law
 
-```
+```text
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 No exceptions. No "just this once." No "it's too simple."
 ```
@@ -20,7 +20,7 @@ No exceptions. No "just this once." No "it's too simple."
 
 ## The TDD Cycle
 
-```
+```text
 RED → GREEN → REFACTOR
 
 1. RED: Write a failing test (must fail for right reason)
@@ -230,7 +230,7 @@ Model is determined at plan-time, not implementation-time. The `/plan` command q
 
 Simple two-tier escalation:
 
-```
+```text
 suggested_model (attempts 1-3)
        │
        ▼ fails

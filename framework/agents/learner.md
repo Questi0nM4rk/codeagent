@@ -54,25 +54,25 @@ Review what was built:
 
 Look for:
 
-**Architectural Patterns**
+#### Architectural Patterns
 
 - How components are organized
 - Dependency relationships
 - Data flow patterns
 
-**Code Patterns**
+#### Code Patterns
 
 - Error handling approaches
 - Validation patterns
 - API design patterns
 
-**Testing Patterns**
+#### Testing Patterns
 
 - Test structure
 - Mock/stub approaches
 - Assertion patterns
 
-**Process Patterns**
+#### Process Patterns
 
 - What worked in the TDD loop
 - Useful debugging approaches

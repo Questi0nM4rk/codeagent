@@ -210,7 +210,8 @@ configure_key() {
     echo -n "  Enter $key_name or press Enter to skip: "
   fi
 
-  read -r new_value
+  read -rs new_value
+  echo ""
   if [ -n "$new_value" ]; then
     store_secret "$key_name" "$new_value"
     log_success "$key_name: saved"

@@ -1,14 +1,15 @@
 #!/bin/bash
 # ============================================
 # CodeAgent Python MCP Installer
-# Custom Python MCPs using venv
+# Installs from GitHub by default, local path with --local flag
 # ============================================
 
-set -e
+set -euo pipefail
 
 # Configuration (inherited from parent)
 INSTALL_DIR="${CODEAGENT_HOME:-$HOME/.codeagent}"
 FORCE="${CODEAGENT_FORCE:-false}"
+LOCAL="${CODEAGENT_LOCAL:-false}"
 REGISTRY_FILE="${CODEAGENT_REGISTRY:-$INSTALL_DIR/mcps/mcp-registry.json}"
 VENV_DIR="$INSTALL_DIR/venv"
 VENV_PIP="$VENV_DIR/bin/pip"
@@ -50,11 +51,17 @@ remove_mcp() {
   claude mcp remove --scope user "$name" 2>/dev/null || true
 }
 
+# Expand tilde in path
+expand_path() {
+  local path="$1"
+  echo "${path/#\~/$HOME}"
+}
+
 # ============================================
 # Setup Python Virtual Environment
 # ============================================
 setup_venv() {
-  if [ ! -f "$VENV_PYTHON" ]; then
+  if [[ ! -f "$VENV_PYTHON" ]]; then
     log_info "Creating Python virtual environment..."
     if ! python3 -m venv "$VENV_DIR"; then
       log_error "Failed to create virtual environment"
@@ -80,84 +87,172 @@ setup_venv() {
 # ============================================
 # Install Python MCP Package
 # ============================================
-install_python_package() {
+install_from_github() {
   local name="$1"
-  local mcp_path="$2"
-  local extras="$3" # Optional extras like "full"
+  local github="$2"
+  local branch="$3"
+  local extras="$4"
+
+  local github_url="git+https://github.com/${github}.git"
+  if [[ -n "$branch" ]]; then
+    github_url="${github_url}@${branch}"
+  fi
+
+  # Add extras if specified
+  local install_target="$github_url"
+  if [[ -n "$extras" ]]; then
+    install_target="${github_url}#egg=${name}[${extras}]"
+  fi
+
+  log_info "  Installing from GitHub: $github"
+  if [[ "$FORCE" == "true" ]]; then
+    "$VENV_PIP" install "$install_target" --force-reinstall --quiet 2>&1 || return 1
+  else
+    "$VENV_PIP" install "$install_target" --quiet 2>&1 || return 1
+  fi
+  return 0
+}
+
+install_from_local() {
+  local name="$1"
+  local local_path="$2"
+  local extras="$3"
+
+  local expanded_path
+  expanded_path=$(expand_path "$local_path")
+
+  # Check path exists
+  if [[ ! -d "$expanded_path" ]]; then
+    log_error "  Local path not found: $expanded_path"
+    return 1
+  fi
 
   # Check pyproject.toml exists
-  if [ ! -f "$mcp_path/pyproject.toml" ]; then
-    log_error "  No pyproject.toml found: $mcp_path"
+  if [[ ! -f "$expanded_path/pyproject.toml" ]]; then
+    log_error "  No pyproject.toml found: $expanded_path"
     return 1
   fi
 
   # Build install target (with optional extras)
-  local install_target="$mcp_path"
-  if [ -n "$extras" ]; then
-    install_target="${mcp_path}[${extras}]"
+  local install_target="$expanded_path"
+  if [[ -n "$extras" ]]; then
+    install_target="${expanded_path}[${extras}]"
   fi
 
-  # Install in editable mode
-  if [ "$FORCE" = "true" ]; then
-    "$VENV_PIP" install -e "$install_target" --force-reinstall --quiet 2>/dev/null
+  log_info "  Installing from local (editable): $expanded_path"
+  if [[ "$FORCE" == "true" ]]; then
+    "$VENV_PIP" install -e "$install_target" --force-reinstall --quiet 2>&1 || return 1
   else
-    "$VENV_PIP" install -e "$install_target" --quiet 2>/dev/null
+    "$VENV_PIP" install -e "$install_target" --quiet 2>&1 || return 1
   fi
+  return 0
 }
 
 # ============================================
 # Install Python MCPs
 # ============================================
 install_python_mcps() {
-  log_info "Installing Python MCPs..."
+  if [[ "$LOCAL" == "true" ]]; then
+    log_info "Installing Python MCPs (LOCAL/EDITABLE mode)..."
+  else
+    log_info "Installing Python MCPs (from GitHub)..."
+  fi
 
   local count
   count=$(jq '.python | length' "$REGISTRY_FILE")
 
   for ((i = 0; i < count; i++)); do
-    local name
+    local name github branch extras local_path module required
     name=$(jq -r ".python[$i].name" "$REGISTRY_FILE")
-    local module
     module=$(jq -r ".python[$i].module" "$REGISTRY_FILE")
-    local path
-    path=$(jq -r ".python[$i].path" "$REGISTRY_FILE")
-    local extras
+    github=$(jq -r ".python[$i].github // empty" "$REGISTRY_FILE")
+    branch=$(jq -r ".python[$i].branch // \"main\"" "$REGISTRY_FILE")
     extras=$(jq -r ".python[$i].extras // empty" "$REGISTRY_FILE")
-    local mcp_path="$INSTALL_DIR/$path"
-
-    # Check MCP directory exists
-    if [ ! -d "$mcp_path" ]; then
-      log_warn "  Skipped: $name (directory not found: $mcp_path)"
-      ((SKIPPED++)) || true
-      continue
-    fi
+    local_path=$(jq -r ".python[$i].local_path // empty" "$REGISTRY_FILE")
+    required=$(jq -r ".python[$i].required // false" "$REGISTRY_FILE")
 
     # Skip if exists and not force
-    if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
+    if [[ "$FORCE" != "true" ]] && mcp_exists "$name"; then
       log_info "  Skipped: $name (already registered)"
       ((SKIPPED++)) || true
       continue
     fi
 
-    # Install package (with optional extras)
-    if ! install_python_package "$name" "$mcp_path" "$extras"; then
-      log_error "  Failed to install package: $name"
-      ((FAILED++)) || true
+    # Install package
+    local install_ok=false
+    if [[ "$LOCAL" == "true" ]]; then
+      # Local mode: install from local path
+      if [[ -n "$local_path" ]]; then
+        if install_from_local "$name" "$local_path" "$extras"; then
+          install_ok=true
+        fi
+      else
+        log_warn "  No local_path defined for $name, falling back to GitHub"
+        if [[ -n "$github" ]] && install_from_github "$name" "$github" "$branch" "$extras"; then
+          install_ok=true
+        fi
+      fi
+    else
+      # GitHub mode (default): install from GitHub
+      if [[ -n "$github" ]]; then
+        if install_from_github "$name" "$github" "$branch" "$extras"; then
+          install_ok=true
+        fi
+      elif [[ -n "$local_path" ]]; then
+        log_warn "  No github defined for $name, falling back to local path"
+        if install_from_local "$name" "$local_path" "$extras"; then
+          install_ok=true
+        fi
+      fi
+    fi
+
+    if [[ "$install_ok" != "true" ]]; then
+      if [[ "$required" == "true" ]]; then
+        log_error "  Failed to install required package: $name"
+        ((FAILED++)) || true
+      else
+        log_warn "  Failed to install optional package: $name (skipping)"
+        ((SKIPPED++)) || true
+      fi
       continue
     fi
 
     # Remove if force (after package install succeeds)
-    if [ "$FORCE" = "true" ]; then
+    if [[ "$FORCE" == "true" ]]; then
       remove_mcp "$name"
     fi
 
+    # Build registration command with env vars if specified
+    local env_json
+    env_json=$(jq -r ".python[$i].env // {}" "$REGISTRY_FILE")
+
     # Register MCP with Claude (user scope for global)
-    if claude mcp add --scope user "$name" -- "$VENV_PYTHON" -m "$module" 2>/dev/null; then
-      log_success "  Installed: $name"
-      ((INSTALLED++)) || true
+    if [[ "$env_json" != "{}" && "$env_json" != "null" ]]; then
+      # Has env vars - build --env flags
+      local env_flags=""
+      while IFS='=' read -r key value; do
+        # Expand ${VAR} references
+        value=$(eval echo "$value")
+        env_flags="$env_flags -e $key=$value"
+      done < <(echo "$env_json" | jq -r 'to_entries[] | "\(.key)=\(.value)"')
+
+      # shellcheck disable=SC2086
+      if claude mcp add --scope user $env_flags "$name" -- "$VENV_PYTHON" -m "$module" 2>/dev/null; then
+        log_success "  Installed: $name (with env)"
+        ((INSTALLED++)) || true
+      else
+        log_error "  Failed to register: $name"
+        ((FAILED++)) || true
+      fi
     else
-      log_error "  Failed to register: $name"
-      ((FAILED++)) || true
+      # No env vars
+      if claude mcp add --scope user "$name" -- "$VENV_PYTHON" -m "$module" 2>/dev/null; then
+        log_success "  Installed: $name"
+        ((INSTALLED++)) || true
+      else
+        log_error "  Failed to register: $name"
+        ((FAILED++)) || true
+      fi
     fi
   done
 }
@@ -192,13 +287,12 @@ verify_python_mcps() {
   local all_ok=true
 
   for ((i = 0; i < count; i++)); do
-    local name
+    local name module
     name=$(jq -r ".python[$i].name" "$REGISTRY_FILE")
-    local module
     module=$(jq -r ".python[$i].module" "$REGISTRY_FILE")
 
     # Check if module can be imported
-    if "$VENV_PYTHON" -c "import $module" 2>/dev/null; then
+    if "$VENV_PYTHON" -c "import ${module%.*}" 2>/dev/null; then
       if mcp_exists "$name"; then
         log_success "  $name: OK"
       else
@@ -211,7 +305,7 @@ verify_python_mcps() {
     fi
   done
 
-  if [ "$all_ok" = "true" ]; then
+  if [[ "$all_ok" == "true" ]]; then
     return 0
   else
     return 1
@@ -223,7 +317,7 @@ verify_python_mcps() {
 # ============================================
 main() {
   # Validate registry
-  if [ ! -f "$REGISTRY_FILE" ]; then
+  if [[ ! -f "$REGISTRY_FILE" ]]; then
     log_error "Registry not found: $REGISTRY_FILE"
     exit 1
   fi
@@ -238,7 +332,7 @@ main() {
   setup_venv
 
   # Remove if force
-  if [ "$FORCE" = "true" ]; then
+  if [[ "$FORCE" == "true" ]]; then
     remove_python_mcps
   fi
 

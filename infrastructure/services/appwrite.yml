@@ -12,8 +12,8 @@
 #     appwrite/appwrite:1.8.1
 #
 # Access:
-#   Console: http://localhost:80
-#   API: http://localhost:80/v1
+#   Console: http://localhost:8585
+#   API: http://localhost:8585/v1
 #
 # After installation, the generated files are in ./appwrite/
 # This file is a placeholder - actual config is in ./appwrite/docker-compose.yml

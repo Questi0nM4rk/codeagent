@@ -17,7 +17,7 @@ x-body-size: &penpot-http-body-size
   PENPOT_HTTP_SERVER_MAX_MULTIPART_BODY_SIZE: 367001600
 
 x-secret-key: &penpot-secret-key
-  PENPOT_SECRET_KEY: codeagent-penpot-secret-change-in-production
+  PENPOT_SECRET_KEY: ${PENPOT_SECRET_KEY:-}
 
 services:
   penpot-frontend:

@@ -71,8 +71,6 @@ Code Suggestion Format
 
 When providing code fixes:
 
-```language
-// suggested code here
-```
+    // suggested code here
 
 This structure helps prioritize review feedback and track issues systematically.
