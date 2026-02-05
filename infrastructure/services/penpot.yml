@@ -53,7 +53,7 @@ services:
       << : [*penpot-flags, *penpot-public-uri, *penpot-http-body-size, *penpot-secret-key]
       PENPOT_DATABASE_URI: postgresql://penpot-postgres/penpot
       PENPOT_DATABASE_USERNAME: penpot
-      PENPOT_DATABASE_PASSWORD: penpot
+      PENPOT_DATABASE_PASSWORD: penpot  # pragma: allowlist secret - dev default
       PENPOT_REDIS_URI: redis://penpot-valkey/0
       PENPOT_ASSETS_STORAGE_BACKEND: assets-fs
       PENPOT_STORAGE_ASSETS_FS_DIRECTORY: /opt/data/assets
@@ -98,7 +98,7 @@ services:
       POSTGRES_INITDB_ARGS: --data-checksums
       POSTGRES_DB: penpot
       POSTGRES_USER: penpot
-      POSTGRES_PASSWORD: penpot
+      POSTGRES_PASSWORD: penpot  # pragma: allowlist secret - dev default
 
   penpot-valkey:
     image: valkey/valkey:8.1

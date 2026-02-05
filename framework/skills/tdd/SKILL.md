@@ -53,11 +53,12 @@ Requirements:
 - Test MUST fail initially (if it passes, something is wrong)
 - Failure message should be meaningful
 
-```
+```text
 Arrange → Act → Assert
 ```
 
 <Good>
+
 ```typescript
 describe('Calculator', () => {
   it('should add two positive numbers', () => {
@@ -81,6 +82,7 @@ describe('Calculator', () => {
 </Good>
 
 <Bad>
+
 ```typescript
 it('test calculator', () => {
   const calc = new Calculator();
@@ -108,6 +110,7 @@ Requirements:
 - "Make it work" not "make it perfect"
 
 <Good>
+
 ```typescript
 // Test expects add(2, 3) = 5
 // Minimal implementation:
@@ -115,10 +118,12 @@ add(a: number, b: number): number {
   return a + b;
 }
 ```
+
 Minimal code that passes the test.
 </Good>
 
 <Bad>
+
 ```typescript
 // Test only expects add(2, 3) = 5
 // Over-engineered implementation:
@@ -283,7 +288,7 @@ When implementing from BDD scenarios (from /plan), convert Gherkin to tests:
 
 ### Conversion Pattern
 
-```
+```text
 Gherkin                          Test Code
 ─────────────────────────────────────────────────────
 Given [precondition]    →    // Arrange
@@ -294,6 +299,7 @@ Then [expectation]      →    // Assert
 ### Example
 
 **BDD Scenario:**
+
 ```gherkin
 Scenario: Successful login with valid credentials
   Given a registered user with email "user@example.com"
@@ -304,19 +310,20 @@ Scenario: Successful login with valid credentials
 ```
 
 **Generated Test:**
+
 ```typescript
 describe('AuthService', () => {
   it('should return JWT token for valid credentials', async () => {
     // Arrange (Given)
     const user = await createTestUser({
       email: 'user@example.com',
-      password: 'SecurePass123!'
+      password: 'SecurePass123!'  // pragma: allowlist secret
     });
 
     // Act (When)
     const result = await authService.login({
       email: 'user@example.com',
-      password: 'SecurePass123!'
+      password: 'SecurePass123!'  // pragma: allowlist secret
     });
 
     // Assert (Then)
