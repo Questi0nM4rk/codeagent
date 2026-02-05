@@ -166,25 +166,25 @@ Safe refactorings:
 
 ## Test Types
 
- | Type | What | When | Speed | Mocking |
- | ------ | ------ | ------ | ------- | --------- |
- | Unit | Single unit | Business logic, algorithms | ms | External deps |
- | Integration | Multiple units | DB, API, services | sec | External services |
- | E2E | Full user flow | Critical paths | min | Nothing |
+| Type | What | When | Speed | Mocking |
+| ------ | ------ | ------ | ------- | --------- |
+| Unit | Single unit | Business logic, algorithms | ms | External deps |
+| Integration | Multiple units | DB, API, services | sec | External services |
+| E2E | Full user flow | Critical paths | min | Nothing |
 
 **Pyramid Ratio**: ~70% Unit, ~20% Integration, ~10% E2E
 
 ## Common Rationalizations
 
- | Excuse | Reality |
- | -------- | --------- |
- | "It's too simple to test" | Simple code breaks. Test takes 30 seconds to write. |
- | "I'll write tests after" | Tests after are biased by implementation. You won't. |
- | "I'm just exploring" | Mark it as prototype. If it ships, it needs tests. |
- | "Tests slow me down" | Debugging untested code slows you down more. |
- | "I know it works" | You know it works NOW. What about after refactoring? |
- | "It's just a small change" | Small changes cause big bugs. Test first. |
- | "Deadline pressure" | Bugs cost more time than tests save. |
+| Excuse | Reality |
+| -------- | --------- |
+| "It's too simple to test" | Simple code breaks. Test takes 30 seconds to write. |
+| "I'll write tests after" | Tests after are biased by implementation. You won't. |
+| "I'm just exploring" | Mark it as prototype. If it ships, it needs tests. |
+| "Tests slow me down" | Debugging untested code slows you down more. |
+| "I know it works" | You know it works NOW. What about after refactoring? |
+| "It's just a small change" | Small changes cause big bugs. Test first. |
+| "Deadline pressure" | Bugs cost more time than tests save. |
 
 ## Red Flags - STOP and Start Over
 
@@ -214,22 +214,22 @@ Before considering any code complete:
 
 ## When Stuck
 
- | Problem | Solution |
- | --------- | ---------- |
- | Test won't fail | Test is wrong or feature exists. Check test logic. |
- | Can't write minimal code | Test may be too complex. Split into smaller tests. |
- | Tests depend on each other | Each test must set up own state. Isolate them. |
- | Test is too complex | You're testing too much. One behavior per test. |
- | 3 failed attempts | Stop. Document attempts. Ask for help or simplify. |
+| Problem | Solution |
+| --------- | ---------- |
+| Test won't fail | Test is wrong or feature exists. Check test logic. |
+| Can't write minimal code | Test may be too complex. Split into smaller tests. |
+| Tests depend on each other | Each test must set up own state. Isolate them. |
+| Test is too complex | You're testing too much. One behavior per test. |
+| 3 failed attempts | Stop. Document attempts. Ask for help or simplify. |
 
 ## Model Selection
 
 Model is determined at plan-time, not implementation-time. The `/plan` command queries historical performance data via `mcp__reflection__get_model_effectiveness()` to determine the suggested model.
 
- | Phase | Model | Rationale |
- | ------- | ------- | ----------- |
- | Test writing | opus | Correctness critical - tests define the contract |
- | Implementation | suggested_model | From task, based on historical data |
+| Phase | Model | Rationale |
+| ------- | ------- | ----------- |
+| Test writing | opus | Correctness critical - tests define the contract |
+| Implementation | suggested_model | From task, based on historical data |
 
 ### Escalation on Failure
 
@@ -266,14 +266,14 @@ STOP and REITERATE to /plan:
 [test code]
 
 ### All Attempts
- | # | Model | Approach | Error |
- | --- | ------- | ---------- | ------- |
- | 1 | [suggested] | [tried] | [error] |
- | 2 | [suggested] | [tried] | [error] |
- | 3 | [suggested] | [tried] | [error] |
- | 4 | opus | [tried] | [error] |
- | 5 | opus | [tried] | [error] |
- | 6 | opus | [tried] | [error] |
+| # | Model | Approach | Error |
+| --- | ------- | ---------- | ------- |
+| 1 | [suggested] | [tried] | [error] |
+| 2 | [suggested] | [tried] | [error] |
+| 3 | [suggested] | [tried] | [error] |
+| 4 | opus | [tried] | [error] |
+| 5 | opus | [tried] | [error] |
+| 6 | opus | [tried] | [error] |
 
 ### Analysis
 [Why the approach isn't working - likely architectural issue]
@@ -338,11 +338,11 @@ describe('AuthService', () => {
 
 Ensure each BDD scenario from /plan has a corresponding test:
 
- | Scenario | Test File | Status |
- | ---------- | ----------- | -------- |
- | Successful login | auth.test.ts | Written |
- | Invalid password | auth.test.ts | Written |
- | Non-existent user | auth.test.ts | Written |
+| Scenario | Test File | Status |
+| ---------- | ----------- | -------- |
+| Successful login | auth.test.ts | Written |
+| Invalid password | auth.test.ts | Written |
+| Non-existent user | auth.test.ts | Written |
 
 ## Related Skills
 
