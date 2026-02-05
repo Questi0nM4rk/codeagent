@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import shutil
 import subprocess
-from pathlib import Path
 
 from rich.console import Console
 
@@ -67,7 +67,10 @@ def run_init(
     if not skip_precommit:
         precommit_path = project_path / ".pre-commit-config.yaml"
         if precommit_path.exists() and not force:
-            console.print("[yellow]⚠[/] .pre-commit-config.yaml exists (use --force to overwrite)")
+            console.print(
+                "[yellow]⚠[/] .pre-commit-config.yaml exists"
+                " (use --force to overwrite)",
+            )
         else:
             config = assemble_config(detected, registry, templates_dir / "pre-commit")
             write_config(config, precommit_path)

@@ -17,8 +17,8 @@ CLIs leverage your existing authentication (SSH keys, CLI login sessions) and pr
 
 ## Decision Matrix
 
-| Service | Approach | CLI | Auth Method | JSON Flag |
-|---------|----------|-----|-------------|-----------|
+| Service   | Approach   | CLI   | Auth Method   | JSON Flag   |
+| --------- | ---------- | ----- | ------------- | ----------- |
 | GitHub | **CLI** | `gh` | `gh auth login` (SSH) | `--json` |
 | AWS | **CLI** | `aws` | `~/.aws/credentials` | `--output json` |
 | Azure | **CLI** | `az` | `az login` | `--output json` |
@@ -67,37 +67,35 @@ Use this pattern when:
 
 ### GitHub (gh)
 
-<Good>
+### Good Example: GitHub API
 ```python
 import subprocess
 import json
 
-# List issues with JSON output
+# List issues with JSON output (include labels for filtering)
 result = subprocess.run(
-    ['gh', 'issue', 'list', '--repo', 'owner/repo', '--json', 'number,title,state'],
+    ['gh', 'issue', 'list', '--repo', 'owner/repo', '--json', 'number,title,state,labels'],
     capture_output=True, text=True
 )
 issues = json.loads(result.stdout)
 
-# Filter in sandbox - only summary returns to context
-open_bugs = [i for i in issues if 'bug' in i.get('labels', [])]
+# Filter in sandbox - labels is a list of objects with 'name' key
+open_bugs = [i for i in issues if any(l.get('name') == 'bug' for l in i.get('labels', []))]
 print(f"Found {len(open_bugs)} open bugs")
 ```
 Uses existing auth, filters in sandbox, minimal context return
-</Good>
 
-<Bad>
+### Bad Example
 ```python
 # DON'T: Using GitHub MCP without code execution
 issues = await mcp_github.list_issues(owner="x", repo="y")
 # Full response goes to context - token bloat
 ```
 Full response bloats context, requires separate API token
-</Bad>
 
 ### AWS (aws)
 
-<Good>
+### Good Example: AWS S3
 ```python
 import subprocess
 import json
@@ -114,11 +112,10 @@ for bucket in buckets:
     print(f"{bucket['Name']}: {bucket['CreationDate']}")
 ```
 Uses ~/.aws/credentials automatically
-</Good>
 
 ### Kubernetes (kubectl)
 
-<Good>
+### Good Example: Kubernetes Pods
 ```python
 import subprocess
 import json
@@ -134,11 +131,10 @@ pods = json.loads(result.stdout)['items']
 unhealthy = [p for p in pods if p['status']['phase'] != 'Running']
 ```
 Uses ~/.kube/config automatically
-</Good>
 
 ### Azure (az)
 
-<Good>
+### Good Example: Azure Resource Groups
 ```python
 import subprocess
 import json
@@ -151,12 +147,11 @@ result = subprocess.run(
 groups = json.loads(result.stdout)
 ```
 Uses az login session
-</Good>
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
+| Excuse   | Reality   |
+| -------- | --------- |
 | "MCP is more structured" | CLI with `--json` gives same structure |
 | "Need to set up auth" | CLIs use existing auth you already have |
 | "MCP is easier" | CLI in sandbox = one subprocess call |
@@ -196,8 +191,8 @@ kubectl cluster-info
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
+| Problem   | Solution   |
+| --------- | ---------- |
 | Auth not working | Run CLI auth command outside sandbox first |
 | No JSON output | Check CLI docs for `--format` or `-o` flags |
 | Missing CLI | Add to codeagent tools install |

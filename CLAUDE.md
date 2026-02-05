@@ -14,10 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Validate shell scripts
 shellcheck install.sh bin/* framework/hooks/*.sh
 
-# Test reflection MCP
-cd mcps/reflection-mcp && ~/.codeagent/venv/bin/python -m pytest
+# Test reflection MCP (external repo)
+cd ~/Projects/reflection-mcp && ~/.codeagent/venv/bin/python -m pytest
 
-# Run reflection MCP standalone (for debugging)
+# Run reflection MCP standalone (requires package installed in venv)
 ~/.codeagent/venv/bin/python -m reflection_mcp
 
 # Infrastructure control
@@ -64,10 +64,10 @@ User: /scan → /plan → /implement → /integrate → /review
 
 | Directory | Purpose |
 |-----------|---------|
-| `bin/` | CLI entry points (8 executables) |
+| `bin/` | CLI entry points (12 executables) |
 | `framework/skills/` | Skill definitions (SKILL.md each) |
 | `framework/commands/` | Slash command specs (5 commands) |
-| `framework/hooks/` | Pre/post tool hooks (8 scripts) |
+| `framework/hooks/` | Pre/post tool hooks (4 CodeAgent + 4 ai-guardrails) |
 | `framework/agents/` | Agent definitions for Task tool |
 | `mcps/` | Custom Python MCP servers + installers |
 | `mcps/installers/` | Per-MCP installation scripts |
@@ -81,15 +81,23 @@ User: /scan → /plan → /implement → /integrate → /review
 ### Registry Structure (mcps/mcp-registry.json)
 
 Defines all MCPs with their installation requirements:
-- `type`: npm | python | docker | builtin
-- `package`: Package name for installation
-- `args`: Command-line arguments
+- `github`: GitHub org/repo (e.g., `Questi0nM4rk/reflection-mcp`)
+- `branch`: Git branch to install from (default: `main`)
+- `local_path`: Local path for development mode (e.g., `~/Projects/reflection-mcp`)
+- `extras`: Optional pip extras (e.g., `full`)
+- `module`: Python module for MCP server
 - `env`: Required environment variables
-- `dependencies`: Other MCPs that must be running
+
+### Installation Modes
+
+| Mode | Flag | Behavior |
+|------|------|----------|
+| **Production** | (default) | `pip install git+https://github.com/{github}.git` |
+| **Development** | `--local` | `pip install -e {local_path}` (editable) |
 
 ### Custom MCP: Reflection
 
-**Location**: `mcps/reflection-mcp/src/reflection_mcp/server.py`
+**GitHub**: [Questi0nM4rk/reflection-mcp](https://github.com/Questi0nM4rk/reflection-mcp)
 
 Implements Reflexion pattern (NeurIPS 2023) for +21% accuracy on code tasks.
 
@@ -100,6 +108,10 @@ Implements Reflexion pattern (NeurIPS 2023) for +21% accuracy on code tasks.
 - `generate_improved_attempt` - Guidance based on past lessons
 - `mark_lesson_effective` - Track if applying lesson led to success
 - `export_lessons` - Export for learner skill integration
+- `get_model_effectiveness` - Get model success rates for intelligent model selection
+- `get_reflection_history` - View reflection history for a task
+- `get_common_lessons` - Get aggregated lessons by feedback type
+- `get_episode_stats` - Get statistics about episodic memory
 
 **Data storage**: `~/.codeagent/data/reflection-episodes/`
 
@@ -193,14 +205,16 @@ Skills auto-activate based on file types and context. Each skill has a SKILL.md 
 
 ## Hooks
 
-| Hook | Trigger | File |
-|------|---------|------|
-| `dangerous-command-check` | PreToolUse:Bash | `framework/hooks/dangerous-command-check.sh` |
-| `pre-commit` | PreToolUse:Bash(git commit) | `framework/hooks/pre-commit.sh` |
-| `pre-push` | PreToolUse:Bash(git push) | `framework/hooks/pre-push.sh` |
-| `auto-format` | PostToolUse:Write/Edit | `framework/hooks/auto-format.sh` |
-| `index-file` | PostToolUse:Write/Edit | `framework/hooks/index-file.sh` |
-| `session-end` | Stop | `framework/hooks/session-end.sh` |
+| Hook | Trigger | Source |
+|------|---------|--------|
+| `dangerous-command-check` | PreToolUse:Bash | ai-guardrails |
+| `pre-commit` | PreToolUse:Bash(git commit) | ai-guardrails |
+| `pre-push` | PreToolUse:Bash(git push) | ai-guardrails |
+| `auto-format` | PostToolUse:Write/Edit | ai-guardrails |
+| `index-file` | PostToolUse:Write/Edit | CodeAgent |
+| `session-end` | Stop | CodeAgent |
+
+**Note**: Shared hooks are symlinked from `~/.ai-guardrails/lib/hooks/` at install time.
 
 ## Infrastructure
 
@@ -274,7 +288,7 @@ cd ~/.codeagent/infrastructure && docker compose down && docker compose up -d
 # Check storage directory
 ls -la ~/.codeagent/memory/
 
-# Test MCP
+# Test MCP (requires pip install -e ~/Projects/amem-mcp in venv)
 ~/.codeagent/venv/bin/python -c "from amem_mcp import server; print('OK')"
 ```
 
@@ -286,7 +300,7 @@ claude mcp list                           # Check registered MCPs
 
 ### Reflection MCP issues
 ```bash
-# Test standalone
+# Test standalone (requires pip install -e ~/Projects/reflection-mcp in venv)
 ~/.codeagent/venv/bin/python -c "from reflection_mcp import server; print('OK')"
 
 # Check data directory
@@ -301,3 +315,68 @@ ls -la ~/.codeagent/data/reflection-episodes/
 4. **TDD always** - Test → fail → code → pass
 5. **Accuracy over speed** - Spend tokens for correctness
 6. **Single agent for shared code** - Only parallelize isolated tasks
+
+
+## AI Guardrails - Code Standards
+
+This project uses [ai-guardrails](https://github.com/Questi0nM4rk/ai-guardrails) for pedantic code enforcement.
+
+### Philosophy
+
+**Hard stops only.** No warnings, no suggestions. Everything is an error or it's ignored.
+
+Pre-commit hooks run on every commit. If they fail, the commit is rejected.
+Fix all errors before committing. Do not bypass hooks with `--no-verify`.
+
+### Pre-commit Workflow
+
+```
+format -> stage -> checks -> commit
+```
+
+1. `format-and-stage` auto-formats and re-stages (local only, skipped in CI)
+2. Security scans (gitleaks, detect-secrets, semgrep)
+3. Linting (ruff, biome, shellcheck, etc.)
+4. Type checking (strict mode)
+5. Git hygiene (no commits to main, no large files)
+
+### Language-Specific Rules
+
+**Python:**
+- `from __future__ import annotations` required in ALL files
+- Type hints required on all function signatures
+- Docstrings required on public functions/classes
+- No bare `except:` - always specify exception type
+- Use `X | None` not `Optional[X]`
+
+**TypeScript/JavaScript:**
+- Strict mode (`"strict": true` in tsconfig)
+- No `any` type - use `unknown` and narrow
+- No `console.log` in production code
+- JSDoc on exported functions
+
+**Shell (Bash):**
+- `set -euo pipefail` at script start
+- Quote all variables: `"$var"` not `$var`
+- Use `[[` not `[` for conditionals
+- Prefer portable POSIX syntax where possible
+
+### Test Requirements
+
+- Tests required for new functionality
+- Test files must be named `test_*.py` or `*_test.py`
+- Meaningful assertions (not just "no errors")
+- No shared state between tests
+
+### When Pre-commit Fails
+
+1. Read the error message carefully
+2. Fix the issue in your code (don't disable the check)
+3. Stage the fix: `git add -u`
+4. Commit again
+
+Common fixes:
+- Missing type hints -> Add them
+- Missing docstring -> Add it
+- Import order wrong -> Let ruff fix it (auto-staged)
+- Trailing whitespace -> Auto-fixed by hooks

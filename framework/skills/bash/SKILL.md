@@ -32,8 +32,8 @@ Every script starts with strict mode. shellcheck passes. All variables quoted.
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
+| Component   | Technology   |
+| ----------- | ------------ |
 | Shells | Bash 5+, Zsh |
 | Linting | shellcheck |
 | Formatting | shfmt |
@@ -59,7 +59,7 @@ bats tests/test_script.bats
 
 ### Script Template
 
-<Good>
+### Good Example
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
@@ -100,9 +100,8 @@ main "$@"
 - Proper quoting throughout
 - Clear structure with main function
 - Error handling built-in
-</Good>
 
-<Bad>
+### Bad Example
 ```bash
 #!/bin/bash
 
@@ -114,11 +113,10 @@ done
 - Parsing `ls` output (breaks on spaces)
 - Unquoted variables
 - No error handling
-</Bad>
 
 ### Error Handling
 
-<Good>
+### Good Example: Cleanup and Retry Logic
 ```bash
 # Trap for cleanup
 cleanup() {
@@ -154,7 +152,6 @@ retry() {
 - Cleanup trap for temp files
 - Command existence check
 - Retry logic for flaky operations
-</Good>
 
 ### Input Validation
 
@@ -177,7 +174,7 @@ retry() {
 
 ### Arrays and Loops
 
-<Good>
+### Good Example: Safe Array and File Iteration
 ```bash
 # Array declaration
 declare -a files=("file1.txt" "file2.txt")
@@ -200,7 +197,6 @@ done < <(find . -name "*.sh" -print0)
 - Proper array quoting
 - Safe file iteration
 - Null-terminated find
-</Good>
 
 ### String Operations
 
@@ -226,7 +222,7 @@ value="${VAR:=default}"     # Set and use default
 
 ### bats-core
 
-<Good>
+### Good Example
 ```bash
 #!/usr/bin/env bats
 
@@ -258,12 +254,11 @@ teardown() {
 - Setup/teardown for isolation
 - Status code verification
 - Output pattern matching
-</Good>
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
+| Excuse   | Reality   |
+| -------- | --------- |
 | "set -e is too strict" | It catches real errors. Handle expected failures explicitly. |
 | "Quoting is ugly" | Unquoted vars break on spaces. Always quote. |
 | "shellcheck is pedantic" | It prevents real bugs. Fix the warnings. |
@@ -303,8 +298,8 @@ bash -n script.sh                 # Syntax check only
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
+| Problem   | Solution   |
+| --------- | ---------- |
 | shellcheck false positive | Add `# shellcheck disable=SCXXXX` with comment explaining why |
 | Need to continue on error | Use `command \|\| true` or `set +e` temporarily |
 | Complex argument parsing | Use `getopts` or switch to Python |

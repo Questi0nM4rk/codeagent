@@ -9,8 +9,10 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from codeagent.init.detector import LanguageRegistry
 
-@pytest.fixture
+
+@pytest.fixture()
 def temp_project(tmp_path: Path) -> Path:
     """Create a temporary project directory."""
     project_dir = tmp_path / "test-project"
@@ -18,7 +20,7 @@ def temp_project(tmp_path: Path) -> Path:
     return project_dir
 
 
-@pytest.fixture
+@pytest.fixture()
 def python_project(temp_project: Path) -> Path:
     """Create a Python project with pyproject.toml."""
     (temp_project / "pyproject.toml").write_text("[project]\nname = 'test'\n")
@@ -27,7 +29,7 @@ def python_project(temp_project: Path) -> Path:
     return temp_project
 
 
-@pytest.fixture
+@pytest.fixture()
 def rust_project(temp_project: Path) -> Path:
     """Create a Rust project with Cargo.toml."""
     (temp_project / "Cargo.toml").write_text("[package]\nname = 'test'\n")
@@ -36,7 +38,7 @@ def rust_project(temp_project: Path) -> Path:
     return temp_project
 
 
-@pytest.fixture
+@pytest.fixture()
 def node_project(temp_project: Path) -> Path:
     """Create a Node.js project with package.json."""
     (temp_project / "package.json").write_text('{"name": "test"}\n')
@@ -45,7 +47,7 @@ def node_project(temp_project: Path) -> Path:
     return temp_project
 
 
-@pytest.fixture
+@pytest.fixture()
 def multi_language_project(temp_project: Path) -> Path:
     """Create a project with multiple languages."""
     (temp_project / "pyproject.toml").write_text("[project]\nname = 'test'\n")
@@ -55,8 +57,8 @@ def multi_language_project(temp_project: Path) -> Path:
     return temp_project
 
 
-@pytest.fixture
-def sample_registry() -> dict:
+@pytest.fixture()
+def sample_registry() -> LanguageRegistry:
     """Sample language registry for testing."""
     return {
         "python": {

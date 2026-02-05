@@ -9,7 +9,7 @@ Domain knowledge for Rust systems programming with memory safety.
 
 ## The Iron Law
 
-```
+```text
 NO UNWRAP IN LIBRARY CODE - HANDLE EVERY ERROR WITH ? OR RESULT
 Panics are for bugs, not user errors. Use thiserror for library errors.
 ```
@@ -20,14 +20,14 @@ Panics are for bugs, not user errors. Use thiserror for library errors.
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
-| Toolchain | rustup, cargo |
-| Edition | 2021 |
-| Testing | Built-in + proptest |
-| Linting | clippy |
-| Formatting | rustfmt |
-| Async | tokio |
+| Component  | Technology          |
+| ---------- | ------------------- |
+| Toolchain  | rustup, cargo       |
+| Edition    | 2021                |
+| Testing    | Built-in + proptest |
+| Linting    | clippy              |
+| Formatting | rustfmt             |
+| Async      | tokio               |
 
 ## Essential Commands
 
@@ -53,7 +53,8 @@ cargo deny check
 
 ### Error Handling with thiserror
 
-<Good>
+### Good Example
+
 ```rust
 use thiserror::Error;
 
@@ -74,23 +75,24 @@ pub fn read_config(path: &str) -> Result<Config> {
     parse_config(&content).ok_or_else(|| AppError::InvalidInput("Invalid config".into()))
 }
 ```
+
 - Custom error type with thiserror
 - `#[from]` for automatic conversion
 - `?` operator for propagation
 - No unwrap/expect
-</Good>
 
-<Bad>
+### Bad Example
+
 ```rust
 pub fn read_config(path: &str) -> Config {
     let content = std::fs::read_to_string(path).unwrap();
     parse_config(&content).unwrap()
 }
 ```
+
 - Panics on error
 - No error handling
 - Caller can't recover
-</Bad>
 
 ### Builder Pattern
 
@@ -118,7 +120,8 @@ impl RequestBuilder {
 
 ### Async with Tokio
 
-<Good>
+#### Good Example
+
 ```rust
 use tokio::sync::mpsc;
 
@@ -139,14 +142,15 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
 - Proper error handling in spawn
 - Channel for communication
 - Returns Result
-</Good>
 
 ## Testing
 
-<Good>
+### Good Example
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -170,10 +174,10 @@ mod tests {
     }
 }
 ```
+
 - `unwrap()` OK in tests (expected to pass)
 - `matches!` for error variants
 - Test both success and failure
-</Good>
 
 ### Property-Based Testing
 
@@ -192,12 +196,12 @@ proptest! {
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "unwrap is fine here" | Use `expect("reason")` at minimum. Better: handle error. |
-| "Lifetimes are too hard" | Start with owned types. Add lifetimes when profiling shows need. |
-| "clippy::pedantic is too strict" | It catches real bugs. Allow specific lints with reason. |
-| "I'll add error handling later" | Later never comes. Use `?` from the start. |
+| Excuse                  | Reality                                                 |
+| ----------------------- | ------------------------------------------------------- |
+| "unwrap is fine here"   | Use `expect("reason")`. Better: handle error.           |
+| "Lifetimes are too hard"| Start owned. Add lifetimes when profiling shows need.   |
+| "clippy is too strict"  | Catches real bugs. Allow specific lints with reason.    |
+| "Add error handling"    | Later never comes. Use `?` from the start.              |
 
 ## Red Flags - STOP
 
@@ -231,12 +235,12 @@ cargo +nightly miri test                           # Memory safety (UB detector)
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
-| Borrow checker error | Draw ownership diagram. Consider `Rc`/`Arc` or restructure. |
-| Lifetime error | Start with `'static` or owned types, loosen later. |
-| Trait bound error | Check required traits. Consider `dyn Trait` or generics. |
-| Async borrow issues | Use `Arc` for shared state, channels for communication. |
+| Problem            | Solution                                             |
+| ------------------ | ---------------------------------------------------- |
+| Borrow error       | Draw diagram. Consider `Rc`/`Arc` or restructure.    |
+| Lifetime error     | Start `'static`. Add lifetimes, loosen later.        |
+| Trait bound error  | Check traits. Consider `dyn Trait` or generics.      |
+| Async borrow       | Use `Arc` for shared state, channels for comms.      |
 
 ## Related Skills
 

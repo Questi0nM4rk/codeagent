@@ -2,13 +2,35 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, TypedDict
 
 import yaml
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def load_registry(registry_path: Path) -> dict[str, Any]:
+
+class DetectConfig(TypedDict, total=False):
+    """Detection rules for a language."""
+
+    files: list[str]
+    patterns: list[str]
+    directories: list[str]
+
+
+class LanguageConfig(TypedDict, total=False):
+    """Configuration for a single language in the registry."""
+
+    name: str
+    detect: DetectConfig
+    pre_commit_template: str
+    configs: list[str]
+
+
+LanguageRegistry = dict[str, LanguageConfig]
+
+
+def load_registry(registry_path: Path) -> LanguageRegistry:
     """Load language registry from YAML file.
 
     Args:
@@ -31,7 +53,7 @@ def load_registry(registry_path: Path) -> dict[str, Any]:
     return result
 
 
-def detect_languages(project_dir: Path, registry: dict[str, Any]) -> list[str]:
+def detect_languages(project_dir: Path, registry: LanguageRegistry) -> list[str]:
     """Detect languages present in project based on registry rules.
 
     Detection rules are evaluated in order:

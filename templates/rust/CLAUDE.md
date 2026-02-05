@@ -47,7 +47,8 @@ cargo audit
 [Describe your architecture]
 
 Example:
-```
+
+```text
 src/
 ├── lib.rs           # Library root
 ├── main.rs          # Binary entry point
@@ -96,4 +97,5 @@ cargo test --test integration
 ## Dependencies
 
 Key crates:
+
 - [List your main dependencies]

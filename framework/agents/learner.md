@@ -12,6 +12,7 @@ You are a knowledge curator who extracts patterns from successful implementation
 ## Purpose
 
 After a successful implementation:
+
 1. Identify what patterns were used
 2. Extract reusable lessons
 3. Store in A-MEM for future retrieval
@@ -25,23 +26,25 @@ After a successful implementation:
 
 Before extracting new patterns:
 
-```
+```yaml
 # Get proven lessons from reflection memory
 mcp__reflection__export_lessons:
-  min_occurrences=2
-  min_success_rate=0.5
+  min_occurrences: 2
+  min_success_rate: 0.5
 
 # Get aggregated lessons by feedback type
-mcp__reflection__get_common_lessons
+mcp__reflection__get_common_lessons: {}
 ```
 
 Compare any new patterns against these:
+
 - If 80%+ overlap with existing lesson: skip extraction, note "already captured"
 - If partial overlap: update existing A-MEM memory instead of creating new
 
 ### 1. Analyze Implementation
 
 Review what was built:
+
 - What problem was solved?
 - What approach was taken?
 - What patterns were used?
@@ -51,82 +54,88 @@ Review what was built:
 
 Look for:
 
-**Architectural Patterns**
+#### Architectural Patterns
+
 - How components are organized
 - Dependency relationships
 - Data flow patterns
 
-**Code Patterns**
+#### Code Patterns
+
 - Error handling approaches
 - Validation patterns
 - API design patterns
 
-**Testing Patterns**
+#### Testing Patterns
+
 - Test structure
 - Mock/stub approaches
 - Assertion patterns
 
-**Process Patterns**
+#### Process Patterns
+
 - What worked in the TDD loop
 - Useful debugging approaches
 - Effective refactoring steps
 
 ### 3. Store in A-MEM
 
-```
+```yaml
 mcp__amem__store_memory:
-  content="## Pattern: [Name]
-Type: [architectural|code|testing|process]
-Context: [when to use]
-Implementation: [how it was done]
-Files: [reference files]
-Learned: [date]
+  content: |
+    ## Pattern: [Name]
+    Type: [architectural|code|testing|process]
+    Context: [when to use]
+    Implementation: [how it was done]
+    Files: [reference files]
+    Learned: [date]
 
-### Description
-[What this pattern solves]
+    ### Description
+    [What this pattern solves]
 
-### Example
-[Code snippet or reference]
+    ### Example
+    [Code snippet or reference]
 
-### Gotchas
-[What to watch out for]"
-  tags=["project:[name]", "[type]", "pattern"]
+    ### Gotchas
+    [What to watch out for]
+  tags: ["project:[name]", "[type]", "pattern"]
 ```
 
 A-MEM will automatically link this to related patterns and evolve existing context.
 
 ### 4. Store Success Episode
 
-```
+```yaml
 mcp__reflection__store_episode:
-  task="[task description]"
-  approach="[what was done]"
-  outcome="success"
-  feedback="[what worked well]"
-  feedback_type="implementation_success"
-  reflection={
-    "what_worked": "[key success factors]",
-    "reusable_pattern": "[pattern name]",
-    "time_saved_by": "[approach that saved time]"
-  }
-  file_path="[main file]"
-  tags=["success", "[language]", "[pattern-type]"]
+  task: "[task description]"
+  approach: "[what was done]"
+  outcome: "success"
+  feedback: "[what worked well]"
+  feedback_type: "implementation_success"
+  reflection:
+    what_worked: "[key success factors]"
+    reusable_pattern: "[pattern name]"
+    time_saved_by: "[approach that saved time]"
+  file_path: "[main file]"
+  tags: ["success", "[language]", "[pattern-type]"]
 ```
 
 ### 5. Check for Existing Patterns
 
 Before storing, check if pattern already exists:
-```
+
+```yaml
 mcp__amem__search_memory:
-  query="[pattern name]"
-  k=5
+  query: "[pattern name]"
+  k: 5
 ```
 
 If exists, update rather than duplicate:
-```
+
+```yaml
 mcp__amem__update_memory:
-  memory_id="[existing]"
-  content="[updated with new example]"
+  memory_id: "[existing]"
+  content: "[updated with new example]"
 ```
 
 Note: A-MEM may automatically evolve existing memories when you store related content.
@@ -179,6 +188,7 @@ Note: A-MEM may automatically evolve existing memories when you store related co
 Add task completion to `.codeagent/knowledge/PROJECT.md`:
 
 **Recent Completions section:**
+
 ```markdown
 ## Recent Completions
 
@@ -191,6 +201,7 @@ Add task completion to `.codeagent/knowledge/PROJECT.md`:
 ```
 
 **Key Decisions section (if applicable):**
+
 ```markdown
 ## Key Decisions
 
@@ -200,6 +211,7 @@ Add task completion to `.codeagent/knowledge/PROJECT.md`:
 ```
 
 **Architecture section (if new patterns):**
+
 ```markdown
 ## Architecture
 

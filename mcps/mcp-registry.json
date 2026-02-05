@@ -1,103 +1,151 @@
 {
-  "version": "1.0",
-  "prefix": "codeagent-",
-  "description": "Registry of CodeAgent-managed MCPs. Force reinstall only affects MCPs listed here.",
-  "docker": [
-    {
-      "name": "qdrant",
-      "container": "codeagent-qdrant",
-      "healthcheck": {
-        "type": "tcp",
-        "port": 6333
-      },
-      "dependencies": [],
-      "mcp_registration": false
-    }
-  ],
-  "npm": [
-    {
-      "name": "context7",
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
-      "env": {},
-      "required": true
-    }
-  ],
-  "npm_optional": [
-    {
-      "name": "github",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env_key": "GITHUB_TOKEN",
-      "env_var": "GITHUB_PERSONAL_ACCESS_TOKEN",
-      "description": "GitHub repository, issues, PRs, and code search"
-    },
-    {
-      "name": "tavily",
-      "command": "npx",
-      "args": ["-y", "tavily-mcp"],
-      "env_key": "TAVILY_API_KEY",
-      "env_var": "TAVILY_API_KEY"
-    },
-    {
-      "name": "figma",
-      "command": "npx",
-      "args": ["-y", "figma-developer-mcp"],
-      "env_key": "FIGMA_API_KEY",
-      "env_var": "FIGMA_API_KEY",
-      "description": "Figma design integration for extracting design tokens, layouts, and styles"
-    },
-    {
-      "name": "supabase",
-      "command": "npx",
-      "args": ["-y", "@supabase/mcp-server-supabase@latest"],
-      "env_key": "SUPABASE_ACCESS_TOKEN",
-      "env_var": "SUPABASE_ACCESS_TOKEN",
-      "description": "Supabase project integration for database, auth, and edge functions"
-    }
-  ],
-  "uvx": [
-    {
-      "name": "code-execution",
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/elusznik/mcp-server-code-execution-mode", "mcp-server-code-execution-mode", "run"],
-      "env": {
-        "MCP_BRIDGE_RUNTIME": "docker",
-        "MCP_BRIDGE_IMAGE": "python:3.13-slim",
-        "MCP_BRIDGE_TIMEOUT": "60",
-        "MCP_BRIDGE_MEMORY": "512m"
-      },
-      "required": true,
-      "description": "Zero-context code execution sandbox. Runs Python/CLIs in isolated Docker containers.",
-      "prerequisites": ["docker", "uv"],
-      "docker_image": "python:3.13-slim"
-    }
-  ],
-  "python": [
-    {
-      "name": "reflection",
-      "module": "reflection_mcp.server",
-      "path": "mcps/reflection-mcp",
-      "required": true
-    },
-    {
-      "name": "amem",
-      "module": "amem_mcp.server",
-      "path": "mcps/amem-mcp",
-      "extras": "full",
-      "required": true,
-      "description": "Brain-like memory with automatic linking and evolution (A-MEM)"
-    },
-    {
-      "name": "codebase",
-      "module": "codebase_rag.server",
-      "path": "mcps/codebase-rag",
-      "required": false,
-      "description": "Codebase indexing with Merkle tree, Tree-sitter, and Qdrant hybrid search",
-      "env": {
-        "QDRANT_HOST": "localhost",
-        "QDRANT_PORT": "6333"
-      }
-    }
-  ]
+	"version": "1.1",
+	"prefix": "codeagent-",
+	"description": "Registry of CodeAgent-managed MCPs. All Python MCPs install from GitHub by default. Use --local flag for editable development installs.",
+	"docker": [
+		{
+			"name": "qdrant",
+			"container": "codeagent-qdrant",
+			"healthcheck": {
+				"type": "tcp",
+				"port": 6333
+			},
+			"dependencies": [],
+			"mcp_registration": false
+		}
+	],
+	"npm": [
+		{
+			"name": "context7",
+			"command": "npx",
+			"args": ["-y", "@upstash/context7-mcp"],
+			"env": {},
+			"required": true
+		}
+	],
+	"npm_optional": [
+		{
+			"name": "github",
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-github"],
+			"env_key": "GITHUB_TOKEN",
+			"env_var": "GITHUB_PERSONAL_ACCESS_TOKEN",
+			"description": "GitHub repository, issues, PRs, and code search"
+		},
+		{
+			"name": "tavily",
+			"command": "npx",
+			"args": ["-y", "tavily-mcp"],
+			"env_key": "TAVILY_API_KEY",
+			"env_var": "TAVILY_API_KEY"
+		},
+		{
+			"name": "figma",
+			"command": "npx",
+			"args": ["-y", "figma-developer-mcp"],
+			"env_key": "FIGMA_API_KEY",
+			"env_var": "FIGMA_API_KEY",
+			"description": "Figma design integration for extracting design tokens, layouts, and styles"
+		},
+		{
+			"name": "supabase",
+			"command": "npx",
+			"args": ["-y", "@supabase/mcp-server-supabase@latest"],
+			"env_key": "SUPABASE_ACCESS_TOKEN",
+			"env_var": "SUPABASE_ACCESS_TOKEN",
+			"description": "Supabase project integration for database, auth, and edge functions"
+		}
+	],
+	"uvx": [
+		{
+			"name": "code-execution",
+			"command": "uvx",
+			"args": [
+				"--from",
+				"git+https://github.com/elusznik/mcp-server-code-execution-mode",
+				"mcp-server-code-execution-mode",
+				"run"
+			],
+			"env": {
+				"MCP_BRIDGE_RUNTIME": "docker",
+				"MCP_BRIDGE_IMAGE": "python:3.13-slim",
+				"MCP_BRIDGE_TIMEOUT": "60",
+				"MCP_BRIDGE_MEMORY": "512m"
+			},
+			"required": true,
+			"description": "Zero-context code execution sandbox. Runs Python/CLIs in isolated Docker containers.",
+			"prerequisites": ["docker", "uv"],
+			"docker_image": "python:3.13-slim"
+		},
+		{
+			"name": "notebooklm",
+			"command": "uvx",
+			"args": ["--from", "notebooklm-mcp-cli", "notebooklm-mcp"],
+			"env": {},
+			"required": false,
+			"description": "Google NotebookLM integration with 29 tools for notebook management, audio generation, and research automation. Requires Chrome and Google account setup via 'nlm setup'.",
+			"prerequisites": ["uv", "google-chrome"],
+			"setup_command": "uvx --from notebooklm-mcp-cli nlm setup"
+		}
+	],
+	"python": [
+		{
+			"name": "reflection",
+			"type": "python",
+			"package": "reflection-mcp",
+			"module": "reflection_mcp.server",
+			"github": "Questi0nM4rk/reflection-mcp",
+			"branch": "main",
+			"extras": "",
+			"local_path": "~/Projects/reflection-mcp",
+			"required": true,
+			"env": {},
+			"dependencies": [],
+			"description": "Self-reflection and episodic memory for learning from failures"
+		},
+		{
+			"name": "amem",
+			"type": "python",
+			"package": "amem-mcp",
+			"module": "amem_mcp.server",
+			"github": "Questi0nM4rk/amem-mcp",
+			"branch": "main",
+			"extras": "full",
+			"local_path": "~/Projects/amem-mcp",
+			"required": true,
+			"env": {},
+			"dependencies": [],
+			"description": "Brain-like memory with automatic linking and evolution (A-MEM)"
+		},
+		{
+			"name": "codebase",
+			"type": "python",
+			"package": "codebase-rag",
+			"module": "codebase_rag.server",
+			"github": "Questi0nM4rk/codebase-mcp",
+			"branch": "main",
+			"extras": "",
+			"local_path": "~/Projects/codebase-mcp",
+			"required": false,
+			"env": {
+				"OPENAI_API_KEY": "${OPENAI_API_KEY}"
+			},
+			"dependencies": [],
+			"description": "Codebase indexing with Tree-sitter parsing and libSQL hybrid search"
+		},
+		{
+			"name": "backlog",
+			"type": "python",
+			"package": "backlog-mcp",
+			"module": "backlog_mcp.server",
+			"github": "Questi0nM4rk/backlog-mcp",
+			"branch": "main",
+			"extras": "",
+			"local_path": "~/Projects/backlog-mcp",
+			"required": false,
+			"env": {},
+			"dependencies": [],
+			"description": "Task and sprint management with single-task loading to prevent scope creep"
+		}
+	]
 }

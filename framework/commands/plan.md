@@ -8,7 +8,7 @@ Gathers context, designs solution, creates backlog items (epics/tasks), and dete
 
 ## Usage
 
-```
+```text
 /plan "Add JWT authentication"              # Standard planning
 /plan "Add users and products"              # Auto-detects if parallelizable
 /plan --sequential "Complex refactoring"    # Force sequential mode
@@ -19,7 +19,7 @@ Gathers context, designs solution, creates backlog items (epics/tasks), and dete
 
 This command spawns three agents:
 
-```
+```text
 Main Claude (Orchestrator)
       │
       ├─► researcher agent (opus)
@@ -39,6 +39,68 @@ Main Claude (Orchestrator)
 
 ## Process
 
+### Phase 0: BDD - Behavior Definition
+
+Before technical research, define business behaviors in Gherkin format:
+
+```gherkin
+Feature: [Feature Name]
+  As a [role]
+  I want [capability]
+  So that [business value]
+
+  Scenario: [Happy path scenario]
+    Given [initial state]
+    And [additional preconditions]
+    When [action taken]
+    Then [expected outcome]
+    And [additional assertions]
+
+  Scenario: [Error case scenario]
+    Given [initial state]
+    When [invalid action]
+    Then [error handling]
+
+  Scenario: [Edge case scenario]
+    Given [edge condition]
+    When [action]
+    Then [expected behavior]
+```
+
+**BDD Rules:**
+
+- Write scenarios BEFORE technical design
+- Each scenario = one acceptance test
+- Use domain language, not technical terms
+- Cover happy path AND error cases
+- Minimum 3 scenarios per feature
+
+**Output:** Include scenarios in plan output:
+
+```gherkin
+### Behaviors (BDD)
+
+Feature: User Authentication
+  As a user
+  I want to login with my credentials
+  So that I can access protected resources
+
+  Scenario: Successful login with valid credentials
+    Given a registered user with email "user@example.com"
+    And password "SecurePass123!"
+    When they submit the login form
+    Then they receive a valid JWT token
+    And are redirected to the dashboard
+
+  Scenario: Failed login with invalid password
+    Given a registered user with email "user@example.com"
+    When they submit with password "WrongPassword"
+    Then they receive a 401 error
+    And see "Invalid credentials" message
+```
+
+These scenarios flow to the architect agent for technical specification, then to the implementer as test cases.
+
 ### Phase 1: Research (researcher agent)
 
 ```markdown
@@ -48,6 +110,44 @@ Research Priority:
 3. Only if needed: Context7 for docs, external research
 
 Output: Context summary with confidence score
+```
+
+### Phase 1.5: Model Selection
+
+Query historical performance to determine suggested model for implementation:
+
+```python
+# Extract task keywords from research phase
+task_keywords = extract_keywords(task_description)  # e.g., "auth", "database", "api"
+primary_pattern = task_keywords[0] if task_keywords else "general"
+
+# Query reflection for model effectiveness on similar tasks
+effectiveness = mcp__reflection__get_model_effectiveness(
+    task_pattern=primary_pattern,  # Primary task domain
+    feedback_type=None  # Or specific type if known from research
+)
+
+suggested_model = effectiveness["recommended_model"]
+# Returns: "haiku" (default) or "opus" (if haiku historically fails)
+```
+
+**Selection Rules:**
+
+| Condition                  | Model | Reason                                |
+| -------------------------- | ----- | ------------------------------------- |
+| No historical data         | haiku | Start cheap, escalate if needed       |
+| Haiku success >= 50%       | haiku | Working well enough                   |
+| Haiku success < 50% (n>=3) | opus  | Historical data shows struggles       |
+| Complex arch task          | opus  | Needs full reasoning (override)       |
+
+**Output Addition:**
+
+Include model recommendation in plan output:
+
+```markdown
+### Suggested Model: [haiku|opus]
+Confidence: [low|medium|high]
+Reason: [from mcp__reflection__get_model_effectiveness]
 ```
 
 ### Phase 2: Design (architect agent)
@@ -201,30 +301,33 @@ Reference: `@~/.claude/framework/references/execution-strategies.md`
 
 ## Mode Detection Rules
 
-| Condition | Mode | Reason |
-|-----------|------|--------|
-| Single subtask | SEQUENTIAL | Nothing to parallelize |
-| `--sequential` flag | SEQUENTIAL | User forced |
-| Any file modified by 2+ subtasks | SEQUENTIAL | Conflict risk |
-| Subtask A modifies B's dependency | SEQUENTIAL | Dependency conflict |
-| Estimated speedup < 30% | SEQUENTIAL | Overhead not worth it |
-| All subtasks fully isolated | PARALLEL | Safe to proceed |
+| Condition                          | Mode       | Reason                     |
+| ---------------------------------- | ---------- | -------------------------- |
+| Single subtask                     | SEQUENTIAL | Nothing to parallelize     |
+| `--sequential` flag                | SEQUENTIAL | User forced                |
+| Any file modified by 2+ subtasks   | SEQUENTIAL | Conflict risk              |
+| Subtask A modifies B's dependency  | SEQUENTIAL | Dependency conflict        |
+| Estimated speedup < 30%            | SEQUENTIAL | Overhead not worth it      |
+| All subtasks fully isolated        | PARALLEL   | Safe to proceed            |
 
 ## A-MEM Integration
 
 The planning pipeline uses A-MEM memory throughout:
 
 **Researcher agent queries A-MEM for:**
+
 - Past similar designs (avoids reinventing)
 - Project-specific constraints and conventions
 - Previous architecture decisions
 
 **Architect agent stores:**
+
 - New design decisions (with alternatives considered)
 - Tradeoff analysis and rationale
 - Implementation notes for future reference
 
 **Orchestrator agent queries/stores:**
+
 - Past parallelization decisions
 - Known file conflict patterns
 
@@ -236,7 +339,7 @@ After planning completes, generate context files in `.planning/` directory:
 
 ### Directory Structure
 
-```
+```text
 .planning/
 ├── STATE.md       # Session state and progress tracking
 ├── PLAN.md        # Executable task definitions (XML format)
@@ -248,6 +351,7 @@ After planning completes, generate context files in `.planning/` directory:
 Generated from template: `@~/.claude/framework/templates/planning/STATE.md.template`
 
 Contents:
+
 - Session ID (timestamp-based)
 - Current position (phase, task, status)
 - Decisions table (empty, filled during /implement)
@@ -259,6 +363,7 @@ Contents:
 Generated from template: `@~/.claude/framework/templates/planning/PLAN.md.template`
 
 Contents:
+
 - Task name and metadata
 - Execution mode (SEQUENTIAL/PARALLEL)
 - Execution strategy (A/B/C)
@@ -279,103 +384,87 @@ Add to plan output:
 Ready for `/implement` with strategy [A|B|C]
 ```
 
-## Backlog Integration
+## Backlog Integration (via backlog-mcp)
 
-After planning completes, generate backlog items in `.codeagent/backlog/`:
+After planning completes, create tasks in Convex via backlog-mcp.
+**Convex is the single source of truth** - no local YAML files.
+
+### Project Setup (first time)
+
+If project doesn't exist in Convex:
+
+```python
+mcp__backlog__create_project(
+    name="MyProject",
+    prefix="MP",
+    description="Project description"
+)
+```
 
 ### Epic Creation (if scope is large)
 
-**File:** `.codeagent/backlog/epics/EPIC-{N}.yaml`
-
-```yaml
-id: EPIC-{N}
-type: epic
-name: "[Task name from plan]"
-description: |
-  [From architect's architecture decision]
-status: ready
-priority: high
-tasks: [TASK-{N}, TASK-{N+1}]
-source:
-  type: plan
-  ref: "[session-id]"
-context:
-  files_to_reference: [from plan's affected files]
-  patterns_to_follow: [from architect's patterns]
-  constraints: [from plan's risks]
-created: "[timestamp]"
+```python
+mcp__backlog__create_task(
+    project="MP",
+    task_type="epic",
+    name="User Authentication System",
+    action="Implement complete auth flow with JWT",
+    priority=2,  # 1=critical, 2=high, 3=medium, 4=low
+    description="From architect's architecture decision",
+    done_criteria=[
+        "All subtasks completed",
+        "Integration tests pass"
+    ]
+)
+# Returns: {id: "MP-EPIC-001", status: "ready"}
 ```
 
 ### Task Creation
 
-**File:** `.codeagent/backlog/tasks/TASK-{N}.yaml`
-
-```yaml
-id: TASK-{N}
-type: task
-name: "[Step name from plan]"
-description: |
-  [Step description]
-epic: EPIC-{N}  # Link to parent epic
-status: ready
-depends_on: []  # Auto-populated from plan dependencies
-blocks: []
-implementation:
-  files:
-    exclusive: [from plan's exclusive files]
-    readonly: [from plan's readonly files]
-    forbidden: [from plan's forbidden files]
-  action: |
-    [From XML task action]
-  verify: [from XML task verify]
-  done: [from XML task done criteria]
-execution:
-  strategy: A  # From orchestrator's strategy decision
-  checkpoint_type: auto  # auto | human-verify | decision
-source:
-  type: plan
-  ref: "[session-id]"
-created: "[timestamp]"
+```python
+mcp__backlog__create_task(
+    project="MP",
+    task_type="task",
+    name="Add JWT validation middleware",
+    action="""
+    1. Create AuthMiddleware implementing IMiddleware
+    2. Use IAuthService.ValidateToken()
+    3. Return 401/403 appropriately
+    """,
+    priority=2,
+    files_exclusive=["src/Middleware/AuthMiddleware.cs"],
+    files_readonly=["src/Services/IAuthService.cs"],
+    files_forbidden=["src/Database/"],
+    verify=["dotnet test --filter AuthMiddleware"],
+    done_criteria=[
+        "AuthMiddleware.cs created",
+        "Middleware registered",
+        "All tests pass"
+    ],
+    depends_on=[],  # Task IDs that must complete first
+    parent_id="MP-EPIC-001",  # Link to parent epic
+    execution_strategy="A",  # A (auto), B (human-verify), C (decision)
+    checkpoint_type="auto",
+    suggested_model=suggested_model  # FROM MODEL SELECTION PHASE (haiku/opus)
+)
+# Returns: {id: "MP-TASK-001", status: "ready", suggested_model: "haiku"}
 ```
 
-### Update BACKLOG.md
+**Note:** The `suggested_model` field is determined by Phase 1.5 and passed to implementation.
 
-After creating items, regenerate `.codeagent/backlog/BACKLOG.md`:
+### Verify Creation
 
-```markdown
-# [Project] Backlog
-
-*Auto-generated. Do not edit manually.*
-
-## Summary
-
-| Type | Backlog | Ready | In Progress | Blocked | Done |
-|------|---------|-------|-------------|---------|------|
-| Epics | 0 | 1 | 0 | 0 | 0 |
-| Tasks | 0 | 3 | 0 | 0 | 0 |
-
-## Ready Items
-
-### EPIC-001: [name]
-- [ ] TASK-001: [name]
-- [ ] TASK-002: [name]
-- [ ] TASK-003: [name]
+```python
+mcp__backlog__get_backlog_summary(project="MP")
+# Returns summary with counts and ready items
 ```
 
-### ID Generation
-
-```
-1. Read .codeagent/config.yaml for id_prefix
-2. Find highest existing number for type
-3. Increment: {prefix}-{TYPE}-{N+1}
-
-Example: If id_prefix="MP" and highest task is TASK-005
-         Next task ID = MP-TASK-006
-```
+**Dashboard:** [http://localhost:6791](http://localhost:6791)
 
 ## Integration with /analyze
 
 If `/analyze` was run first:
+
 - Link epic to spike: `source.type: spike`, `source.ref: SPIKE-{N}`
 - Import findings as context
 - Reference spike output in epic description
@@ -388,5 +477,6 @@ If `/analyze` was run first:
 - If confidence < 7, the plan will recommend human review
 - Architecture decisions are stored in A-MEM for future reference
 - Context files are generated in `.planning/` directory
-- Backlog items are created in `.codeagent/backlog/`
+- Backlog items are created via backlog-mcp (Convex backend)
 - Maximum 2-3 tasks per plan to prevent context degradation
+- Dashboard at [http://localhost:6791](http://localhost:6791) for human backlog view
