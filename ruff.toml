@@ -43,13 +43,6 @@ ignore = [
   "FIX002", # TODOs are intentional reminders, not errors
 ]
 
-# Docstring style (applies when D rules are re-enabled)
-[lint.pydocstyle]
-convention = "google"
-
-# Annotation config (applies when ANN rules are re-enabled)
-# [lint.flake8-annotations]
-
 # Strict type checking hints
 [lint.flake8-type-checking]
 strict = true
