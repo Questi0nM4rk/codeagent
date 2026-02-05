@@ -14,7 +14,7 @@ AI agents tend to add inline suppressions (`# noqa`, `# type: ignore`, etc.) as 
 
 | Tool | Inline Comment | Ignored? | Exception File |
 |------|---------------|----------|----------------|
-| Ruff | `# noqa` | ✅ Yes (`ignore-noqa = true`) | `ruff.toml` `[lint.per-file-ignores]` |
+| Ruff | `# noqa` | ⚠️ Detected (pre-commit) | `ruff.toml` `[lint.per-file-ignores]` |
 | Semgrep | `# nosemgrep` | ✅ Yes (`--disable-nosem`) | `.semgrepignore` |
 | detect-secrets | `# pragma: allowlist secret` | ⚠️ Detected | `.secrets.baseline` |
 | Mypy | `# type: ignore` | ⚠️ Detected | `mypy.ini` or `pyproject.toml` |

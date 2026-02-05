@@ -18,12 +18,13 @@ repos:
         exclude: ^tests/
 
   # Ruff - Lint with ALL rules enabled
+  # --ignore-noqa: Disable inline noqa comments (forces exceptions through config)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.0
     hooks:
       - id: ruff
         name: "python - ruff lint (pedantic)"
-        args: ["--no-fix"]
+        args: ["--no-fix", "--ignore-noqa"]
       - id: ruff-format
         name: "python - ruff format"
         args: ["--check"]
