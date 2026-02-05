@@ -25,44 +25,44 @@ exit_code=0
 # Each pattern is on its own line for maintainability
 patterns=(
   # Python
-  '#\s*noqa'
-  '#\s*type:\s*ignore'
-  '#\s*pylint:\s*disable'
-  '#\s*pragma:\s*no\s*cover'
-  '#\s*pragma:\s*allowlist' # detect-secrets allowlist
-  '#\s*mypy:\s*ignore'
+  '#[[:space:]]*noqa'
+  '#[[:space:]]*type:[[:space:]]*ignore'
+  '#[[:space:]]*pylint:[[:space:]]*disable'
+  '#[[:space:]]*pragma:[[:space:]]*no[[:space:]]*cover'
+  '#[[:space:]]*pragma:[[:space:]]*allowlist' # detect-secrets allowlist
+  '#[[:space:]]*mypy:[[:space:]]*ignore'
 
   # JavaScript/TypeScript
-  '//\s*eslint-disable'
-  '//\s*@ts-ignore'
-  '//\s*@ts-expect-error'
-  '//\s*@ts-nocheck'
-  '/\*\s*eslint-disable'
+  '//[[:space:]]*eslint-disable'
+  '//[[:space:]]*@ts-ignore'
+  '//[[:space:]]*@ts-expect-error'
+  '//[[:space:]]*@ts-nocheck'
+  '/\*[[:space:]]*eslint-disable'
 
   # C/C++
-  '//\s*NOLINT'
-  '#pragma\s+warning\s*\(\s*disable'
+  '//[[:space:]]*NOLINT'
+  '#pragma[[:space:]]+warning[[:space:]]*\([[:space:]]*disable'
 
   # C#
-  '#pragma\s+warning\s+disable'
-  '//\s*ReSharper\s+disable'
+  '#pragma[[:space:]]+warning[[:space:]]+disable'
+  '//[[:space:]]*ReSharper[[:space:]]+disable'
 
   # Rust (allow attributes)
   '#\[allow\('
   '#!\[allow\('
 
   # Go
-  '//\s*nolint'
+  '//[[:space:]]*nolint'
 
   # Semgrep
-  '#\s*nosemgrep'
-  '//\s*nosemgrep'
+  '#[[:space:]]*nosemgrep'
+  '//[[:space:]]*nosemgrep'
 
   # Shell
-  '#\s*shellcheck\s+disable'
+  '#[[:space:]]*shellcheck[[:space:]]+disable'
 
   # Lua
-  '---@diagnostic\s+disable'
+  '---@diagnostic[[:space:]]+disable'
 )
 
 # Build combined pattern
