@@ -24,40 +24,45 @@ exit_code=0
 # Patterns to detect (extended regex)
 # Each pattern is on its own line for maintainability
 patterns=(
-    # Python
-    '#\s*noqa'
-    '#\s*type:\s*ignore'
-    '#\s*pylint:\s*disable'
-    '#\s*pragma:\s*no\s*cover'
-    '#\s*mypy:\s*ignore'
+  # Python
+  '#\s*noqa'
+  '#\s*type:\s*ignore'
+  '#\s*pylint:\s*disable'
+  '#\s*pragma:\s*no\s*cover'
+  '#\s*pragma:\s*allowlist' # detect-secrets allowlist
+  '#\s*mypy:\s*ignore'
 
-    # JavaScript/TypeScript
-    '//\s*eslint-disable'
-    '//\s*@ts-ignore'
-    '//\s*@ts-expect-error'
-    '//\s*@ts-nocheck'
-    '/\*\s*eslint-disable'
+  # JavaScript/TypeScript
+  '//\s*eslint-disable'
+  '//\s*@ts-ignore'
+  '//\s*@ts-expect-error'
+  '//\s*@ts-nocheck'
+  '/\*\s*eslint-disable'
 
-    # C/C++
-    '//\s*NOLINT'
-    '#pragma\s+warning\s*\(\s*disable'
+  # C/C++
+  '//\s*NOLINT'
+  '#pragma\s+warning\s*\(\s*disable'
 
-    # C#
-    '#pragma\s+warning\s+disable'
-    '//\s*ReSharper\s+disable'
+  # C#
+  '#pragma\s+warning\s+disable'
+  '//\s*ReSharper\s+disable'
 
-    # Rust (allow attributes)
-    '#\[allow\('
-    '#!\[allow\('
+  # Rust (allow attributes)
+  '#\[allow\('
+  '#!\[allow\('
 
-    # Go
-    '//\s*nolint'
+  # Go
+  '//\s*nolint'
 
-    # Shell
-    '#\s*shellcheck\s+disable'
+  # Semgrep
+  '#\s*nosemgrep'
+  '//\s*nosemgrep'
 
-    # Lua
-    '---@diagnostic\s+disable'
+  # Shell
+  '#\s*shellcheck\s+disable'
+
+  # Lua
+  '---@diagnostic\s+disable'
 )
 
 # Build combined pattern
@@ -65,30 +70,30 @@ combined_pattern=$(printf '%s\n' "${patterns[@]}" | paste -sd '|' -)
 
 # Check each file passed to the hook
 for file in "$@"; do
-    if [[ ! -f "$file" ]]; then
-        continue
-    fi
+  if [[ ! -f "$file" ]]; then
+    continue
+  fi
 
-    # Search for suppression comments
-    if grep -EnH "$combined_pattern" "$file" 2>/dev/null; then
-        exit_code=1
-    fi
+  # Search for suppression comments
+  if grep -EnH "$combined_pattern" "$file" 2>/dev/null; then
+    exit_code=1
+  fi
 done
 
 if [[ $exit_code -ne 0 ]]; then
-    echo ""
-    echo "ERROR: Suppression comments detected!"
-    echo ""
-    echo "Philosophy: 'Everything is an error or it's ignored'"
-    echo ""
-    echo "Instead of suppressing warnings:"
-    echo "  1. Fix the underlying issue, OR"
-    echo "  2. Update the linter configuration to ignore this rule globally"
-    echo ""
-    echo "If this is a false positive, add a comment explaining WHY the"
-    echo "suppression is necessary and update .pre-commit-config.yaml to"
-    echo "exclude this specific file/pattern from this check."
-    echo ""
+  echo ""
+  echo "ERROR: Suppression comments detected!"
+  echo ""
+  echo "Philosophy: 'Everything is an error or it's ignored'"
+  echo ""
+  echo "Instead of suppressing warnings:"
+  echo "  1. Fix the underlying issue, OR"
+  echo "  2. Update the linter configuration to ignore this rule globally"
+  echo ""
+  echo "If this is a false positive, add a comment explaining WHY the"
+  echo "suppression is necessary and update .pre-commit-config.yaml to"
+  echo "exclude this specific file/pattern from this check."
+  echo ""
 fi
 
 exit $exit_code

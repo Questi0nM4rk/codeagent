@@ -17,6 +17,10 @@ unsafe-fixes = false
 # Enable ALL rules - no exceptions for AI
 select = ["ALL"]
 
+# CRITICAL: Disable inline noqa comments - forces all ignores through config file
+# AI agents cannot add "# noqa" - they must ask user to update per-file-ignores
+ignore-noqa = true
+
 ignore = [
   # === Formatter conflicts only ===
   "W191",   # tab-indentation
