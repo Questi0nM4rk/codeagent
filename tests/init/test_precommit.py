@@ -92,7 +92,7 @@ class TestAssembleConfig:
         """Test assembling config includes Python template."""
         result = assemble_config(["python"], sample_registry, templates_dir)
 
-        assert len(result["repos"]) == 2  # noqa: PLR2004
+        assert len(result["repos"]) == 2
         repos = [r["repo"] for r in result["repos"]]
         assert any("ruff" in r for r in repos)
 
@@ -100,7 +100,7 @@ class TestAssembleConfig:
         """Test assembling config with multiple languages."""
         result = assemble_config(["python", "rust"], sample_registry, templates_dir)
 
-        assert len(result["repos"]) == 3  # noqa: PLR2004
+        assert len(result["repos"]) == 3
 
     def test_assemble_missing_template_warns(
         self, templates_dir: Path, sample_registry: dict, capsys: pytest.CaptureFixture

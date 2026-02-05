@@ -106,3 +106,25 @@ class TestDetectLanguages:
         result = detect_languages(project, sample_registry)
 
         assert "shell" in result
+
+    def test_detect_by_directory_rule(self, tmp_path: Path) -> None:
+        """Test detecting by directory presence rule."""
+        project = tmp_path / "dir-project"
+        project.mkdir()
+        (project / "vendor").mkdir()
+        registry = {"vendorlang": {"detect": {"directories": ["vendor"]}}}
+
+        result = detect_languages(project, registry)
+
+        assert "vendorlang" in result
+
+    def test_directory_rule_not_triggered_for_file(self, tmp_path: Path) -> None:
+        """Test directory rule doesn't match files with same name."""
+        project = tmp_path / "file-project"
+        project.mkdir()
+        (project / "vendor").write_text("not a directory")  # File, not dir
+        registry = {"vendorlang": {"detect": {"directories": ["vendor"]}}}
+
+        result = detect_languages(project, registry)
+
+        assert "vendorlang" not in result
