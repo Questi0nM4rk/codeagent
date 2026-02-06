@@ -1,0 +1,179 @@
+# Ruff Configuration - PEDANTIC Python Linting
+# https://docs.astral.sh/ruff/configuration/
+# Copy to project root as ruff.toml
+#
+# Philosophy: AI agents need hard stops. No warnings, no suggestions.
+# Everything is an error or it's ignored.
+
+target-version = "py311"
+line-length = 88
+indent-width = 4
+
+# Strict: never auto-fix, force manual review
+fix = false
+unsafe-fixes = false
+
+[lint]
+# Enable ALL rules - no exceptions for AI
+select = ["ALL"]
+
+ignore = [
+  # === Formatter conflicts ===
+  "W191",   # tab-indentation
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "D206",   # indent-with-spaces
+  "D300",   # triple-single-quotes
+  "Q000",   # bad-quotes-inline-string
+  "Q001",   # bad-quotes-multiline-string
+  "Q002",   # bad-quotes-docstring
+  "Q003",   # avoidable-escaped-quote
+  "COM812", # missing-trailing-comma
+  "COM819", # prohibited-trailing-comma
+  "ISC001", # single-line-implicit-string-concatenation
+  "ISC002", # multi-line-implicit-string-concatenation
+
+  # === Disabled rule groups ===
+  "D",   # pydocstyle - docstrings not enforced yet
+  "ANN", # annotations - using mypy --strict for type checking
+
+  # === Project-wide exceptions ===
+  "TD003",  # TODOs use Epic numbers, not issue links
+  "FIX002", # TODOs are intentional reminders, not errors
+]
+
+# Strict type checking hints
+[lint.flake8-type-checking]
+strict = true
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+
+# === IMPORTS - TOP OF FILE ONLY ===
+[lint.isort]
+force-single-line = false
+force-sort-within-sections = true
+known-first-party = ["codeagent"]
+combine-as-imports = true
+split-on-trailing-comma = true
+force-to-top = ["__future__"]
+# PEP 563: Deferred annotation evaluation (strings instead of objects)
+# Benefits: Avoids circular imports, enables forward references without quotes
+# Tradeoffs: Runtime issues with get_type_hints(), some ORMs, Pydantic v1
+#   Mitigations: Keep types at module level, use model_rebuild() in Pydantic v2
+# Note: PEP 649/749 will supersede this with lazy evaluation (no string storage)
+required-imports = ["from __future__ import annotations"]
+
+# === PATHLIB - MANDATORY (no os.path) ===
+# PTH rules are in ALL, this ensures they're not ignored
+
+# === RETURNS - EXPLICIT ALWAYS ===
+# RET rules are in ALL - explicit returns required
+
+# === SIMPLIFY - FORCE CLEAN CODE ===
+# SIM rules are in ALL - no complex conditionals
+
+# === NAMING CONVENTIONS ===
+[lint.pep8-naming]
+classmethod-decorators = [
+  "classmethod",
+  "pydantic.validator",
+  "pydantic.field_validator",
+]
+staticmethod-decorators = ["staticmethod"]
+
+# === COMPLEXITY LIMITS - STRICT ===
+[lint.mccabe]
+max-complexity = 10
+
+[lint.pylint]
+max-args = 5
+max-bool-expr = 3
+max-branches = 10
+max-locals = 10
+max-nested-blocks = 3
+max-positional-args = 5
+max-public-methods = 15
+max-returns = 4
+max-statements = 30
+
+# === BUGBEAR - STRICT ===
+[lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
+
+# === COMPREHENSIONS - FORCE CLEAN ===
+[lint.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = false
+
+# === QUOTES - CONSISTENT ===
+[lint.flake8-quotes]
+inline-quotes = "double"
+multiline-quotes = "double"
+docstring-quotes = "double"
+
+# === TIDY IMPORTS ===
+[lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[lint.flake8-tidy-imports.banned-api]
+"typing.Optional".msg = "Use `X | None` instead"
+"typing.Union".msg = "Use `X | Y` instead"
+"typing.List".msg = "Use `list[X]` instead"
+"typing.Dict".msg = "Use `dict[X, Y]` instead"
+"typing.Set".msg = "Use `set[X]` instead"
+"typing.Tuple".msg = "Use `tuple[X, ...]` instead"
+
+# === ERRMSG - PROPER EXCEPTIONS ===
+[lint.flake8-errmsg]
+max-string-length = 50
+
+# === PYTEST STYLE ===
+[lint.flake8-pytest-style]
+fixture-parentheses = true
+mark-parentheses = true
+parametrize-names-type = "csv"
+parametrize-values-type = "list"
+raises-require-match-for = [
+  "ValueError",
+  "TypeError",
+  "KeyError",
+  "RuntimeError",
+]
+
+# === PER-FILE IGNORES ===
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+  "S101",    # assert allowed in tests
+  "ARG001",  # unused function argument (fixtures)
+  "ARG002",  # unused method argument
+  "PLR2004", # magic value comparison in tests
+  "PLC0415", # imports inside functions (lazy imports for missing packages)
+  "FBT001",  # boolean positional args (test helper parameters)
+  "FBT002",  # boolean default args
+  "FBT003",  # boolean positional values in calls
+]
+"**/conftest.py" = [
+  "FBT001", # boolean args in fixtures
+  "FBT002", # boolean defaults in fixtures
+]
+"__init__.py" = [
+  "F401", # unused import (re-exports)
+]
+"**/cli/**/*.py" = [
+  "FBT001",  # boolean flags are standard in CLI
+  "FBT002",  # boolean defaults in CLI
+  "FBT003",  # boolean values in CLI calls
+  "PLC0415", # lazy imports in CLI callbacks
+  "PLR0912", # CLI commands can have many branches
+  "PLR0915", # CLI commands can have many statements
+  "C901",    # CLI commands can be complex
+  "S603",    # subprocess calls with validated inputs
+  "S607",    # partial executable paths (using PATH)
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+docstring-code-format = true
+docstring-code-line-length = 80

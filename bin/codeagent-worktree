@@ -33,170 +33,177 @@ NC='\033[0m' # No Color
 
 # Get current branch name
 get_parent_branch() {
-    git rev-parse --abbrev-ref HEAD
+  git rev-parse --abbrev-ref HEAD
 }
 
 # Sanitize branch name (slashes to dashes)
 get_parent_sanitized() {
-    get_parent_branch | tr '/' '-'
+  get_parent_branch | tr '/' '-'
 }
 
 # Get task branch name (sanitized-parent--task-id)
 # Uses double-dash separator to avoid conflict with parent branch
 get_task_branch() {
-    local task_id="$1"
-    echo "$(get_parent_sanitized)--${task_id}"
+  local task_id="$1"
+  echo "$(get_parent_sanitized)--${task_id}"
 }
 
 # Get worktree path
 get_worktree_path() {
-    local task_id="$1"
-    echo "${WORKTREES_DIR}/$(get_parent_sanitized)/${task_id}"
+  local task_id="$1"
+  echo "${WORKTREES_DIR}/$(get_parent_sanitized)/${task_id}"
 }
 
 # Setup a new worktree for a task
 cmd_setup() {
-    local task_id="$1"
+  local task_id="$1"
 
-    if [ -z "$task_id" ]; then
-        echo -e "${RED}Error: TASK-ID required${NC}" >&2
-        echo "Usage: codeagent worktree setup TASK-ID" >&2
-        exit 1
-    fi
+  if [ -z "$task_id" ]; then
+    echo -e "${RED}Error: TASK-ID required${NC}" >&2
+    echo "Usage: codeagent worktree setup TASK-ID" >&2
+    exit 1
+  fi
 
-    local worktree_path=$(get_worktree_path "$task_id")
-    local task_branch=$(get_task_branch "$task_id")
-    local parent_branch=$(get_parent_branch)
+  local worktree_path
+  worktree_path=$(get_worktree_path "$task_id")
+  local task_branch
+  task_branch=$(get_task_branch "$task_id")
+  local parent_branch
+  parent_branch=$(get_parent_branch)
 
-    # Check if worktree already exists
-    if [ -d "$worktree_path" ]; then
-        echo -e "${YELLOW}Worktree already exists at ${worktree_path}${NC}" >&2
-        echo "{\"worktree\": \"$worktree_path\", \"branch\": \"$task_branch\", \"status\": \"exists\"}"
-        exit 0
-    fi
+  # Check if worktree already exists
+  if [ -d "$worktree_path" ]; then
+    echo -e "${YELLOW}Worktree already exists at ${worktree_path}${NC}" >&2
+    echo "{\"worktree\": \"$worktree_path\", \"branch\": \"$task_branch\", \"status\": \"exists\"}"
+    exit 0
+  fi
 
-    # Create parent directory
-    mkdir -p "$(dirname "$worktree_path")"
+  # Create parent directory
+  mkdir -p "$(dirname "$worktree_path")"
 
-    # Create task branch from current HEAD (ignore if exists)
-    git branch "$task_branch" HEAD 2>/dev/null || true
+  # Create task branch from current HEAD (ignore if exists)
+  git branch "$task_branch" HEAD 2>/dev/null || true
 
-    # Create worktree
-    git worktree add "$worktree_path" "$task_branch" >/dev/null 2>&1
+  # Create worktree
+  git worktree add "$worktree_path" "$task_branch" >/dev/null 2>&1
 
-    # Output JSON for caller
-    echo "{\"worktree\": \"$worktree_path\", \"branch\": \"$task_branch\", \"parent\": \"$parent_branch\", \"status\": \"created\"}"
+  # Output JSON for caller
+  echo "{\"worktree\": \"$worktree_path\", \"branch\": \"$task_branch\", \"parent\": \"$parent_branch\", \"status\": \"created\"}"
 }
 
 # Cleanup a worktree (remove worktree and branch)
 cmd_cleanup() {
-    local task_id="$1"
-    local delete_branch="${2:-true}"
+  local task_id="$1"
+  local delete_branch="${2:-true}"
 
-    if [ -z "$task_id" ]; then
-        echo -e "${RED}Error: TASK-ID required${NC}" >&2
-        echo "Usage: codeagent worktree cleanup TASK-ID [keep-branch]" >&2
-        exit 1
-    fi
+  if [ -z "$task_id" ]; then
+    echo -e "${RED}Error: TASK-ID required${NC}" >&2
+    echo "Usage: codeagent worktree cleanup TASK-ID [keep-branch]" >&2
+    exit 1
+  fi
 
-    local worktree_path=$(get_worktree_path "$task_id")
-    local task_branch=$(get_task_branch "$task_id")
+  local worktree_path
+  worktree_path=$(get_worktree_path "$task_id")
+  local task_branch
+  task_branch=$(get_task_branch "$task_id")
 
-    # Remove worktree
-    if [ -d "$worktree_path" ]; then
-        git worktree remove "$worktree_path" --force 2>/dev/null || true
-        echo -e "${GREEN}Removed worktree: ${worktree_path}${NC}" >&2
-    fi
+  # Remove worktree
+  if [ -d "$worktree_path" ]; then
+    git worktree remove "$worktree_path" --force 2>/dev/null || true
+    echo -e "${GREEN}Removed worktree: ${worktree_path}${NC}" >&2
+  fi
 
-    # Delete branch if requested
-    if [ "$delete_branch" = "true" ]; then
-        git branch -D "$task_branch" 2>/dev/null || true
-        echo -e "${GREEN}Deleted branch: ${task_branch}${NC}" >&2
-    fi
+  # Delete branch if requested
+  if [ "$delete_branch" = "true" ]; then
+    git branch -D "$task_branch" 2>/dev/null || true
+    echo -e "${GREEN}Deleted branch: ${task_branch}${NC}" >&2
+  fi
 
-    # Clean empty parent directories
-    rmdir "$(dirname "$worktree_path")" 2>/dev/null || true
-    rmdir "$WORKTREES_DIR" 2>/dev/null || true
+  # Clean empty parent directories
+  rmdir "$(dirname "$worktree_path")" 2>/dev/null || true
+  rmdir "$WORKTREES_DIR" 2>/dev/null || true
 
-    echo "{\"status\": \"cleaned\", \"task\": \"$task_id\"}"
+  echo "{\"status\": \"cleaned\", \"task\": \"$task_id\"}"
 }
 
 # Merge task branch to parent and cleanup
 cmd_merge() {
-    local task_id="$1"
+  local task_id="$1"
 
-    if [ -z "$task_id" ]; then
-        echo -e "${RED}Error: TASK-ID required${NC}" >&2
-        echo "Usage: codeagent worktree merge TASK-ID" >&2
-        exit 1
-    fi
+  if [ -z "$task_id" ]; then
+    echo -e "${RED}Error: TASK-ID required${NC}" >&2
+    echo "Usage: codeagent worktree merge TASK-ID" >&2
+    exit 1
+  fi
 
-    local task_branch=$(get_task_branch "$task_id")
-    local parent_branch=$(get_parent_branch)
+  local task_branch
+  task_branch=$(get_task_branch "$task_id")
+  local parent_branch
+  parent_branch=$(get_parent_branch)
 
-    # Ensure we're in the main worktree (git root)
-    cd "$(git rev-parse --show-toplevel)"
+  # Ensure we're in the main worktree (git root)
+  cd "$(git rev-parse --show-toplevel)"
 
-    # Check for conflicts before merging
-    if ! git merge-tree "$(git merge-base HEAD "$task_branch")" HEAD "$task_branch" >/dev/null 2>&1; then
-        echo -e "${YELLOW}Warning: Potential merge conflicts detected${NC}" >&2
-    fi
+  # Check for conflicts before merging
+  if ! git merge-tree "$(git merge-base HEAD "$task_branch")" HEAD "$task_branch" >/dev/null 2>&1; then
+    echo -e "${YELLOW}Warning: Potential merge conflicts detected${NC}" >&2
+  fi
 
-    # Merge task branch with no-ff to preserve history
-    if git merge "$task_branch" --no-ff -m "Merge ${task_id} into ${parent_branch}"; then
-        echo -e "${GREEN}Merged ${task_branch} into ${parent_branch}${NC}" >&2
+  # Merge task branch with no-ff to preserve history
+  if git merge "$task_branch" --no-ff -m "Merge ${task_id} into ${parent_branch}"; then
+    echo -e "${GREEN}Merged ${task_branch} into ${parent_branch}${NC}" >&2
 
-        # Cleanup after successful merge
-        cmd_cleanup "$task_id" "true"
+    # Cleanup after successful merge
+    cmd_cleanup "$task_id" "true"
 
-        echo "{\"status\": \"merged\", \"task\": \"$task_id\", \"into\": \"$parent_branch\"}"
-    else
-        echo -e "${RED}Merge failed - resolve conflicts manually${NC}" >&2
-        echo "{\"status\": \"conflict\", \"task\": \"$task_id\", \"branch\": \"$task_branch\"}"
-        exit 1
-    fi
+    echo "{\"status\": \"merged\", \"task\": \"$task_id\", \"into\": \"$parent_branch\"}"
+  else
+    echo -e "${RED}Merge failed - resolve conflicts manually${NC}" >&2
+    echo "{\"status\": \"conflict\", \"task\": \"$task_id\", \"branch\": \"$task_branch\"}"
+    exit 1
+  fi
 }
 
 # List active worktrees
 cmd_list() {
-    if [ ! -d "$WORKTREES_DIR" ]; then
-        echo "No active worktrees"
-        exit 0
-    fi
+  if [ ! -d "$WORKTREES_DIR" ]; then
+    echo "No active worktrees"
+    exit 0
+  fi
 
-    echo "Active worktrees:"
-    git worktree list | grep -E "\.worktrees" || echo "  (none)"
+  echo "Active worktrees:"
+  git worktree list | grep -E "\.worktrees" || echo "  (none)"
 }
 
 # Show detailed status
 cmd_status() {
-    echo "=== Worktree Status ==="
-    echo ""
-    echo "Parent branch: $(get_parent_branch)"
-    echo "Worktrees directory: $WORKTREES_DIR"
-    echo ""
+  echo "=== Worktree Status ==="
+  echo ""
+  echo "Parent branch: $(get_parent_branch)"
+  echo "Worktrees directory: $WORKTREES_DIR"
+  echo ""
 
-    if [ ! -d "$WORKTREES_DIR" ]; then
-        echo "No active worktrees"
-        exit 0
+  if [ ! -d "$WORKTREES_DIR" ]; then
+    echo "No active worktrees"
+    exit 0
+  fi
+
+  echo "Active worktrees:"
+  git worktree list --porcelain | while read -r line; do
+    if [[ "$line" == worktree* ]] && [[ "$line" == *".worktrees"* ]]; then
+      path="${line#worktree }"
+      echo "  Path: $path"
+    elif [[ "$line" == branch* ]]; then
+      branch="${line#branch refs/heads/}"
+      echo "  Branch: $branch"
+      echo ""
     fi
-
-    echo "Active worktrees:"
-    git worktree list --porcelain | while read -r line; do
-        if [[ "$line" == worktree* ]] && [[ "$line" == *".worktrees"* ]]; then
-            path="${line#worktree }"
-            echo "  Path: $path"
-        elif [[ "$line" == branch* ]]; then
-            branch="${line#branch refs/heads/}"
-            echo "  Branch: $branch"
-            echo ""
-        fi
-    done
+  done
 }
 
 # Show help
 cmd_help() {
-    cat << 'EOF'
+  cat <<'EOF'
 Git Worktree Management for Parallel Execution
 
 USAGE:
@@ -233,27 +240,27 @@ EOF
 
 # Main dispatch
 case "${1:-help}" in
-    setup)
-        cmd_setup "$2"
-        ;;
-    cleanup)
-        cmd_cleanup "$2" "$3"
-        ;;
-    merge)
-        cmd_merge "$2"
-        ;;
-    list)
-        cmd_list
-        ;;
-    status)
-        cmd_status
-        ;;
-    help|--help|-h)
-        cmd_help
-        ;;
-    *)
-        echo -e "${RED}Unknown command: $1${NC}" >&2
-        echo "Run 'codeagent worktree help' for usage" >&2
-        exit 1
-        ;;
+  setup)
+    cmd_setup "$2"
+    ;;
+  cleanup)
+    cmd_cleanup "$2" "$3"
+    ;;
+  merge)
+    cmd_merge "$2"
+    ;;
+  list)
+    cmd_list
+    ;;
+  status)
+    cmd_status
+    ;;
+  help | --help | -h)
+    cmd_help
+    ;;
+  *)
+    echo -e "${RED}Unknown command: $1${NC}" >&2
+    echo "Run 'codeagent worktree help' for usage" >&2
+    exit 1
+    ;;
 esac

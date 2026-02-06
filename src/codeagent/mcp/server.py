@@ -4,17 +4,12 @@ from __future__ import annotations
 
 import asyncio
 
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fastmcp import FastMCP
 
-app = Server("codeagent")
+app = FastMCP("codeagent")
 
 
-# Tools will be registered here from submodules:
-# - codeagent.mcp.tools.memory (A-MEM)
-# - codeagent.mcp.tools.reflection
-# - codeagent.mcp.tools.codebase
-# - codeagent.mcp.tools.backlog
+# Tool submodules: memory, reflection, codebase, backlog (Epic 6)
 
 
 @app.tool()
@@ -25,8 +20,7 @@ async def ping() -> dict[str, str]:
 
 async def run_server() -> None:
     """Run the MCP server."""
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(read_stream, write_stream, app.create_initialization_options())
+    await app.run_stdio_async()
 
 
 def main() -> None:

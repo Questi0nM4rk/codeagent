@@ -36,6 +36,10 @@ reviews:
     drafts: false
     # Only review changed code on subsequent pushes (faster reviews)
     auto_incremental_review: true
+    # Ignore PRs from these users (e.g., bots)
+    # ignore_usernames:
+    #   - "dependabot[bot]"
+    #   - "renovate[bot]"
 
   # Stop review if PR is closed/merged
   abort_on_close: true
@@ -43,12 +47,18 @@ reviews:
   # ============================================
   # Path-Specific Instructions
   # ============================================
+  # Custom review focus per file pattern
   path_instructions:
     - path: "**/*.py"
       instructions: |
         - Enforce type hints on all function signatures
         - Check for proper exception handling (no bare except)
         - Verify docstrings on public functions/classes
+    - path: "**/*.ts"
+      instructions: |
+        - Ensure strict TypeScript (no any, no type assertions without reason)
+        - Check for proper error handling
+        - Verify JSDoc on exported functions
     - path: "**/*.sh"
       instructions: |
         - Verify scripts use set -euo pipefail
@@ -68,17 +78,29 @@ reviews:
   # ============================================
   # Static Analysis Tools
   # ============================================
+  # CodeRabbit runs these automatically when corresponding files exist
   tools:
+    # Python
     ruff:
       enabled: true
+    # JavaScript/TypeScript
+    biome:
+      enabled: true
+    eslint:
+      enabled: true
+    # Shell
     shellcheck:
       enabled: true
+    # Markdown
     markdownlint:
       enabled: true
+    # YAML
     yamllint:
       enabled: true
+    # Security scanning
     gitleaks:
       enabled: true
+    # Spell checking
     languagetool:
       enabled: true
 
@@ -86,8 +108,10 @@ reviews:
   # Finishing Touches (AI-generated additions)
   # ============================================
   finishing_touches:
+    # Generate docstrings for undocumented code
     docstrings:
       enabled: true
+    # Suggest unit tests for new code
     unit_tests:
       enabled: true
 
@@ -97,3 +121,10 @@ reviews:
 chat:
   auto_reply: true
 
+# ============================================
+# Knowledge Base
+# ============================================
+# CodeRabbit automatically detects and uses these files as coding guidelines:
+# - CLAUDE.md, .cursorrules, CODING_STANDARDS.md, etc.
+# knowledge_base:
+#   opt_out: false

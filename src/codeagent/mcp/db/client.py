@@ -3,17 +3,29 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
-from types import TracebackType
-from typing import Any
+import os
+from typing import TYPE_CHECKING, Any, Self
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from types import TracebackType
 
 from surrealdb import AsyncSurreal
+
+_DEFAULT_URL = "ws://localhost:8000"
+_DEFAULT_NS = "codeagent"
+_DEFAULT_DB = "codeagent"
 
 
 class SurrealDBClient:
     """Async wrapper for SurrealDB operations.
 
-    Provides connection management, schema initialization, and CRUD operations.
+    Provides connection management, schema initialization,
+    and CRUD operations.
+
+    Credentials are resolved from environment variables
+    SURREALDB_USER / SURREALDB_PASS, falling back to
+    "root"/"root" for local development.
 
     Example:
         async with SurrealDBClient() as client:
@@ -23,24 +35,24 @@ class SurrealDBClient:
 
     def __init__(
         self,
-        url: str = "ws://localhost:8000",
-        username: str = "root",
-        password: str = "root",  # noqa: S107 - Default dev credentials
-        namespace: str = "codeagent",
-        database: str = "codeagent",
+        url: str = _DEFAULT_URL,
+        username: str | None = None,
+        password: str | None = None,
+        namespace: str = _DEFAULT_NS,
+        database: str = _DEFAULT_DB,
     ) -> None:
         """Initialize the client configuration.
 
         Args:
-            url: SurrealDB WebSocket URL (default: ws://localhost:8000)
-            username: Authentication username (default: root)
-            password: Authentication password (default: root)
-            namespace: SurrealDB namespace to use (default: codeagent)
-            database: SurrealDB database to use (default: codeagent)
+            url: SurrealDB WebSocket URL
+            username: Auth username (env: SURREALDB_USER)
+            password: Auth password (env: SURREALDB_PASS)
+            namespace: SurrealDB namespace to use
+            database: SurrealDB database to use
         """
         self._url = url
-        self._username = username
-        self._password = password
+        self._username = username or os.environ.get("SURREALDB_USER", "root")
+        self._password = password or os.environ.get("SURREALDB_PASS", "root")
         self._namespace = namespace
         self._database = database
         self._client = AsyncSurreal(self._url)
@@ -53,7 +65,9 @@ class SurrealDBClient:
         """
         await self._client.connect(self._url)
         try:
-            await self._client.signin({"username": self._username, "password": self._password})
+            await self._client.signin(
+                {"username": self._username, "password": self._password},
+            )
             await self._client.use(self._namespace, self._database)
         except Exception:
             await self._client.close()
@@ -63,16 +77,16 @@ class SurrealDBClient:
         """Close the connection to SurrealDB."""
         await self._client.close()
 
-    async def __aenter__(self) -> SurrealDBClient:
+    async def __aenter__(self) -> Self:
         """Async context manager entry."""
         await self.connect()
         return self
 
     async def __aexit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
+        _exc_type: type[BaseException] | None,
+        _exc_val: BaseException | None,
+        _exc_tb: TracebackType | None,
     ) -> None:
         """Async context manager exit."""
         await self.close()

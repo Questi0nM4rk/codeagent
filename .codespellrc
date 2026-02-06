@@ -1,0 +1,10 @@
+# Codespell configuration
+# https://github.com/codespell-project/codespell
+
+[codespell]
+# Skip files that shouldn't be spell-checked
+skip = .git,*.lock,*.baseline,node_modules,venv,.venv
+
+# Words to ignore (case-insensitive)
+# BRIN = PostgreSQL Block Range Index
+ignore-words-list = brin

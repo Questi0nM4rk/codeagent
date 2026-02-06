@@ -32,16 +32,16 @@ read -p "Continue with uninstall? (y/N) " -n 1 -r
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Cancelled."
-    exit 0
+  echo "Cancelled."
+  exit 0
 fi
 
 # Stop services
 echo ""
 echo -e "${BLUE}Stopping services...${NC}"
 if [ -f "$INSTALL_DIR/infrastructure/docker-compose.yml" ]; then
-    cd "$INSTALL_DIR/infrastructure"
-    docker compose down 2>/dev/null || true
+  cd "$INSTALL_DIR/infrastructure" || exit 1
+  docker compose down 2>/dev/null || true
 fi
 
 # Ask about Docker volumes
@@ -50,12 +50,12 @@ read -p "Remove Docker volumes (deletes all memory data)? (y/N) " -n 1 -r
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${BLUE}Removing Docker volumes...${NC}"
-    docker volume rm codeagent_qdrant_data 2>/dev/null || true
-    rm -rf "$HOME/.codeagent/memory" 2>/dev/null || true
-    echo -e "${GREEN}✓${NC} Volumes removed"
+  echo -e "${BLUE}Removing Docker volumes...${NC}"
+  docker volume rm codeagent_qdrant_data 2>/dev/null || true
+  rm -rf "$HOME/.codeagent/memory" 2>/dev/null || true
+  echo -e "${GREEN}✓${NC} Volumes removed"
 else
-    echo -e "${YELLOW}○${NC} Volumes preserved"
+  echo -e "${YELLOW}○${NC} Volumes preserved"
 fi
 
 # Remove CLI commands
@@ -71,16 +71,16 @@ echo -e "${GREEN}✓${NC} CLI commands removed"
 # Remove MCPs
 echo ""
 echo -e "${BLUE}Removing MCP configurations...${NC}"
-if command -v claude &> /dev/null; then
-    claude mcp remove context7 2>/dev/null || true
-    claude mcp remove code-execution 2>/dev/null || true
-    claude mcp remove reflection 2>/dev/null || true
-    claude mcp remove amem 2>/dev/null || true
-    claude mcp remove tavily 2>/dev/null || true
-    claude mcp remove figma 2>/dev/null || true
-    claude mcp remove supabase 2>/dev/null || true
-    claude mcp remove github 2>/dev/null || true
-    echo -e "${GREEN}✓${NC} MCPs removed"
+if command -v claude &>/dev/null; then
+  claude mcp remove context7 2>/dev/null || true
+  claude mcp remove code-execution 2>/dev/null || true
+  claude mcp remove reflection 2>/dev/null || true
+  claude mcp remove amem 2>/dev/null || true
+  claude mcp remove tavily 2>/dev/null || true
+  claude mcp remove figma 2>/dev/null || true
+  claude mcp remove supabase 2>/dev/null || true
+  claude mcp remove github 2>/dev/null || true
+  echo -e "${GREEN}✓${NC} MCPs removed"
 fi
 
 # Remove installation directory
@@ -93,11 +93,11 @@ echo -e "${GREEN}✓${NC} Installation removed"
 echo ""
 echo -e "${BLUE}Cleaning shell configuration...${NC}"
 for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
-    if [ -f "$rc" ]; then
-        # Remove CodeAgent lines
-        sed -i '/# CodeAgent/d' "$rc" 2>/dev/null || true
-        sed -i '/CODEAGENT_HOME/d' "$rc" 2>/dev/null || true
-    fi
+  if [ -f "$rc" ]; then
+    # Remove CodeAgent lines
+    sed -i '/# CodeAgent/d' "$rc" 2>/dev/null || true
+    sed -i '/CODEAGENT_HOME/d' "$rc" 2>/dev/null || true
+  fi
 done
 echo -e "${GREEN}✓${NC} Shell config cleaned"
 

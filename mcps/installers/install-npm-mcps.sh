@@ -38,182 +38,200 @@ log_error() { echo -e "${RED}[NPM]${NC} $1"; }
 
 # Check if MCP is already registered
 mcp_exists() {
-    local name="$1"
-    claude mcp list 2>/dev/null | grep -q "^$name:" 2>/dev/null
+  local name="$1"
+  claude mcp list 2>/dev/null | grep -q "^$name:" 2>/dev/null
 }
 
 # Remove MCP registration (user scope for global)
 remove_mcp() {
-    local name="$1"
-    claude mcp remove --scope user "$name" 2>/dev/null || true
+  local name="$1"
+  claude mcp remove --scope user "$name" 2>/dev/null || true
 }
 
 # Get API key value from environment or .env file
 get_key_value() {
-    local key_name="$1"
+  local key_name="$1"
 
-    # First check environment
-    if [ -n "${!key_name}" ]; then
-        echo "${!key_name}"
-        return
-    fi
+  # First check environment
+  if [ -n "${!key_name}" ]; then
+    echo "${!key_name}"
+    return
+  fi
 
-    # Fall back to .env file
-    if [ -f "$ENV_FILE" ]; then
-        local value=$(grep "^$key_name=" "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
-        if [ -n "$value" ]; then
-            echo "$value"
-        fi
+  # Fall back to .env file
+  if [ -f "$ENV_FILE" ]; then
+    local value
+    value=$(grep "^$key_name=" "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
+    if [ -n "$value" ]; then
+      echo "$value"
     fi
+  fi
 }
 
 # ============================================
 # Install Required NPM MCPs
 # ============================================
 install_npm_required() {
-    log_info "Installing required NPM MCPs..."
+  log_info "Installing required NPM MCPs..."
 
-    local count=$(jq '.npm | length' "$REGISTRY_FILE")
+  local count
+  count=$(jq '.npm | length' "$REGISTRY_FILE")
 
-    for ((i=0; i<count; i++)); do
-        local name=$(jq -r ".npm[$i].name" "$REGISTRY_FILE")
-        local command=$(jq -r ".npm[$i].command" "$REGISTRY_FILE")
-        local args=$(jq -r ".npm[$i].args | join(\" \")" "$REGISTRY_FILE")
+  for ((i = 0; i < count; i++)); do
+    local name
+    name=$(jq -r ".npm[$i].name" "$REGISTRY_FILE")
+    local command
+    command=$(jq -r ".npm[$i].command" "$REGISTRY_FILE")
+    local args
+    args=$(jq -r ".npm[$i].args | join(\" \")" "$REGISTRY_FILE")
 
-        # Skip if exists and not force
-        if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
-            log_info "  Skipped: $name (already registered)"
-            ((SKIPPED++)) || true
-            continue
-        fi
+    # Skip if exists and not force
+    if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
+      log_info "  Skipped: $name (already registered)"
+      ((SKIPPED++)) || true
+      continue
+    fi
 
-        # Remove if force
-        if [ "$FORCE" = "true" ]; then
-            remove_mcp "$name"
-        fi
+    # Remove if force
+    if [ "$FORCE" = "true" ]; then
+      remove_mcp "$name"
+    fi
 
-        # Register MCP (user scope for global)
-        local add_output
-        add_output=$(claude mcp add --scope user "$name" -- $command $args 2>&1) || true
+    # Register MCP (user scope for global)
+    local add_output
+    add_output=$(claude mcp add --scope user "$name" -- $command $args 2>&1) || true
 
-        # Check if registration succeeded (either added or already exists)
-        if mcp_exists "$name"; then
-            log_success "  Installed: $name"
-            ((INSTALLED++)) || true
-        else
-            log_error "  Failed: $name"
-            ((FAILED++)) || true
-        fi
-    done
+    # Check if registration succeeded (either added or already exists)
+    if mcp_exists "$name"; then
+      log_success "  Installed: $name"
+      ((INSTALLED++)) || true
+    else
+      log_error "  Failed: $name"
+      ((FAILED++)) || true
+    fi
+  done
 }
 
 # ============================================
 # Install Optional NPM MCPs (API keys can be added later)
 # ============================================
 install_npm_optional() {
-    log_info "Installing optional NPM MCPs..."
+  log_info "Installing optional NPM MCPs..."
 
-    local count=$(jq '.npm_optional | length' "$REGISTRY_FILE")
+  local count
+  count=$(jq '.npm_optional | length' "$REGISTRY_FILE")
 
-    for ((i=0; i<count; i++)); do
-        local name=$(jq -r ".npm_optional[$i].name" "$REGISTRY_FILE")
-        local command=$(jq -r ".npm_optional[$i].command" "$REGISTRY_FILE")
-        local args=$(jq -r ".npm_optional[$i].args | join(\" \")" "$REGISTRY_FILE")
-        local env_key=$(jq -r ".npm_optional[$i].env_key" "$REGISTRY_FILE")
-        local env_var=$(jq -r ".npm_optional[$i].env_var" "$REGISTRY_FILE")
+  for ((i = 0; i < count; i++)); do
+    local name
+    name=$(jq -r ".npm_optional[$i].name" "$REGISTRY_FILE")
+    local command
+    command=$(jq -r ".npm_optional[$i].command" "$REGISTRY_FILE")
+    local args
+    args=$(jq -r ".npm_optional[$i].args | join(\" \")" "$REGISTRY_FILE")
+    local env_key
+    env_key=$(jq -r ".npm_optional[$i].env_key" "$REGISTRY_FILE")
+    local env_var
+    env_var=$(jq -r ".npm_optional[$i].env_var" "$REGISTRY_FILE")
 
-        # Skip if exists and not force
-        if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
-            log_info "  Skipped: $name (already registered)"
-            ((SKIPPED++)) || true
-            continue
-        fi
+    # Skip if exists and not force
+    if [ "$FORCE" != "true" ] && mcp_exists "$name"; then
+      log_info "  Skipped: $name (already registered)"
+      ((SKIPPED++)) || true
+      continue
+    fi
 
-        # Remove if force
-        if [ "$FORCE" = "true" ]; then
-            remove_mcp "$name"
-        fi
+    # Remove if force
+    if [ "$FORCE" = "true" ]; then
+      remove_mcp "$name"
+    fi
 
-        # Check if API key is available
-        local key_value=$(get_key_value "$env_key")
-        local add_output
+    # Check if API key is available
+    local key_value
+    key_value=$(get_key_value "$env_key")
+    # shellcheck disable=SC2034  # add_output captured for debugging
+    local add_output
 
-        if [ -n "$key_value" ]; then
-            # Register MCP with env var (user scope for global)
-            add_output=$(claude mcp add --scope user "$name" -e "$env_var=$key_value" -- $command $args 2>&1) || true
-        else
-            # Register MCP without env var - will need key configured later
-            add_output=$(claude mcp add --scope user "$name" -- $command $args 2>&1) || true
-        fi
+    if [ -n "$key_value" ]; then
+      # Register MCP with env var (user scope for global)
+      add_output=$(claude mcp add --scope user "$name" -e "$env_var=$key_value" -- $command $args 2>&1) || true
+    else
+      # Register MCP without env var - will need key configured later
+      # shellcheck disable=SC2034  # add_output captured for debugging
+      add_output=$(claude mcp add --scope user "$name" -- $command $args 2>&1) || true
+    fi
 
-        # Check if registration succeeded
-        if mcp_exists "$name"; then
-            if [ -n "$key_value" ]; then
-                log_success "  Installed: $name"
-            else
-                log_success "  Installed: $name (configure $env_key to enable)"
-            fi
-            ((INSTALLED++)) || true
-        else
-            log_error "  Failed: $name"
-            ((FAILED++)) || true
-        fi
-    done
+    # Check if registration succeeded
+    if mcp_exists "$name"; then
+      if [ -n "$key_value" ]; then
+        log_success "  Installed: $name"
+      else
+        log_success "  Installed: $name (configure $env_key to enable)"
+      fi
+      ((INSTALLED++)) || true
+    else
+      log_error "  Failed: $name"
+      ((FAILED++)) || true
+    fi
+  done
 }
 
 # ============================================
 # Remove NPM MCPs (for --force)
 # ============================================
 remove_npm_mcps() {
-    log_warn "Removing CodeAgent NPM MCPs..."
+  log_warn "Removing CodeAgent NPM MCPs..."
 
-    # Required MCPs
-    local npm_count=$(jq '.npm | length' "$REGISTRY_FILE")
-    for ((i=0; i<npm_count; i++)); do
-        local name=$(jq -r ".npm[$i].name" "$REGISTRY_FILE")
-        if mcp_exists "$name"; then
-            remove_mcp "$name"
-            log_info "  Removed: $name"
-        fi
-    done
+  # Required MCPs
+  local npm_count
+  npm_count=$(jq '.npm | length' "$REGISTRY_FILE")
+  for ((i = 0; i < npm_count; i++)); do
+    local name
+    name=$(jq -r ".npm[$i].name" "$REGISTRY_FILE")
+    if mcp_exists "$name"; then
+      remove_mcp "$name"
+      log_info "  Removed: $name"
+    fi
+  done
 
-    # Optional MCPs
-    local npm_opt_count=$(jq '.npm_optional | length' "$REGISTRY_FILE")
-    for ((i=0; i<npm_opt_count; i++)); do
-        local name=$(jq -r ".npm_optional[$i].name" "$REGISTRY_FILE")
-        if mcp_exists "$name"; then
-            remove_mcp "$name"
-            log_info "  Removed: $name"
-        fi
-    done
+  # Optional MCPs
+  local npm_opt_count
+  npm_opt_count=$(jq '.npm_optional | length' "$REGISTRY_FILE")
+  for ((i = 0; i < npm_opt_count; i++)); do
+    local name
+    name=$(jq -r ".npm_optional[$i].name" "$REGISTRY_FILE")
+    if mcp_exists "$name"; then
+      remove_mcp "$name"
+      log_info "  Removed: $name"
+    fi
+  done
 }
 
 # ============================================
 # Main
 # ============================================
 main() {
-    # Validate registry
-    if [ ! -f "$REGISTRY_FILE" ]; then
-        log_error "Registry not found: $REGISTRY_FILE"
-        exit 1
-    fi
+  # Validate registry
+  if [ ! -f "$REGISTRY_FILE" ]; then
+    log_error "Registry not found: $REGISTRY_FILE"
+    exit 1
+  fi
 
-    # Remove if force
-    if [ "$FORCE" = "true" ]; then
-        remove_npm_mcps
-    fi
+  # Remove if force
+  if [ "$FORCE" = "true" ]; then
+    remove_npm_mcps
+  fi
 
-    # Install
-    install_npm_required
-    install_npm_optional
+  # Install
+  install_npm_required
+  install_npm_optional
 
-    # Export counters (names must match parent's grep pattern)
-    echo "INSTALLED=$INSTALLED"
-    echo "SKIPPED=$SKIPPED"
-    echo "FAILED=$FAILED"
+  # Export counters (names must match parent's grep pattern)
+  echo "INSTALLED=$INSTALLED"
+  echo "SKIPPED=$SKIPPED"
+  echo "FAILED=$FAILED"
 }
 
 # Run if executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+  main "$@"
 fi
