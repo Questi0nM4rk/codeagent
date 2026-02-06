@@ -254,12 +254,12 @@
   },
   "overrides": [
     {
-      "includes": ["**/tests/fixtures/**"],
+      "include": ["**/tests/fixtures/**"],
       "linter": { "enabled": false },
       "formatter": { "enabled": false }
     },
     {
-      "includes": [
+      "include": [
         "*.config.ts",
         "*.config.js",
         "*.config.mjs",
