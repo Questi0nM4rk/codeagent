@@ -13,6 +13,8 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from codeagent.mcp.tools import memory as memory_tools
+from codeagent.mcp.tools import reflect as reflect_tools
+from codeagent.mcp.tools import task as task_tools
 
 app = FastMCP("codeagent")
 
@@ -26,10 +28,15 @@ app.add_tool(memory_tools.delete)
 app.add_tool(memory_tools.link)
 app.add_tool(memory_tools.stats)
 
+# --- Task tools (4 tools) ---
+app.add_tool(task_tools.create_task)
+app.add_tool(task_tools.get_next_task)
+app.add_tool(task_tools.complete_task)
+app.add_tool(task_tools.list_tasks)
+
 # Future tool domains:
 # - codeagent.mcp.tools.reflection
 # - codeagent.mcp.tools.codebase
-# - codeagent.mcp.tools.backlog
 
 
 @app.tool()
@@ -67,6 +74,11 @@ async def run_server() -> None:
     search_svc = SearchService(db, embedding_svc)
 
     memory_tools.init_memory_tools(memory_svc, search_svc)
+
+    from codeagent.mcp.services.task_service import TaskService
+
+    task_svc = TaskService(db)
+    task_tools.init_task_tools(task_svc)
 
     await app.run_stdio_async()
 
