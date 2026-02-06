@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -277,7 +277,7 @@ class TestMemoryServiceLink:
         service, mock_db, _ = _make_service()
         mock_db.query.return_value = [{"result": "ok"}]
 
-        result = await service.link(
+        await service.link(
             from_id="memory:a",
             to_id="memory:b",
             reason="related concept",
@@ -383,10 +383,14 @@ class TestMemoryServiceAutoLink:
         service, mock_db, _ = _make_service()
         mock_db.query.side_effect = [
             # Similarity search result
-            [{"result": [
-                {"id": "memory:similar1", "score": 0.9},
-                {"id": "memory:similar2", "score": 0.8},
-            ]}],
+            [
+                {
+                    "result": [
+                        {"id": "memory:similar1", "score": 0.9},
+                        {"id": "memory:similar2", "score": 0.8},
+                    ]
+                }
+            ],
             # RELATE calls
             [{"result": "ok"}],
             [{"result": "ok"}],
@@ -402,9 +406,11 @@ class TestMemoryServiceAutoLink:
         """_auto_link() should not create edges when similarity < 0.7."""
         service, mock_db, _ = _make_service()
         mock_db.query.return_value = [
-            {"result": [
-                {"id": "memory:weak", "score": 0.3},
-            ]}
+            {
+                "result": [
+                    {"id": "memory:weak", "score": 0.3},
+                ]
+            }
         ]
 
         await service._auto_link("memory:new", [0.1])

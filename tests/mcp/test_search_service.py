@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -39,15 +39,19 @@ class TestSearchServiceSearch:
         """search() should execute a vector similarity query."""
         service, mock_db, mock_embedding = _make_service()
         mock_embedding.embed.return_value = [0.1]
-        mock_db.query.return_value = [{"result": [
+        mock_db.query.return_value = [
             {
-                "id": "memory:abc",
-                "type": "knowledge",
-                "title": "Test",
-                "content": "Short content",
-                "vec_score": 0.95,
+                "result": [
+                    {
+                        "id": "memory:abc",
+                        "type": "knowledge",
+                        "title": "Test",
+                        "content": "Short content",
+                        "vec_score": 0.95,
+                    }
+                ]
             }
-        ]}]
+        ]
 
         result = await service.search(query="test query")
 
@@ -136,15 +140,19 @@ class TestSearchServiceSearch:
         mock_embedding.embed.return_value = [0.1]
         mock_db.query.side_effect = [
             # Main search result
-            [{"result": [
+            [
                 {
-                    "id": "memory:abc",
-                    "type": "knowledge",
-                    "title": "Test",
-                    "content": "content",
-                    "vec_score": 0.9,
+                    "result": [
+                        {
+                            "id": "memory:abc",
+                            "type": "knowledge",
+                            "title": "Test",
+                            "content": "content",
+                            "vec_score": 0.9,
+                        }
+                    ]
                 }
-            ]}],
+            ],
             # Graph traversal result
             [{"result": [{"related": ["memory:def"]}]}],
         ]
@@ -160,15 +168,19 @@ class TestSearchServiceSearch:
         service, mock_db, mock_embedding = _make_service()
         mock_embedding.embed.return_value = [0.1]
         long_content = "x" * 300
-        mock_db.query.return_value = [{"result": [
+        mock_db.query.return_value = [
             {
-                "id": "memory:abc",
-                "type": "knowledge",
-                "title": "Test",
-                "content": long_content,
-                "vec_score": 0.8,
+                "result": [
+                    {
+                        "id": "memory:abc",
+                        "type": "knowledge",
+                        "title": "Test",
+                        "content": long_content,
+                        "vec_score": 0.8,
+                    }
+                ]
             }
-        ]}]
+        ]
 
         result = await service.search(query="test")
 
@@ -181,15 +193,19 @@ class TestSearchServiceSearch:
         """search() should not truncate content <= 200 chars."""
         service, mock_db, mock_embedding = _make_service()
         mock_embedding.embed.return_value = [0.1]
-        mock_db.query.return_value = [{"result": [
+        mock_db.query.return_value = [
             {
-                "id": "memory:abc",
-                "type": "knowledge",
-                "title": "Test",
-                "content": "short",
-                "vec_score": 0.8,
+                "result": [
+                    {
+                        "id": "memory:abc",
+                        "type": "knowledge",
+                        "title": "Test",
+                        "content": "short",
+                        "vec_score": 0.8,
+                    }
+                ]
             }
-        ]}]
+        ]
 
         result = await service.search(query="test")
 
