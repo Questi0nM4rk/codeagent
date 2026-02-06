@@ -9,10 +9,10 @@ Meta-skill for creating well-designed, effective skills for the CodeAgent framew
 
 ## The Iron Law
 
-```
+```text
 IRON LAW FIRST - IF YOU CAN'T STATE THE CORE RULE, DON'T CREATE THE SKILL
 A skill without a clear, unmistakable Iron Law is not a skill - it's vague advice.
-```
+```text
 
 ## Core Principle
 
@@ -21,12 +21,14 @@ A skill without a clear, unmistakable Iron Law is not a skill - it's vague advic
 ## When to Use
 
 **Always:**
+
 - Creating new skills for the CodeAgent framework
 - Refining existing skills that lack clarity
 - Documenting team methodologies as skills
 - Converting best practices into actionable skills
 
 **Exceptions (ask human partner):**
+
 - One-off procedures (use runbook instead)
 - Personal preferences (not universal enough for skill)
 - Contextual advice (too situation-dependent)
@@ -36,6 +38,7 @@ A skill without a clear, unmistakable Iron Law is not a skill - it's vague advic
 ### 1. Iron Law Must Be Unmistakable
 
 The Iron Law should:
+
 - Fit in one sentence (max 10 words)
 - Be written in CAPS
 - Leave zero ambiguity
@@ -43,26 +46,27 @@ The Iron Law should:
 - Be memorable ("NO CODE WITHOUT FAILING TEST")
 
 <Good>
-```
+```text
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 NEVER SELF-VALIDATE - USE EXTERNAL TOOLS ONLY
 REPRODUCE BEFORE FIX - NO GUESSING
-```
+```text
 Clear, memorable, actionable.
 </Good>
 
 <Bad>
-```
+```text
 Try to write tests when possible and practical
 Consider using linters and other tools
 Debug systematically when you have time
-```
+```text
 Vague, conditional, forgettable.
 </Bad>
 
 ### 2. Skills Compress Methodologies
 
 A good skill takes a 50-page book and extracts:
+
 - One core rule (Iron Law)
 - 5-7 key steps (Workflow)
 - Common pitfalls (Rationalizations)
@@ -72,13 +76,13 @@ A good skill takes a 50-page book and extracts:
 
 The best skills predict how people will avoid them:
 
-| Pattern | Example |
-|---------|---------|
-| Time pressure | "I don't have time for this" |
-| Overconfidence | "I know this works" |
-| Exception-seeking | "This case is different" |
-| Procrastination | "I'll do it later" |
-| Minimization | "It's too simple to need this" |
+ | Pattern | Example |
+ | --------- | --------- |
+ | Time pressure | "I don't have time for this" |
+ | Overconfidence | "I know this works" |
+ | Exception-seeking | "This case is different" |
+ | Procrastination | "I'll do it later" |
+ | Minimization | "It's too simple to need this" |
 
 ### 4. Examples Must Show Contrast
 
@@ -97,7 +101,7 @@ What specific methodology or practice are you encoding?
 **Source**: [Book, framework, team practice]
 **Domain**: [When this applies]
 **Anti-pattern**: [What happens without this skill]
-```
+```text
 
 ### Step 2: Find the Iron Law
 
@@ -112,9 +116,10 @@ Extract the ONE non-negotiable rule:
 
 ## Selected Iron Law
 [FINAL VERSION IN CAPS]
-```
+```text
 
 Test your Iron Law:
+
 - Can someone remember it after one reading?
 - Does it have exceptions? (if yes, refine it)
 - Would violating it obviously cause problems?
@@ -130,9 +135,10 @@ Break the methodology into 4-7 concrete steps:
 1. [Action verb] [Object] - [Brief description]
 2. [Action verb] [Object] - [Brief description]
 ...
-```
+```text
 
 Each step should:
+
 - Start with action verb (Write, Run, Check, Create)
 - Be independently verifiable
 - Have clear inputs and outputs
@@ -144,11 +150,11 @@ List every excuse people use to skip this skill:
 ```markdown
 ## Rationalizations
 
-| Excuse | Category | Reality Check |
-|--------|----------|---------------|
-| [excuse] | time pressure | [why it's wrong] |
-| [excuse] | overconfidence | [why it's wrong] |
-```
+ | Excuse | Category | Reality Check |
+ | -------- | ---------- | --------------- |
+ | [excuse] | time pressure | [why it's wrong] |
+ | [excuse] | overconfidence | [why it's wrong] |
+```text
 
 Be cynical. People are creative at avoiding good practices.
 
@@ -159,25 +165,31 @@ For each major concept, show Good and Bad:
 ```markdown
 <Good>
 [example with code]
+
 - Why this is good
 - What principle it demonstrates
+
 </Good>
 
 <Bad>
 [anti-example with code]
+
 - What's wrong
 - What principle it violates
+
 </Bad>
-```
+```text
 
 ### Step 6: Build Verification Checklist
 
 Create checkboxes for "done" criteria:
 
 ```markdown
+
 - [ ] [Verifiable statement]
 - [ ] [Verifiable statement]
-```
+
+```text
 
 Each item should be binary (yes/no), not subjective.
 
@@ -186,10 +198,10 @@ Each item should be binary (yes/no), not subjective.
 ```markdown
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
-| [specific problem] | [specific solution] |
-```
+ | Problem | Solution |
+ | --------- | ---------- |
+ | [specific problem] | [specific solution] |
+```text
 
 Cover the most common ways the skill can fail.
 
@@ -197,19 +209,19 @@ Cover the most common ways the skill can fail.
 
 Use the template at `templates/skill-template.md`. Required sections:
 
-| Section | Purpose | Required |
-|---------|---------|----------|
-| Frontmatter | Name, trigger description | Yes |
-| Iron Law | Core non-negotiable rule | Yes |
-| Core Principle | Quotable summary | Recommended |
-| When to Use | Activation triggers | Yes |
-| Workflow | Step-by-step process | Recommended |
-| Examples | Good/Bad contrasts | Yes |
-| Rationalizations | Anticipated excuses | Recommended |
-| Red Flags | Signs of violation | Recommended |
-| Verification Checklist | Done criteria | Yes |
-| When Stuck | Recovery procedures | Recommended |
-| Related Skills | Cross-references | Optional |
+ | Section | Purpose | Required |
+ | --------- | --------- | ---------- |
+ | Frontmatter | Name, trigger description | Yes |
+ | Iron Law | Core non-negotiable rule | Yes |
+ | Core Principle | Quotable summary | Recommended |
+ | When to Use | Activation triggers | Yes |
+ | Workflow | Step-by-step process | Recommended |
+ | Examples | Good/Bad contrasts | Yes |
+ | Rationalizations | Anticipated excuses | Recommended |
+ | Red Flags | Signs of violation | Recommended |
+ | Verification Checklist | Done criteria | Yes |
+ | When Stuck | Recovery procedures | Recommended |
+ | Related Skills | Cross-references | Optional |
 
 ## Examples
 
@@ -226,9 +238,9 @@ External validation methodology.
 
 ## The Iron Law
 
-```
+```text
 NEVER SELF-VALIDATE - USE EXTERNAL TOOLS ONLY
-```
+```text
 
 ## Workflow
 
@@ -249,10 +261,12 @@ NEVER SELF-VALIDATE - USE EXTERNAL TOOLS ONLY
 <Bad>
 [example showing self-validation]
 </Bad>
-```
+```text
+
 - Clear Iron Law (7 words)
 - Specific workflow with commands
 - Contrasting examples
+
 </Good>
 
 <Bad>
@@ -267,24 +281,26 @@ Writing good code is important. Here are some tips:
 - Clean code is better
 
 Remember to be thoughtful about quality!
-```
+```text
+
 - No Iron Law
 - Vague "tips" instead of methodology
 - No concrete workflow
 - No examples
 - No verification criteria
+
 </Bad>
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "The methodology is too complex for a skill" | Break it into multiple skills. Each should be focused. |
-| "There are too many exceptions" | Your Iron Law is wrong. Find a more universal rule. |
-| "People will know what to do" | If they did, you wouldn't need the skill. Be explicit. |
-| "Examples are obvious" | What's obvious to you isn't obvious to everyone. Show both good and bad. |
-| "Rationalizations section is negative" | It's realistic. Anticipate how people avoid good practices. |
-| "This skill overlaps with another" | That's fine. Document the relationship in Related Skills. |
+ | Excuse | Reality |
+ | -------- | --------- |
+ | "The methodology is too complex for a skill" | Break it into multiple skills. Each should be focused. |
+ | "There are too many exceptions" | Your Iron Law is wrong. Find a more universal rule. |
+ | "People will know what to do" | If they did, you wouldn't need the skill. Be explicit. |
+ | "Examples are obvious" | What's obvious to you isn't obvious to everyone. Show both good and bad. |
+ | "Rationalizations section is negative" | It's realistic. Anticipate how people avoid good practices. |
+ | "This skill overlaps with another" | That's fine. Document the relationship in Related Skills. |
 
 ## Red Flags - STOP and Start Over
 
@@ -318,14 +334,14 @@ Before publishing a new skill:
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
-| Can't find Iron Law | The methodology isn't focused enough. Split into multiple skills. |
-| Too many steps | Combine related steps. Max 7. Core essence only. |
-| Can't think of bad examples | What would someone who's never heard of this do? That's the bad example. |
-| Skill too long | Cut secondary content. Keep Iron Law, Workflow, Examples, Checklist. |
-| Overlaps with existing skill | Check if existing skill should be extended instead. |
-| Not sure if it should be a skill | Ask: Does violating this cause real problems? Is there a clear alternative? |
+ | Problem | Solution |
+ | --------- | ---------- |
+ | Can't find Iron Law | The methodology isn't focused enough. Split into multiple skills. |
+ | Too many steps | Combine related steps. Max 7. Core essence only. |
+ | Can't think of bad examples | What would someone who's never heard of this do? That's the bad example. |
+ | Skill too long | Cut secondary content. Keep Iron Law, Workflow, Examples, Checklist. |
+ | Overlaps with existing skill | Check if existing skill should be extended instead. |
+ | Not sure if it should be a skill | Ask: Does violating this cause real problems? Is there a clear alternative? |
 
 ## Skill Naming Guidelines
 
@@ -339,9 +355,11 @@ Before publishing a new skill:
 - better-code (vague)
 - tips (not a methodology)
 - misc-practices (unfocused)
-```
+
+```text
 
 Names should be:
+
 - Lowercase with hyphens
 - 1-3 words
 - Descriptive of the methodology
@@ -349,13 +367,13 @@ Names should be:
 
 ## File Structure
 
-```
+```text
 framework/skills/
   skill-name/
     SKILL.md      # The skill definition (required)
     examples/     # Extended examples (optional)
     README.md     # Implementation notes (optional)
-```
+```text
 
 ## Related Skills
 

@@ -10,10 +10,12 @@ from pathlib import Path
 
 import pytest
 
-SCHEMA_PATH = Path(__file__).parents[2] / "src" / "codeagent" / "mcp" / "db" / "schema.surql"
+SCHEMA_PATH = (
+    Path(__file__).parents[2] / "src" / "codeagent" / "mcp" / "db" / "schema.surql"
+)
 
 
-@pytest.fixture
+@pytest.fixture()
 def schema_content() -> str:
     """Load the schema file content."""
     return SCHEMA_PATH.read_text()
@@ -85,15 +87,22 @@ class TestMemoryTable:
 
     def test_memory_has_confidence_field(self, schema_content: str) -> None:
         """Memory table should have a confidence field with default."""
-        assert "DEFINE FIELD confidence ON memory TYPE float DEFAULT 1.0" in schema_content
+        assert (
+            "DEFINE FIELD confidence ON memory TYPE float DEFAULT 1.0" in schema_content
+        )
 
     def test_memory_has_access_count_field(self, schema_content: str) -> None:
         """Memory table should have an access_count field."""
-        assert "DEFINE FIELD access_count ON memory TYPE int DEFAULT 0" in schema_content
+        assert (
+            "DEFINE FIELD access_count ON memory TYPE int DEFAULT 0" in schema_content
+        )
 
     def test_memory_has_source_task_field(self, schema_content: str) -> None:
         """Memory table should have an optional source_task record reference."""
-        assert "DEFINE FIELD source_task ON memory TYPE option<record<task>>" in schema_content
+        assert (
+            "DEFINE FIELD source_task ON memory TYPE option<record<task>>"
+            in schema_content
+        )
 
     def test_memory_has_timestamps(self, schema_content: str) -> None:
         """Memory table should have created_at and updated_at timestamps."""
@@ -146,7 +155,9 @@ class TestRelatesToTable:
 
     def test_relates_to_has_auto_flag(self, schema_content: str) -> None:
         """relates_to should have an auto bool field."""
-        assert "DEFINE FIELD auto ON relates_to TYPE bool DEFAULT false" in schema_content
+        assert (
+            "DEFINE FIELD auto ON relates_to TYPE bool DEFAULT false" in schema_content
+        )
 
 
 class TestProjectTable:
@@ -166,11 +177,16 @@ class TestProjectTable:
 
     def test_project_has_description(self, schema_content: str) -> None:
         """Project table should have an optional description field."""
-        assert "DEFINE FIELD description ON project TYPE option<string>" in schema_content
+        assert (
+            "DEFINE FIELD description ON project TYPE option<string>" in schema_content
+        )
 
     def test_project_prefix_unique_index(self, schema_content: str) -> None:
         """Project should have a unique index on prefix."""
-        assert "DEFINE INDEX project_prefix ON project FIELDS prefix UNIQUE" in schema_content
+        assert (
+            "DEFINE INDEX project_prefix ON project FIELDS prefix UNIQUE"
+            in schema_content
+        )
 
 
 class TestTaskTable:
@@ -199,7 +215,9 @@ class TestTaskTable:
 
     def test_task_has_status_assert(self, schema_content: str) -> None:
         """Task status should be constrained to valid values."""
-        assert '$value IN ["pending", "in_progress", "done", "blocked"]' in schema_content
+        assert (
+            '$value IN ["pending", "in_progress", "done", "blocked"]' in schema_content
+        )
 
     def test_task_has_priority_assert(self, schema_content: str) -> None:
         """Task priority should be constrained between 1 and 5."""

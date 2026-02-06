@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
 from pydantic import ValidationError
+import pytest
 
 
 class TestMemoryType:
     """Tests for MemoryType enum."""
 
     @pytest.mark.parametrize(
-        ("attr", "expected_value"),
+        "attr, expected_value",
         [
             ("KNOWLEDGE", "knowledge"),
             ("EPISODE", "episode"),

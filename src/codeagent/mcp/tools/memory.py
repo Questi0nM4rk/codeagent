@@ -6,7 +6,7 @@ and returns a dict response (or ErrorResponse dict on failure).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
@@ -17,15 +17,20 @@ from codeagent.mcp.models import (
     MemoryType,
     MemoryUpdate,
 )
-from codeagent.mcp.services.memory_service import MemoryService
-from codeagent.mcp.services.search_service import SearchService
+
+if TYPE_CHECKING:
+    from codeagent.mcp.services.memory_service import MemoryService
+    from codeagent.mcp.services.search_service import SearchService
 
 # Service instances, set by init_memory_tools()
 _memory_service: MemoryService | None = None
 _search_service: SearchService | None = None
 
 
-def init_memory_tools(memory_service: MemoryService, search_service: SearchService) -> None:
+def init_memory_tools(
+    memory_service: MemoryService,
+    search_service: SearchService,
+) -> None:
     """Initialize tool dependencies.
 
     Must be called before any tool function is invoked.
@@ -34,13 +39,13 @@ def init_memory_tools(memory_service: MemoryService, search_service: SearchServi
         memory_service: Service handling memory CRUD and linking.
         search_service: Service handling hybrid search.
     """
-    global _memory_service, _search_service
+    global _memory_service, _search_service  # noqa: PLW0603
     _memory_service = memory_service
     _search_service = search_service
 
 
-async def store(
-    type: str,
+async def store(  # noqa: PLR0913
+    memory_type: str,
     content: str,
     title: str | None = None,
     metadata: dict[str, Any] | None = None,
@@ -52,7 +57,7 @@ async def store(
     """Store a new memory with auto-embedding and auto-linking.
 
     Args:
-        type: Memory type (knowledge, episode, decision, pattern, code_chunk).
+        memory_type: Memory type (knowledge, episode, decision, pattern, code_chunk).
         content: The main text content of the memory.
         title: Optional human-readable title.
         metadata: Optional type-specific metadata.
@@ -66,11 +71,12 @@ async def store(
     """
     if _memory_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
         create = MemoryCreate(
-            type=MemoryType(type),
+            type=MemoryType(memory_type),
             content=content,
             title=title,
             metadata=metadata or {},
@@ -87,9 +93,9 @@ async def store(
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
 
-async def search(
+async def search(  # noqa: PLR0913
     query: str,
-    type: str | None = None,
+    memory_type: str | None = None,
     project: str | None = None,
     tags: list[str] | None = None,
     max_results: int = 10,
@@ -100,7 +106,7 @@ async def search(
 
     Args:
         query: Search query string.
-        type: Optional memory type filter.
+        memory_type: Optional memory type filter.
         project: Optional project name filter.
         tags: Optional tag filters.
         max_results: Maximum number of results to return.
@@ -111,12 +117,13 @@ async def search(
     """
     if _search_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
         return await _search_service.search(
             query=query,
-            memory_type=type,
+            memory_type=memory_type,
             project=project,
             tags=tags,
             max_results=max_results,
@@ -127,13 +134,13 @@ async def search(
 
 
 async def read(
-    id: str,
+    memory_id: str,
     depth: int = 1,
 ) -> dict[str, Any]:
     """Read a memory by ID with graph neighborhood.
 
     Args:
-        id: SurrealDB record ID (e.g. "memory:abc123").
+        memory_id: SurrealDB record ID (e.g. "memory:abc123").
         depth: Graph traversal depth (clamped to max 3).
 
     Returns:
@@ -141,16 +148,17 @@ async def read(
     """
     if _memory_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
-        return await _memory_service.read(id, depth=min(depth, 3))
+        return await _memory_service.read(memory_id, depth=min(depth, 3))
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
 
-async def update(
-    id: str,
+async def update(  # noqa: PLR0913
+    memory_id: str,
     content: str | None = None,
     title: str | None = None,
     metadata: dict[str, Any] | None = None,
@@ -160,7 +168,7 @@ async def update(
     """Update a memory. Re-embeds if content changes.
 
     Args:
-        id: SurrealDB record ID of the memory to update.
+        memory_id: SurrealDB record ID of the memory to update.
         content: New content text, if updating.
         title: New title, if updating.
         metadata: New metadata, if updating.
@@ -172,11 +180,12 @@ async def update(
     """
     if _memory_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
         upd = MemoryUpdate(
-            memory_id=id,
+            memory_id=memory_id,
             content=content,
             title=title,
             metadata=metadata,
@@ -188,21 +197,22 @@ async def update(
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
 
-async def delete(id: str) -> dict[str, Any]:
+async def delete(memory_id: str) -> dict[str, Any]:
     """Delete a memory (preserved in changefeed).
 
     Args:
-        id: SurrealDB record ID to delete.
+        memory_id: SurrealDB record ID to delete.
 
     Returns:
         Dict with deletion status or an error response.
     """
     if _memory_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
-        return await _memory_service.delete(id)
+        return await _memory_service.delete(memory_id)
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
@@ -226,7 +236,8 @@ async def link(
     """
     if _memory_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
         return await _memory_service.link(from_id, to_id, reason, strength)
@@ -236,22 +247,23 @@ async def link(
 
 async def stats(
     project: str | None = None,
-    type: str | None = None,
+    memory_type: str | None = None,
 ) -> dict[str, Any]:
     """Memory statistics by type and project.
 
     Args:
         project: Optional project name to filter stats.
-        type: Optional memory type to filter stats.
+        memory_type: Optional memory type to filter stats.
 
     Returns:
         Dict with statistics or an error response.
     """
     if _memory_service is None:
         return ErrorResponse(
-            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+            error="Memory tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
         ).model_dump()
     try:
-        return await _memory_service.stats(project, type)
+        return await _memory_service.stats(project, memory_type)
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()

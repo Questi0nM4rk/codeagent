@@ -6,8 +6,12 @@ Checks cache before calling the provider, caches results on miss.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from codeagent.mcp.embeddings.cache import EmbeddingCache
-from codeagent.mcp.embeddings.provider import EmbeddingProvider
+
+if TYPE_CHECKING:
+    from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
 
 class EmbeddingService:
@@ -55,7 +59,11 @@ class EmbeddingService:
             A list of embedding vectors in the same order as the input texts.
         """
         results: list[list[float] | None] = [self._cache.get(t) for t in texts]
-        misses = [(i, t) for i, (t, r) in enumerate(zip(texts, results, strict=True)) if r is None]
+        misses = [
+            (i, t)
+            for i, (t, r) in enumerate(zip(texts, results, strict=True))
+            if r is None
+        ]
         if misses:
             miss_texts = [t for _, t in misses]
             embeddings = await self._provider.embed_batch(miss_texts)

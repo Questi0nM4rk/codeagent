@@ -6,10 +6,12 @@ and returns a dict response (or ErrorResponse dict on failure).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from codeagent.mcp.models import ErrorCode, ErrorResponse
-from codeagent.mcp.services.reflection_service import ReflectionService
+
+if TYPE_CHECKING:
+    from codeagent.mcp.services.reflection_service import ReflectionService
 
 # Service instance, set by init_reflection_tools()
 _reflection_service: ReflectionService | None = None
@@ -24,11 +26,11 @@ def init_reflection_tools(reflection_service: ReflectionService) -> None:
         reflection_service: Service handling reflection, improved attempts,
             and model effectiveness queries.
     """
-    global _reflection_service
+    global _reflection_service  # noqa: PLW0603
     _reflection_service = reflection_service
 
 
-async def reflect(
+async def reflect(  # noqa: PLR0913
     output: str,
     feedback: str,
     feedback_type: str = "test_failure",

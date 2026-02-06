@@ -79,7 +79,7 @@ class TestEmbeddingProviderInit:
 class TestEmbeddingProviderEmbed:
     """Tests for EmbeddingProvider.embed() single-text embedding."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_embed_returns_embedding_vector(self) -> None:
         """embed() returns a list of floats from the OpenAI API response."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
@@ -89,13 +89,16 @@ class TestEmbeddingProviderEmbed:
             json_data={"data": [{"embedding": expected_embedding, "index": 0}]},
         )
 
-        with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "codeagent.mcp.embeddings.provider.httpx.AsyncClient",
+            return_value=mock_client,
+        ):
             provider = EmbeddingProvider(api_key="sk-test")
             result = await provider.embed("hello world")
 
         assert result == expected_embedding
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_embed_sends_correct_api_request(self) -> None:
         """embed() sends the correct payload to OpenAI's API."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
@@ -125,7 +128,7 @@ class TestEmbeddingProviderEmbed:
         assert payload["model"] == "text-embedding-3-small"
         assert payload["dimensions"] == 1536
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_embed_raises_on_api_error(self) -> None:
         """embed() propagates httpx.HTTPStatusError on API failure."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
@@ -143,7 +146,10 @@ class TestEmbeddingProviderEmbed:
             ),
         )
 
-        with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "codeagent.mcp.embeddings.provider.httpx.AsyncClient",
+            return_value=mock_client,
+        ):
             provider = EmbeddingProvider(api_key="sk-bad")
             with pytest.raises(httpx.HTTPStatusError):
                 await provider.embed("test")
@@ -152,7 +158,7 @@ class TestEmbeddingProviderEmbed:
 class TestEmbeddingProviderEmbedBatch:
     """Tests for EmbeddingProvider.embed_batch() multi-text embedding."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_embed_batch_returns_ordered_embeddings(self) -> None:
         """embed_batch() returns embeddings sorted by index regardless of API order."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
@@ -168,7 +174,10 @@ class TestEmbeddingProviderEmbedBatch:
             },
         )
 
-        with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "codeagent.mcp.embeddings.provider.httpx.AsyncClient",
+            return_value=mock_client,
+        ):
             provider = EmbeddingProvider(api_key="sk-test")
             result = await provider.embed_batch(["a", "b", "c"])
 
@@ -177,7 +186,7 @@ class TestEmbeddingProviderEmbedBatch:
         assert result[1] == [0.2, 0.2]
         assert result[2] == [0.3, 0.3]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_embed_batch_sends_all_texts_in_single_request(self) -> None:
         """embed_batch() sends all texts in one API call."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
@@ -191,7 +200,10 @@ class TestEmbeddingProviderEmbedBatch:
             },
         )
 
-        with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "codeagent.mcp.embeddings.provider.httpx.AsyncClient",
+            return_value=mock_client,
+        ):
             provider = EmbeddingProvider(api_key="sk-test")
             await provider.embed_batch(["text1", "text2"])
 
@@ -199,7 +211,7 @@ class TestEmbeddingProviderEmbedBatch:
         payload = mock_client.post.call_args[1]["json"]
         assert payload["input"] == ["text1", "text2"]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_embed_batch_raises_on_api_error(self) -> None:
         """embed_batch() propagates httpx.HTTPStatusError on API failure."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
@@ -217,7 +229,10 @@ class TestEmbeddingProviderEmbedBatch:
             ),
         )
 
-        with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
+        with patch(
+            "codeagent.mcp.embeddings.provider.httpx.AsyncClient",
+            return_value=mock_client,
+        ):
             provider = EmbeddingProvider(api_key="sk-test")
             with pytest.raises(httpx.HTTPStatusError):
                 await provider.embed_batch(["a", "b"])

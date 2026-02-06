@@ -9,10 +9,10 @@ Scientific method applied to bug investigation. Every fix must be preceded by re
 
 ## The Iron Law
 
-```
+```text
 REPRODUCE BEFORE FIX - NO GUESSING
 Never attempt a fix without first reproducing the bug. Guessing wastes time and introduces new bugs.
-```
+```text
 
 ## Core Principle
 
@@ -21,6 +21,7 @@ Never attempt a fix without first reproducing the bug. Guessing wastes time and 
 ## When to Use
 
 **Always:**
+
 - Investigating any reported bug
 - Unexpected test failures
 - Production incidents
@@ -28,12 +29,13 @@ Never attempt a fix without first reproducing the bug. Guessing wastes time and 
 - "It works on my machine" situations
 
 **Exceptions (ask human partner):**
+
 - Typos obvious from error message (still verify fix)
 - Build/config errors with clear solution (still test after)
 
 ## The Debugging Scientific Method
 
-```
+```text
 OBSERVE → HYPOTHESIZE → PREDICT → TEST → CONCLUDE
 
 1. OBSERVE: Gather facts, reproduce the bug
@@ -41,7 +43,7 @@ OBSERVE → HYPOTHESIZE → PREDICT → TEST → CONCLUDE
 3. PREDICT: What would confirm/deny hypothesis?
 4. TEST: Run experiment to verify
 5. CONCLUDE: Accept, reject, or refine hypothesis
-```
+```text
 
 ## Workflow
 
@@ -50,6 +52,7 @@ OBSERVE → HYPOTHESIZE → PREDICT → TEST → CONCLUDE
 Before anything else, reproduce the bug reliably.
 
 Requirements:
+
 - Write down exact steps to reproduce
 - Confirm bug occurs consistently
 - Identify minimal reproduction case
@@ -67,16 +70,18 @@ Requirements:
 **Actual**: [What happens]
 
 **Environment**:
+
 - OS: [version]
 - Language: [version]
 - Dependencies: [relevant versions]
 
 **Minimal Reproduction**: [Smallest code/steps that trigger bug]
-```
+```text
 
 ### Step 2: Gather Evidence
 
 Collect facts without interpretation:
+
 - Error messages (full stack trace)
 - Logs around the failure
 - Input values that trigger bug
@@ -91,7 +96,7 @@ git bisect start
 git bisect bad HEAD
 git bisect good <last-known-good>
 # ... test each commit until found
-```
+```text
 
 ### Step 3: Form Hypotheses
 
@@ -101,17 +106,21 @@ Generate multiple possible causes (minimum 2-3):
 ## Hypotheses
 
 1. **Race condition in auth flow**
+
    - Evidence: Only fails under load
    - Test: Add logging, check timing
 
 2. **Null check missing in user service**
+
    - Evidence: NullPointerException in stack trace
    - Test: Check if user object is null before access
 
 3. **Database connection pool exhausted**
+
    - Evidence: Timeout errors in logs
    - Test: Monitor connection count
-```
+
+```text
 
 ### Step 4: Test Hypotheses
 
@@ -124,7 +133,7 @@ Test ONE hypothesis at a time. Make predictions before testing.
 **Experiment**: Add lock around token generation
 **Result**: Bug still occurs
 **Conclusion**: REJECTED - not a race condition
-```
+```text
 
 ### Step 5: Fix and Verify
 
@@ -149,7 +158,7 @@ git bisect start
 git bisect bad HEAD
 git bisect good v1.0.0
 # Git will checkout commits for you to test
-```
+```text
 
 ### Rubber Duck Debugging
 
@@ -170,7 +179,7 @@ print(x)
 logger.debug(f"[AUTH] validate_token called: user_id={user_id}, token_length={len(token)}")
 logger.debug(f"[AUTH] token_valid={is_valid}, expires_at={expires_at}")
 logger.debug(f"[AUTH] cache_hit={cache_hit}, lookup_time_ms={elapsed}")
-```
+```text
 
 ### Simplify and Isolate
 
@@ -218,12 +227,14 @@ logger.debug(f"[AUTH] cache_hit={cache_hit}, lookup_time_ms={elapsed}")
 ### Root Cause
 Session refactor in abc123 removed the lock that prevented concurrent session
 creation for the same user.
-```
+```text
+
 - Reproduction documented first
 - Multiple hypotheses considered
 - Predictions made before testing
 - Only one variable changed at a time
 - Fix verified with test and manual reproduction
+
 </Good>
 
 <Bad>
@@ -243,24 +254,26 @@ Actually I'll just rewrite this whole function to be cleaner.
 [rewrites function]
 
 Seems to work now! Closing the ticket.
-```
+```text
+
 - No reproduction documented
 - Guessing instead of hypothesizing
 - Multiple changes at once
 - No verification that fix actually works
 - Root cause unknown
+
 </Bad>
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "I know what the bug is" | Then prove it. Write the reproduction first. |
-| "It's faster to just try things" | Guessing creates new bugs. Systematic is faster long-term. |
-| "Can't reproduce locally" | Match the environment. Use containers, same data, same config. |
-| "It's obviously this line" | If it were obvious, it wouldn't be a bug. Verify. |
-| "I'll document after I fix it" | You'll forget critical details. Document as you go. |
-| "The user described it wrong" | Don't assume. Reproduce exactly what they described. |
+ | Excuse | Reality |
+ | -------- | --------- |
+ | "I know what the bug is" | Then prove it. Write the reproduction first. |
+ | "It's faster to just try things" | Guessing creates new bugs. Systematic is faster long-term. |
+ | "Can't reproduce locally" | Match the environment. Use containers, same data, same config. |
+ | "It's obviously this line" | If it were obvious, it wouldn't be a bug. Verify. |
+ | "I'll document after I fix it" | You'll forget critical details. Document as you go. |
+ | "The user described it wrong" | Don't assume. Reproduce exactly what they described. |
 
 ## Red Flags - STOP and Start Over
 
@@ -292,14 +305,14 @@ Before declaring a bug fixed:
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
-| Can't reproduce | Match exact environment. Check versions, config, data. |
-| All hypotheses rejected | Gather more evidence. Look at different layer (network, OS, hardware). |
-| Bug is intermittent | Add extensive logging. Run in loop until it occurs. Check for race conditions. |
-| Too much code to search | Use git bisect to find breaking commit. Binary search through code. |
-| No error message | Add assertions. Check return values. Enable debug logging. |
-| "Works on my machine" | Compare environments bit by bit. Use containers for consistency. |
+ | Problem | Solution |
+ | --------- | ---------- |
+ | Can't reproduce | Match exact environment. Check versions, config, data. |
+ | All hypotheses rejected | Gather more evidence. Look at different layer (network, OS, hardware). |
+ | Bug is intermittent | Add extensive logging. Run in loop until it occurs. Check for race conditions. |
+ | Too much code to search | Use git bisect to find breaking commit. Binary search through code. |
+ | No error message | Add assertions. Check return values. Enable debug logging. |
+ | "Works on my machine" | Compare environments bit by bit. Use containers for consistency. |
 
 ## Debugging Toolkit
 
@@ -319,7 +332,7 @@ valgrind --leak-check=full ./program
 
 # Performance profiling
 perf record -g ./program && perf report
-```
+```text
 
 ## Documentation Template
 
@@ -337,6 +350,7 @@ perf record -g ./program && perf report
 **Actual:** [behavior]
 
 **Environment:**
+
 - [relevant versions]
 
 ## Investigation
@@ -346,9 +360,9 @@ perf record -g ./program && perf report
 - [fact 2]
 
 ### Hypotheses Tested
-| Hypothesis | Prediction | Result | Conclusion |
-|------------|------------|--------|------------|
-| [h1] | [prediction] | [result] | CONFIRMED/REJECTED |
+ | Hypothesis | Prediction | Result | Conclusion |
+ | ------------ | ------------ | -------- | ------------ |
+ | [h1] | [prediction] | [result] | CONFIRMED/REJECTED |
 
 ### Root Cause
 [What actually caused the bug]
@@ -359,7 +373,7 @@ perf record -g ./program && perf report
 
 ## Prevention
 [How to prevent similar bugs]
-```
+```text
 
 ## Related Skills
 

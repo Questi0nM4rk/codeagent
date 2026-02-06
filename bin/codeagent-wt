@@ -1,0 +1,259 @@
+#!/bin/bash
+# codeagent-wt - Worktrunk wrapper with context management for Claude Code
+#
+# Wraps worktrunk (wt) commands and manages .worktree-context.json files
+# that help Claude understand which worktree it's working in.
+#
+# Usage:
+#   codeagent-wt new <branch> [description]  - Create worktree with context
+#   codeagent-wt update                      - Update context with PR info
+#   codeagent-wt context                     - Show current worktree context
+#   codeagent-wt list                        - List worktrees with context
+#   codeagent-wt <wt-command> [args...]      - Pass through to worktrunk
+
+set -euo pipefail
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Check if worktrunk is installed
+check_wt() {
+  if ! command -v wt &>/dev/null; then
+    echo -e "${RED}Error: worktrunk (wt) not found${NC}" >&2
+    echo "Install: cargo install worktrunk && wt config shell install" >&2
+    exit 1
+  fi
+}
+
+# Check if jq is installed
+check_jq() {
+  if ! command -v jq &>/dev/null; then
+    echo -e "${RED}Error: jq not found${NC}" >&2
+    echo "Install: pacman -S jq (Arch) or apt install jq (Debian)" >&2
+    exit 1
+  fi
+}
+
+# Check if gh is installed
+check_gh() {
+  if ! command -v gh &>/dev/null; then
+    echo -e "${RED}Error: gh (GitHub CLI) not found${NC}" >&2
+    echo "Install: pacman -S github-cli (Arch) or apt install gh (Debian)" >&2
+    exit 1
+  fi
+}
+
+# Create worktree context file using jq for proper JSON escaping
+create_context() {
+  local worktree_path="$1"
+  local branch="$2"
+  local description="${3:-}"
+
+  local context_file="$worktree_path/.worktree-context.json"
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+  jq -n \
+    --arg branch "$branch" \
+    --arg desc "$description" \
+    --arg ts "$timestamp" \
+    '{
+      branch: $branch,
+      pr_number: null,
+      pr_title: null,
+      description: $desc,
+      task_id: null,
+      created: $ts
+    }' >"$context_file"
+
+  echo -e "${GREEN}✓${NC} Created context: $context_file"
+}
+
+# Update context with PR info
+update_context() {
+  check_jq
+  check_gh
+
+  local context_file
+  context_file="$(git rev-parse --show-toplevel 2>/dev/null)/.worktree-context.json"
+
+  if [[ ! -f "$context_file" ]]; then
+    echo -e "${YELLOW}⚠${NC} No .worktree-context.json in current worktree"
+    echo "Create one with: codeagent-wt new <branch> [description]"
+    return 1
+  fi
+
+  local branch
+  branch=$(jq -r '.branch' "$context_file")
+
+  if pr_info=$(gh pr view "$branch" --json number,title 2>/dev/null); then
+    local pr_num pr_title
+    pr_num=$(echo "$pr_info" | jq -r '.number')
+    pr_title=$(echo "$pr_info" | jq -r '.title')
+
+    local tmp_file
+    tmp_file=$(mktemp)
+    jq --arg num "$pr_num" --arg title "$pr_title" \
+      '.pr_number = ($num | tonumber) | .pr_title = $title' \
+      "$context_file" >"$tmp_file" && mv "$tmp_file" "$context_file"
+
+    echo -e "${GREEN}✓${NC} Updated: PR #$pr_num - $pr_title"
+  else
+    echo -e "${YELLOW}⚠${NC} No PR found for branch: $branch"
+  fi
+}
+
+# Show current worktree context
+show_context() {
+  check_jq
+
+  local worktree_root
+  worktree_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo -e "${RED}✗${NC} Not in a git repository"
+    return 1
+  }
+
+  local context_file="$worktree_root/.worktree-context.json"
+
+  echo -e "${CYAN}Worktree:${NC} $worktree_root"
+  echo -e "${CYAN}Branch:${NC}   $(git rev-parse --abbrev-ref HEAD)"
+
+  if [[ -f "$context_file" ]]; then
+    local pr_num pr_title desc
+    pr_num=$(jq -r '.pr_number // empty' "$context_file")
+    pr_title=$(jq -r '.pr_title // empty' "$context_file")
+    desc=$(jq -r '.description // empty' "$context_file")
+
+    if [[ -n "$pr_num" ]]; then
+      echo -e "${CYAN}PR:${NC}       #$pr_num - $pr_title"
+    fi
+    if [[ -n "$desc" ]]; then
+      echo -e "${CYAN}Context:${NC}  $desc"
+    fi
+  else
+    echo -e "${YELLOW}(no .worktree-context.json)${NC}"
+  fi
+}
+
+# List worktrees with context
+list_worktrees() {
+  check_jq
+
+  echo -e "${BLUE}Worktrees:${NC}"
+  echo ""
+
+  local worktree_path=""
+
+  git worktree list --porcelain | while IFS= read -r line; do
+    if [[ "$line" == worktree\ * ]]; then
+      worktree_path="${line#worktree }"
+    elif [[ "$line" == "branch refs/heads/"* ]]; then
+      local branch="${line#branch refs/heads/}"
+      local context_file="$worktree_path/.worktree-context.json"
+      local marker=" "
+
+      # Mark current worktree
+      if [[ "$worktree_path" == "$(git rev-parse --show-toplevel 2>/dev/null)" ]]; then
+        marker="→"
+      fi
+
+      if [[ -f "$context_file" ]]; then
+        local pr_num desc
+        pr_num=$(jq -r '.pr_number // "-"' "$context_file")
+        desc=$(jq -r '.description // ""' "$context_file" | cut -c1-40)
+        printf " %s %-35s PR:%-4s %s\n" "$marker" "$branch" "$pr_num" "$desc"
+      else
+        printf " %s %-35s (no context)\n" "$marker" "$branch"
+      fi
+    fi
+  done
+}
+
+# Find worktree path for a branch from git worktree list --porcelain
+find_worktree_path() {
+  local target_branch="$1"
+  local worktree_path=""
+
+  git worktree list --porcelain | while IFS= read -r line; do
+    if [[ "$line" == worktree\ * ]]; then
+      worktree_path="${line#worktree }"
+    elif [[ "$line" == "branch refs/heads/$target_branch" ]]; then
+      echo "$worktree_path"
+      return 0
+    fi
+  done
+}
+
+# Create new worktree with context
+cmd_new() {
+  local branch="${1:-}"
+  local description="${2:-}"
+
+  if [[ -z "$branch" ]]; then
+    echo "Usage: codeagent-wt new <branch> [description]"
+    exit 1
+  fi
+
+  check_wt
+  check_jq
+
+  # Create worktree using wt
+  echo -e "${BLUE}Creating worktree for: $branch${NC}"
+  wt switch --create "$branch"
+
+  # Find the worktree path from git worktree list
+  local worktree_path
+  worktree_path=$(find_worktree_path "$branch")
+
+  if [[ -z "$worktree_path" ]]; then
+    # Fallback to git rev-parse if the above fails
+    worktree_path=$(git rev-parse --show-toplevel)
+  fi
+
+  create_context "$worktree_path" "$branch" "$description"
+}
+
+# Main
+main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    new | create)
+      cmd_new "$@"
+      ;;
+    update | update-context)
+      update_context
+      ;;
+    context | ctx | where)
+      show_context
+      ;;
+    list | ls)
+      list_worktrees
+      ;;
+    help | -h | --help)
+      echo "codeagent-wt - Worktrunk wrapper with context for Claude Code"
+      echo ""
+      echo "Commands:"
+      echo "  new <branch> [desc]  Create worktree with context file"
+      echo "  update               Update context with PR info"
+      echo "  context              Show current worktree context"
+      echo "  list                 List worktrees with context"
+      echo "  <wt-command>         Pass through to worktrunk"
+      echo ""
+      echo "Worktrunk commands: switch, merge, remove, run, etc."
+      echo "Run 'wt --help' for full worktrunk documentation."
+      ;;
+    *)
+      check_wt
+      wt "$cmd" "$@"
+      ;;
+  esac
+}
+
+main "$@"

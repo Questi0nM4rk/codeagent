@@ -6,11 +6,13 @@ Handles priority ordering, dependency filtering, and project scoping.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from codeagent.mcp.db.client import SurrealDBClient
 from codeagent.mcp.models import ErrorCode
-from codeagent.mcp.models.task import TaskCreate
+
+if TYPE_CHECKING:
+    from codeagent.mcp.db.client import SurrealDBClient
+    from codeagent.mcp.models.task import TaskCreate
 
 
 class TaskService:

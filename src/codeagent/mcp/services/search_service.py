@@ -6,10 +6,14 @@ and tags. Supports graph traversal to include related memories.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from codeagent.mcp.db.client import SurrealDBClient
-from codeagent.mcp.services.embedding_service import EmbeddingService
+if TYPE_CHECKING:
+    from codeagent.mcp.db.client import SurrealDBClient
+    from codeagent.mcp.services.embedding_service import EmbeddingService
+
+
+_SNIPPET_MAX_LENGTH = 200
 
 
 class SearchService:
@@ -24,7 +28,7 @@ class SearchService:
         self._db = db
         self._embedding = embedding
 
-    async def search(
+    async def search(  # noqa: C901, PLR0912, PLR0913, PLR0915
         self,
         query: str,
         *,
@@ -89,7 +93,9 @@ class SearchService:
             row_ids = [row.get("id") for row in rows if row.get("id")]
             if row_ids:
                 graph_result = await self._db.query(
-                    "SELECT id, ->relates_to->memory.id AS related FROM memory WHERE id IN $ids",
+                    "SELECT id,"
+                    " ->relates_to->memory.id AS related"
+                    " FROM memory WHERE id IN $ids",
                     {"ids": row_ids},
                 )
                 if (
@@ -105,7 +111,11 @@ class SearchService:
         details: list[dict[str, Any]] = []
         for row in rows:
             content = row.get("content", "")
-            snippet = content[:200] + "..." if len(content) > 200 else content
+            snippet = (
+                content[:_SNIPPET_MAX_LENGTH] + "..."
+                if len(content) > _SNIPPET_MAX_LENGTH
+                else content
+            )
 
             index.append(
                 {

@@ -6,7 +6,7 @@ and returns a dict response (or ErrorResponse dict on failure).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
@@ -17,7 +17,9 @@ from codeagent.mcp.models import (
     TaskStatus,
     TaskType,
 )
-from codeagent.mcp.services.task_service import TaskService
+
+if TYPE_CHECKING:
+    from codeagent.mcp.services.task_service import TaskService
 
 # Service instance, set by init_task_tools()
 _task_service: TaskService | None = None
@@ -31,11 +33,11 @@ def init_task_tools(task_service: TaskService) -> None:
     Args:
         task_service: Service handling task lifecycle operations.
     """
-    global _task_service
+    global _task_service  # noqa: PLW0603
     _task_service = task_service
 
 
-async def create_task(
+async def create_task(  # noqa: PLR0913
     project: str,
     name: str,
     task_id: str,
@@ -136,7 +138,11 @@ async def complete_task(
             error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
         ).model_dump()
     try:
-        return await _task_service.complete_task(task_id, resolved_by=resolved_by, summary=summary)
+        return await _task_service.complete_task(
+            task_id,
+            resolved_by=resolved_by,
+            summary=summary,
+        )
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
@@ -161,7 +167,11 @@ async def list_tasks(
             error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
         ).model_dump()
     try:
-        tasks = await _task_service.list_tasks(project=project, status=status, task_type=task_type)
+        tasks = await _task_service.list_tasks(
+            project=project,
+            status=status,
+            task_type=task_type,
+        )
         return {"tasks": tasks, "count": len(tasks)}
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()

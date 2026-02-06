@@ -20,8 +20,8 @@ Enable nullable, use primary constructors for DI, return Result<T> not exception
 
 ## Stack
 
-| Component | Technology |
-|-----------|------------|
+| Component   | Technology   |
+| ----------- | ------------ |
 | Runtime | .NET 8/9/10 |
 | Language | C# 12/13 |
 | Web | ASP.NET Core, Minimal APIs |
@@ -53,7 +53,7 @@ dotnet list package --vulnerable
 
 ### Primary Constructor DI (C# 12+)
 
-<Good>
+### Good Example
 ```csharp
 public class UserService(
     IUserRepository repository,
@@ -73,9 +73,8 @@ public class UserService(
 - CancellationToken on async methods
 - Result pattern for expected failures
 - Structured logging with template
-</Good>
 
-<Bad>
+### Bad Example
 ```csharp
 public class UserService
 {
@@ -99,7 +98,6 @@ public class UserService
 - No CancellationToken
 - Exception for expected failure (not found)
 - No logging
-</Bad>
 
 ### Result Pattern
 
@@ -131,7 +129,7 @@ app.MapGet("/users/{id:guid}", async (Guid id, IUserService service, Cancellatio
 
 ## Testing
 
-<Good>
+### Good Example
 ```csharp
 public class UserServiceTests
 {
@@ -164,12 +162,11 @@ public class UserServiceTests
 - Clear Arrange/Act/Assert
 - FluentAssertions for readability
 - Tests behavior, not implementation
-</Good>
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
+| Excuse   | Reality   |
+| -------- | --------- |
 | "Nullable is too strict" | It catches bugs at compile time. Enable it. |
 | "Exceptions are easier" | Result pattern makes error handling explicit and testable. |
 | "Primary constructors are new" | C# 12 is stable. Use modern features. |
@@ -206,8 +203,8 @@ dotnet test --collect:"XPlat Code Coverage" # Coverage
 
 ## When Stuck
 
-| Problem | Solution |
-|---------|----------|
+| Problem   | Solution   |
+| --------- | ---------- |
 | Nullable warnings everywhere | Enable nullable, fix errors file by file |
 | EF migrations failing | Check connection string, ensure migrations project set |
 | Test dependencies | Use Mock<T> for interfaces, TestContainers for integration |

@@ -33,7 +33,7 @@ def _make_service(
 class TestTaskServiceCreateTask:
     """Tests for TaskService.create_task() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_calls_db_create(self) -> None:
         """create_task() should call db.create with 'task' table and model data."""
         service, mock_db = _make_service()
@@ -50,7 +50,7 @@ class TestTaskServiceCreateTask:
         assert data["project"] == "project:testproj"
         assert data["name"] == "Implement feature X"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_returns_created_record(self) -> None:
         """create_task() should return the created record dict."""
         service, mock_db = _make_service()
@@ -61,7 +61,7 @@ class TestTaskServiceCreateTask:
 
         assert result == {"id": "task:abc", "task_id": "CA-TASK-001"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_handles_list_response(self) -> None:
         """create_task() should unwrap list response from db.create."""
         service, mock_db = _make_service()
@@ -72,7 +72,7 @@ class TestTaskServiceCreateTask:
 
         assert result == {"id": "task:xyz"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_handles_dict_response(self) -> None:
         """create_task() should handle when db.create returns a dict directly."""
         service, mock_db = _make_service()
@@ -83,7 +83,7 @@ class TestTaskServiceCreateTask:
 
         assert result["id"] == "task:single"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_raises_on_empty_list_response(self) -> None:
         """create_task() should raise RuntimeError when db.create returns []."""
         service, mock_db = _make_service()
@@ -97,12 +97,21 @@ class TestTaskServiceCreateTask:
 class TestTaskServiceGetNextTask:
     """Tests for TaskService.get_next_task() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_returns_highest_priority_pending(self) -> None:
         """get_next_task() should return the highest priority pending task."""
         service, mock_db = _make_service()
         mock_db.query.return_value = [
-            {"result": [{"id": "task:a", "task_id": "CA-001", "priority": 1, "status": "pending"}]}
+            {
+                "result": [
+                    {
+                        "id": "task:a",
+                        "task_id": "CA-001",
+                        "priority": 1,
+                        "status": "pending",
+                    }
+                ]
+            }
         ]
 
         result = await service.get_next_task()
@@ -110,12 +119,20 @@ class TestTaskServiceGetNextTask:
         assert result["task_id"] == "CA-001"
         assert result["priority"] == 1
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_filters_by_project(self) -> None:
         """get_next_task() should filter by project when provided."""
         service, mock_db = _make_service()
         mock_db.query.return_value = [
-            {"result": [{"id": "task:a", "task_id": "CA-001", "project": "project:myproj"}]}
+            {
+                "result": [
+                    {
+                        "id": "task:a",
+                        "task_id": "CA-001",
+                        "project": "project:myproj",
+                    }
+                ]
+            }
         ]
 
         await service.get_next_task(project="project:myproj")
@@ -125,7 +142,7 @@ class TestTaskServiceGetNextTask:
         assert "project = $project" in query_str
         assert query_call[0][1]["project"] == "project:myproj"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_returns_not_found_when_empty(self) -> None:
         """get_next_task() should return NOT_FOUND error when no pending tasks."""
         service, mock_db = _make_service()
@@ -136,7 +153,7 @@ class TestTaskServiceGetNextTask:
         assert result["error"] == "No pending tasks found"
         assert result["code"] == "NOT_FOUND"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_queries_pending_with_no_deps(self) -> None:
         """get_next_task() should only query pending tasks with empty depends_on."""
         service, mock_db = _make_service()
@@ -154,7 +171,7 @@ class TestTaskServiceGetNextTask:
 class TestTaskServiceCompleteTask:
     """Tests for TaskService.complete_task() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_complete_task_updates_status_to_done(self) -> None:
         """complete_task() should update task status to 'done'."""
         service, mock_db = _make_service()
@@ -169,7 +186,7 @@ class TestTaskServiceCompleteTask:
         assert query_call[0][1]["task_id"] == "CA-001"
         assert result["status"] == "done"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_complete_task_includes_resolved_by(self) -> None:
         """complete_task() should include resolved_by when provided."""
         service, mock_db = _make_service()
@@ -191,7 +208,7 @@ class TestTaskServiceCompleteTask:
         query_call = mock_db.query.call_args
         assert query_call[0][1]["resolved_by"] == "memory:ep1"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_complete_task_returns_not_found_for_missing(self) -> None:
         """complete_task() should return NOT_FOUND for a non-existent task."""
         service, mock_db = _make_service()
@@ -202,7 +219,7 @@ class TestTaskServiceCompleteTask:
         assert result["error"] == "Task CA-NONEXIST not found"
         assert result["code"] == "NOT_FOUND"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_complete_task_returns_updated_record(self) -> None:
         """complete_task() should return the updated task record."""
         service, mock_db = _make_service()
@@ -217,7 +234,7 @@ class TestTaskServiceCompleteTask:
 class TestTaskServiceListTasks:
     """Tests for TaskService.list_tasks() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_returns_all_tasks(self) -> None:
         """list_tasks() should return all tasks when no filters given."""
         service, mock_db = _make_service()
@@ -232,7 +249,7 @@ class TestTaskServiceListTasks:
         assert len(result) == 2
         assert result[0]["task_id"] == "CA-001"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_filters_by_project(self) -> None:
         """list_tasks() should filter by project when provided."""
         service, mock_db = _make_service()
@@ -244,7 +261,7 @@ class TestTaskServiceListTasks:
         assert "project = $project" in query_str
         assert mock_db.query.call_args[0][1]["project"] == "project:myproj"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_filters_by_status(self) -> None:
         """list_tasks() should filter by status when provided."""
         service, mock_db = _make_service()
@@ -256,7 +273,7 @@ class TestTaskServiceListTasks:
         assert "status = $status" in query_str
         assert mock_db.query.call_args[0][1]["status"] == "done"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_filters_by_type(self) -> None:
         """list_tasks() should filter by task type when provided."""
         service, mock_db = _make_service()
@@ -268,7 +285,7 @@ class TestTaskServiceListTasks:
         assert "type = $type" in query_str
         assert mock_db.query.call_args[0][1]["type"] == "epic"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_returns_empty_list_when_no_results(self) -> None:
         """list_tasks() should return [] when no tasks match."""
         service, mock_db = _make_service()

@@ -7,14 +7,13 @@
 # Only greet once per session
 GREETER_FLAG="/tmp/.codeagent-greeted-$$"
 if [ -f "$GREETER_FLAG" ]; then
-    exit 0
+  exit 0
 fi
 touch "$GREETER_FLAG"
 
 # Colors
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo ""

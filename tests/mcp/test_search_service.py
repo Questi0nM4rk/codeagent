@@ -23,7 +23,7 @@ def _make_service(
 class TestSearchServiceSearch:
     """Tests for SearchService.search() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_embeds_query(self) -> None:
         """search() should embed the query string."""
         service, mock_db, mock_embedding = _make_service()
@@ -34,7 +34,7 @@ class TestSearchServiceSearch:
 
         mock_embedding.embed.assert_called_once_with("find related patterns")
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_runs_vector_query(self) -> None:
         """search() should execute a vector similarity query."""
         service, mock_db, mock_embedding = _make_service()
@@ -60,7 +60,7 @@ class TestSearchServiceSearch:
         assert result["index"][0]["score"] == 0.95
         assert result["total_count"] == 1
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_applies_type_filter(self) -> None:
         """search() should include type filter in the query."""
         service, mock_db, mock_embedding = _make_service()
@@ -75,7 +75,7 @@ class TestSearchServiceSearch:
         assert "type = $type" in query_str
         assert params["type"] == "knowledge"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_applies_project_filter(self) -> None:
         """search() should include project filter in the query."""
         service, mock_db, mock_embedding = _make_service()
@@ -90,7 +90,7 @@ class TestSearchServiceSearch:
         assert "project = $project" in query_str
         assert params["project"] == "myproject"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_applies_tags_filter(self) -> None:
         """search() should include tags filter in the query."""
         service, mock_db, mock_embedding = _make_service()
@@ -107,7 +107,7 @@ class TestSearchServiceSearch:
         assert params["tag0"] == "python"
         assert params["tag1"] == "patterns"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_returns_empty_when_no_results(self) -> None:
         """search() should return empty structure when no results found."""
         service, mock_db, mock_embedding = _make_service()
@@ -120,7 +120,7 @@ class TestSearchServiceSearch:
         assert result["details"] == []
         assert result["total_count"] == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_returns_empty_when_query_returns_none(self) -> None:
         """search() should handle None results from db.query."""
         service, mock_db, mock_embedding = _make_service()
@@ -133,7 +133,7 @@ class TestSearchServiceSearch:
         assert result["details"] == []
         assert result["total_count"] == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_includes_graph_when_requested(self) -> None:
         """search() should include related memory IDs when include_graph=True."""
         service, mock_db, mock_embedding = _make_service()
@@ -162,7 +162,7 @@ class TestSearchServiceSearch:
         assert len(result["details"]) == 1
         assert result["details"][0]["related"] == ["memory:def"]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_truncates_long_content_for_snippets(self) -> None:
         """search() should truncate content > 200 chars with '...' for snippets."""
         service, mock_db, mock_embedding = _make_service()
@@ -188,7 +188,7 @@ class TestSearchServiceSearch:
         assert len(snippet) == 203  # 200 chars + "..."
         assert snippet.endswith("...")
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_search_keeps_short_content_as_snippet(self) -> None:
         """search() should not truncate content <= 200 chars."""
         service, mock_db, mock_embedding = _make_service()

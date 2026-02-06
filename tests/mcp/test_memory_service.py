@@ -46,7 +46,7 @@ def _make_service(
 class TestMemoryServiceStore:
     """Tests for MemoryService.store() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_store_embeds_content(self) -> None:
         """store() should embed the content before inserting."""
         service, mock_db, mock_embedding = _make_service()
@@ -59,7 +59,7 @@ class TestMemoryServiceStore:
 
         mock_embedding.embed.assert_called_once_with("Test memory content")
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_store_inserts_into_db_with_embedding(self) -> None:
         """store() should pass embedded vector to db.create."""
         service, mock_db, mock_embedding = _make_service()
@@ -76,7 +76,7 @@ class TestMemoryServiceStore:
         assert data["embedding"] == [0.1, 0.2]
         assert data["content"] == "Test memory content"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_store_calls_auto_link(self) -> None:
         """store() should call _auto_link after creating the record."""
         service, mock_db, mock_embedding = _make_service()
@@ -92,7 +92,7 @@ class TestMemoryServiceStore:
         query_calls = mock_db.query.call_args_list
         assert len(query_calls) >= 1  # At least the similarity search
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_store_returns_created_record(self) -> None:
         """store() should return the created record dict."""
         service, mock_db, mock_embedding = _make_service()
@@ -105,7 +105,7 @@ class TestMemoryServiceStore:
 
         assert result == {"id": "memory:xyz", "content": "test"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_store_handles_single_dict_from_create(self) -> None:
         """store() should handle when db.create returns a dict instead of list."""
         service, mock_db, mock_embedding = _make_service()
@@ -122,7 +122,7 @@ class TestMemoryServiceStore:
 class TestMemoryServiceRead:
     """Tests for MemoryService.read() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_read_increments_access_count(self) -> None:
         """read() should increment access_count via query."""
         service, mock_db, _ = _make_service()
@@ -136,7 +136,7 @@ class TestMemoryServiceRead:
         assert "access_count" in first_query[0][0]
         assert first_query[0][1] == {"id": "memory:abc"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_read_returns_not_found_for_missing_id(self) -> None:
         """read() should return error dict when memory not found."""
         service, mock_db, _ = _make_service()
@@ -148,7 +148,7 @@ class TestMemoryServiceRead:
         assert result["error"] == "Memory not found"
         assert result["code"] == "NOT_FOUND"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_read_returns_memory_data(self) -> None:
         """read() should return the memory record on success."""
         service, mock_db, _ = _make_service()
@@ -160,7 +160,7 @@ class TestMemoryServiceRead:
         assert result["id"] == "memory:abc"
         assert result["content"] == "hello"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_read_includes_related_when_depth_gt_zero(self) -> None:
         """read() should include related_memories when depth > 0."""
         service, mock_db, _ = _make_service()
@@ -175,7 +175,7 @@ class TestMemoryServiceRead:
         assert "related_memories" in result
         assert result["related_memories"] == [{"id": "memory:related1"}]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_read_skips_graph_when_depth_zero(self) -> None:
         """read() should not query graph when depth=0."""
         service, mock_db, _ = _make_service()
@@ -192,7 +192,7 @@ class TestMemoryServiceRead:
 class TestMemoryServiceUpdate:
     """Tests for MemoryService.update() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_update_reembeds_when_content_changes(self) -> None:
         """update() should re-embed when content is provided."""
         service, mock_db, mock_embedding = _make_service()
@@ -206,7 +206,7 @@ class TestMemoryServiceUpdate:
         update_call = mock_db.update.call_args
         assert update_call[0][1]["embedding"] == [0.9, 0.8]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_update_skips_embedding_for_metadata_only(self) -> None:
         """update() should not re-embed when only metadata fields change."""
         service, mock_db, _mock_embedding = _make_service()
@@ -217,7 +217,7 @@ class TestMemoryServiceUpdate:
 
         _mock_embedding.embed.assert_not_called()
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_update_sets_updated_at(self) -> None:
         """update() should set the updated_at timestamp."""
         service, mock_db, _mock_embedding = _make_service()
@@ -229,7 +229,7 @@ class TestMemoryServiceUpdate:
         update_call = mock_db.update.call_args
         assert "updated_at" in update_call[0][1]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_update_returns_result(self) -> None:
         """update() should return the updated record."""
         service, mock_db, _mock_embedding = _make_service()
@@ -244,7 +244,7 @@ class TestMemoryServiceUpdate:
 class TestMemoryServiceDelete:
     """Tests for MemoryService.delete() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_delete_calls_db_delete(self) -> None:
         """delete() should call db.delete with the memory_id."""
         service, mock_db, _ = _make_service()
@@ -255,7 +255,7 @@ class TestMemoryServiceDelete:
         mock_db.delete.assert_called_once_with("memory:abc")
         assert result["deleted"] == "memory:abc"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_delete_returns_confirmation(self) -> None:
         """delete() should return a dict with deleted key."""
         service, mock_db, _ = _make_service()
@@ -270,7 +270,7 @@ class TestMemoryServiceDelete:
 class TestMemoryServiceLink:
     """Tests for MemoryService.link() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_link_creates_relates_to_edge(self) -> None:
         """link() should execute RELATE query to create edge."""
         service, mock_db, _ = _make_service()
@@ -292,7 +292,7 @@ class TestMemoryServiceLink:
         assert params["strength"] == 0.9
         assert params["reason"] == "related concept"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_link_returns_success(self) -> None:
         """link() should return a dict indicating success."""
         service, mock_db, _ = _make_service()
@@ -306,14 +306,28 @@ class TestMemoryServiceLink:
 class TestMemoryServiceStats:
     """Tests for MemoryService.stats() method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_stats_returns_correct_aggregates(self) -> None:
         """stats() should return total, by_type, and by_project."""
         service, mock_db, _ = _make_service()
         mock_db.query.side_effect = [
             [{"result": [{"total": 42}]}],
-            [{"result": [{"type": "knowledge", "count": 30}, {"type": "episode", "count": 12}]}],
-            [{"result": [{"project": "proj1", "count": 25}, {"project": "proj2", "count": 17}]}],
+            [
+                {
+                    "result": [
+                        {"type": "knowledge", "count": 30},
+                        {"type": "episode", "count": 12},
+                    ]
+                }
+            ],
+            [
+                {
+                    "result": [
+                        {"project": "proj1", "count": 25},
+                        {"project": "proj2", "count": 17},
+                    ]
+                }
+            ],
         ]
 
         result = await service.stats()
@@ -322,7 +336,7 @@ class TestMemoryServiceStats:
         assert result["by_type"] == {"knowledge": 30, "episode": 12}
         assert result["by_project"] == {"proj1": 25, "proj2": 17}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_stats_applies_project_filter(self) -> None:
         """stats() should include project filter in queries."""
         service, mock_db, _ = _make_service()
@@ -339,7 +353,7 @@ class TestMemoryServiceStats:
             assert "project = $project" in query_str
             assert query_call[0][1]["project"] == "myproj"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_stats_applies_type_filter(self) -> None:
         """stats() should include type filter in queries."""
         service, mock_db, _ = _make_service()
@@ -356,7 +370,7 @@ class TestMemoryServiceStats:
             assert "type = $type" in query_str
             assert query_call[0][1]["type"] == "episode"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_stats_returns_zero_when_empty(self) -> None:
         """stats() should return 0 total when no results."""
         service, mock_db, _ = _make_service()
@@ -376,7 +390,7 @@ class TestMemoryServiceStats:
 class TestMemoryServiceAutoLink:
     """Tests for MemoryService._auto_link() private method."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_auto_link_creates_edges_for_similar_memories(self) -> None:
         """_auto_link() should create relates_to edges for high-similarity matches."""
         service, mock_db, _ = _make_service()
@@ -406,7 +420,7 @@ class TestMemoryServiceAutoLink:
         assert relate_params["to0"] == "memory:similar1"
         assert relate_params["to1"] == "memory:similar2"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_auto_link_skips_low_similarity(self) -> None:
         """_auto_link() should not create edges when similarity < 0.7."""
         service, mock_db, _ = _make_service()

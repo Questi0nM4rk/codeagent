@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import typer
 from rich.console import Console
+import typer
 
 from codeagent import __version__
 
@@ -19,12 +19,12 @@ def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
         console.print(f"codeagent {__version__}")
-        raise typer.Exit()
+        raise typer.Exit
 
 
 @app.callback()
 def main(
-    version: bool = typer.Option(
+    _version: bool = typer.Option(
         False,
         "--version",
         "-v",
@@ -38,11 +38,31 @@ def main(
 
 @app.command()
 def init(
-    project_dir: str = typer.Argument(".", help="Project directory to initialize"),
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing configs"),
-    no_precommit: bool = typer.Option(False, "--no-precommit", help="Skip pre-commit setup"),
-    no_coderabbit: bool = typer.Option(False, "--no-coderabbit", help="Skip CodeRabbit setup"),
-    no_workflow: bool = typer.Option(False, "--no-workflow", help="Skip GitHub workflow setup"),
+    project_dir: str = typer.Argument(
+        ".",
+        help="Project directory to initialize",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Overwrite existing configs",
+    ),
+    no_precommit: bool = typer.Option(
+        False,
+        "--no-precommit",
+        help="Skip pre-commit setup",
+    ),
+    no_coderabbit: bool = typer.Option(
+        False,
+        "--no-coderabbit",
+        help="Skip CodeRabbit setup",
+    ),
+    no_workflow: bool = typer.Option(
+        False,
+        "--no-workflow",
+        help="Skip GitHub workflow setup",
+    ),
 ) -> None:
     """Initialize a project with CodeAgent configuration."""
     from codeagent.cli.init_cmd import run_init

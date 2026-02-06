@@ -17,6 +17,10 @@ unsafe-fixes = false
 # Enable ALL rules - no exceptions for AI
 select = ["ALL"]
 
+# NOTE: To disable inline noqa comments, use --ignore-noqa CLI flag in pre-commit
+# The detect-suppression-comments.sh hook blocks noqa at commit time
+# AI agents cannot add "# noqa" - they must ask user to update per-file-ignores
+
 ignore = [
   # === Formatter conflicts only ===
   "W191",   # tab-indentation

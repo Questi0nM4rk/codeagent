@@ -28,9 +28,9 @@ class TestInitTaskTools:
 class TestCreateTask:
     """Tests for the create_task() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_calls_service(self) -> None:
-        """create_task() should create a TaskCreate and call _task_service.create_task."""
+        """create_task() should delegate to _task_service."""
         from codeagent.mcp.tools import task as task_mod
 
         mock_svc = AsyncMock()
@@ -58,7 +58,7 @@ class TestCreateTask:
         assert call_arg.priority == 2
         assert result == {"id": "task:abc", "task_id": "CA-001"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_returns_error_on_exception(self) -> None:
         """create_task() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import task as task_mod
@@ -76,7 +76,7 @@ class TestCreateTask:
         assert "error" in result
         assert "DB down" in result["error"]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_task_returns_error_on_validation_failure(self) -> None:
         """create_task() should return ErrorResponse for invalid priority."""
         from codeagent.mcp.tools import task as task_mod
@@ -99,13 +99,16 @@ class TestCreateTask:
 class TestGetNextTask:
     """Tests for the get_next_task() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_calls_service(self) -> None:
         """get_next_task() should forward project to _task_service.get_next_task."""
         from codeagent.mcp.tools import task as task_mod
 
         mock_svc = AsyncMock()
-        mock_svc.get_next_task.return_value = {"task_id": "CA-001", "name": "First task"}
+        mock_svc.get_next_task.return_value = {
+            "task_id": "CA-001",
+            "name": "First task",
+        }
 
         with patch.object(task_mod, "_task_service", mock_svc):
             result = await task_mod.get_next_task(project="project:myproj")
@@ -113,7 +116,7 @@ class TestGetNextTask:
         mock_svc.get_next_task.assert_awaited_once_with(project="project:myproj")
         assert result == {"task_id": "CA-001", "name": "First task"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_returns_error_on_exception(self) -> None:
         """get_next_task() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import task as task_mod
@@ -128,7 +131,7 @@ class TestGetNextTask:
         assert "Query failed" in result["error"]
         assert result["code"] == "DB_ERROR"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_get_next_task_defaults_project_to_none(self) -> None:
         """get_next_task() without project should pass None."""
         from codeagent.mcp.tools import task as task_mod
@@ -145,7 +148,7 @@ class TestGetNextTask:
 class TestCompleteTask:
     """Tests for the complete_task() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_complete_task_calls_service(self) -> None:
         """complete_task() should forward task_id and resolved_by to service."""
         from codeagent.mcp.tools import task as task_mod
@@ -163,7 +166,7 @@ class TestCompleteTask:
         )
         assert result == {"task_id": "CA-001", "status": "done"}
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_complete_task_returns_error_on_exception(self) -> None:
         """complete_task() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import task as task_mod
@@ -182,7 +185,7 @@ class TestCompleteTask:
 class TestListTasks:
     """Tests for the list_tasks() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_calls_service(self) -> None:
         """list_tasks() should forward filters to _task_service.list_tasks."""
         from codeagent.mcp.tools import task as task_mod
@@ -201,9 +204,12 @@ class TestListTasks:
         mock_svc.list_tasks.assert_awaited_once_with(
             project="project:myproj", status="pending", task_type="task"
         )
-        assert result == {"tasks": [{"task_id": "CA-001"}, {"task_id": "CA-002"}], "count": 2}
+        assert result == {
+            "tasks": [{"task_id": "CA-001"}, {"task_id": "CA-002"}],
+            "count": 2,
+        }
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_returns_error_on_exception(self) -> None:
         """list_tasks() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import task as task_mod
@@ -218,7 +224,7 @@ class TestListTasks:
         assert "List failed" in result["error"]
         assert result["code"] == "DB_ERROR"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_wraps_result_in_dict(self) -> None:
         """list_tasks() should wrap the list result with count."""
         from codeagent.mcp.tools import task as task_mod
@@ -233,7 +239,7 @@ class TestListTasks:
         assert "count" in result
         assert result["count"] == 1
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_list_tasks_defaults_all_filters_to_none(self) -> None:
         """list_tasks() without args should pass None for all filters."""
         from codeagent.mcp.tools import task as task_mod
@@ -244,4 +250,6 @@ class TestListTasks:
         with patch.object(task_mod, "_task_service", mock_svc):
             await task_mod.list_tasks()
 
-        mock_svc.list_tasks.assert_awaited_once_with(project=None, status=None, task_type=None)
+        mock_svc.list_tasks.assert_awaited_once_with(
+            project=None, status=None, task_type=None
+        )

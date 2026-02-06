@@ -12,9 +12,11 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from codeagent.mcp.tools import memory as memory_tools
-from codeagent.mcp.tools import reflect as reflect_tools
-from codeagent.mcp.tools import task as task_tools
+from codeagent.mcp.tools import (
+    memory as memory_tools,
+    reflect as reflect_tools,
+    task as task_tools,
+)
 
 app = FastMCP("codeagent")
 
@@ -55,13 +57,20 @@ async def run_server() -> None:
     Creates DB client, embedding service, memory service, and search
     service. Injects them into tool modules then starts stdio transport.
     """
-    from codeagent.mcp.db.client import SurrealDBClient
-    from codeagent.mcp.embeddings import EmbeddingCache, EmbeddingProvider
-    from codeagent.mcp.services.embedding_service import EmbeddingService
-    from codeagent.mcp.services.memory_service import MemoryService
-    from codeagent.mcp.services.reflection_service import ReflectionService
-    from codeagent.mcp.services.search_service import SearchService
-    from codeagent.mcp.services.task_service import TaskService
+    from codeagent.mcp.db.client import SurrealDBClient  # noqa: PLC0415
+    from codeagent.mcp.embeddings import (  # noqa: PLC0415
+        EmbeddingCache,
+        EmbeddingProvider,
+    )
+    from codeagent.mcp.services.embedding_service import (  # noqa: PLC0415
+        EmbeddingService,
+    )
+    from codeagent.mcp.services.memory_service import MemoryService  # noqa: PLC0415
+    from codeagent.mcp.services.reflection_service import (  # noqa: PLC0415
+        ReflectionService,
+    )
+    from codeagent.mcp.services.search_service import SearchService  # noqa: PLC0415
+    from codeagent.mcp.services.task_service import TaskService  # noqa: PLC0415
 
     db = SurrealDBClient(
         url=os.getenv("SURREAL_URL", "ws://localhost:8000"),

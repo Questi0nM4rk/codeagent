@@ -51,3 +51,5 @@ credentials/
 
 # Internal documentation (not for distribution)
 Docs/
+.worktree-context.json
+.ai-guardrails/

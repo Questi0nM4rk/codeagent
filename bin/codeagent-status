@@ -26,148 +26,156 @@ JSON_OUTPUT=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        -w|--watch)
-            WATCH_MODE=true
-            shift
-            ;;
-        -i|--interval)
-            WATCH_INTERVAL="$2"
-            shift 2
-            ;;
-        -r|--auto-restart)
-            AUTO_RESTART=true
-            shift
-            ;;
-        -t|--threshold)
-            ALERT_THRESHOLD="$2"
-            shift 2
-            ;;
-        -j|--json)
-            JSON_OUTPUT=true
-            shift
-            ;;
-        -h|--help)
-            echo "Usage: codeagent status [options]"
-            echo ""
-            echo "Options:"
-            echo "  -w, --watch         Continuous monitoring mode"
-            echo "  -i, --interval N    Watch interval in seconds (default: 10)"
-            echo "  -r, --auto-restart  Automatically restart failed services"
-            echo "  -t, --threshold N   Consecutive failures before alert (default: 3)"
-            echo "  -j, --json          Output status as JSON"
-            echo "  -h, --help          Show this help"
-            exit 0
-            ;;
-        *)
-            shift
-            ;;
-    esac
+  case $1 in
+    -w | --watch)
+      WATCH_MODE=true
+      shift
+      ;;
+    -i | --interval)
+      WATCH_INTERVAL="$2"
+      shift 2
+      ;;
+    -r | --auto-restart)
+      AUTO_RESTART=true
+      shift
+      ;;
+    -t | --threshold)
+      ALERT_THRESHOLD="$2"
+      shift 2
+      ;;
+    -j | --json)
+      JSON_OUTPUT=true
+      shift
+      ;;
+    -h | --help)
+      echo "Usage: codeagent status [options]"
+      echo ""
+      echo "Options:"
+      echo "  -w, --watch         Continuous monitoring mode"
+      echo "  -i, --interval N    Watch interval in seconds (default: 10)"
+      echo "  -r, --auto-restart  Automatically restart failed services"
+      echo "  -t, --threshold N   Consecutive failures before alert (default: 3)"
+      echo "  -j, --json          Output status as JSON"
+      echo "  -h, --help          Show this help"
+      exit 0
+      ;;
+    *)
+      shift
+      ;;
+  esac
 done
 
 # Load config if exists
 if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
+  # shellcheck disable=SC1090  # Dynamic config file path
+  source "$CONFIG_FILE"
 fi
 
 # Track consecutive failures per service
 declare -A failure_counts
 
 restart_service() {
-    local container=$1
-    echo -e "${YELLOW}Restarting $container...${NC}"
-    docker restart "$container" >/dev/null 2>&1 && \
-        echo -e "${GREEN}✓${NC} $container restarted" || \
-        echo -e "${RED}✗${NC} Failed to restart $container"
+  local container=$1
+  echo -e "${YELLOW}Restarting $container...${NC}"
+  docker restart "$container" >/dev/null 2>&1 \
+    && echo -e "${GREEN}✓${NC} $container restarted" \
+    || echo -e "${RED}✗${NC} Failed to restart $container"
 }
 
 check_service() {
-    local name=$1
-    local container=$2
-    local url=$3
-    local status="unknown"
-    local healthy=false
+  local name=$1
+  local container=$2
+  local url=$3
+  # shellcheck disable=SC2034  # status/healthy used for future JSON output
+  local status="unknown"
+  local healthy=false
 
-    # Check if container exists
-    if ! docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
-        status="not_created"
-        if [ "$JSON_OUTPUT" = false ]; then
-            echo -e "${RED}✗${NC} $name: not created"
-        fi
-        return 1
+  # Check if container exists
+  if ! docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+    status="not_created"
+    if [ "$JSON_OUTPUT" = false ]; then
+      echo -e "${RED}✗${NC} $name: not created"
     fi
+    return 1
+  fi
 
-    # Check if container is running
-    if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
-        status="stopped"
-        if [ "$JSON_OUTPUT" = false ]; then
-            echo -e "${YELLOW}○${NC} $name: stopped"
-        fi
-        return 1
+  # Check if container is running
+  if ! docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
+    status="stopped"
+    if [ "$JSON_OUTPUT" = false ]; then
+      echo -e "${YELLOW}○${NC} $name: stopped"
     fi
+    return 1
+  fi
 
-    # Check health status
-    local health=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
+  # Check health status
+  local health
+  health=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
 
-    case "$health" in
-        healthy)
-            status="healthy"
-            healthy=true
-            if [ "$JSON_OUTPUT" = false ]; then
-                echo -e "${GREEN}✓${NC} $name: running (healthy)"
-                if [ -n "$url" ]; then
-                    echo -e "    └─ ${BLUE}$url${NC}"
-                fi
-            fi
-            # Reset failure count on success
-            failure_counts[$container]=0
-            return 0
-            ;;
-        unhealthy)
-            status="unhealthy"
-            if [ "$JSON_OUTPUT" = false ]; then
-                echo -e "${RED}✗${NC} $name: unhealthy"
-            fi
-            # Increment failure count
-            failure_counts[$container]=$((${failure_counts[$container]:-0} + 1))
-            # Auto-restart if enabled and threshold reached
-            if [ "$AUTO_RESTART" = true ] && [ "${failure_counts[$container]}" -ge "$ALERT_THRESHOLD" ]; then
-                restart_service "$container"
-                failure_counts[$container]=0
-            fi
-            return 1
-            ;;
-        starting)
-            status="starting"
-            if [ "$JSON_OUTPUT" = false ]; then
-                echo -e "${YELLOW}◐${NC} $name: starting..."
-            fi
-            return 1
-            ;;
-        *)
-            status="running"
-            if [ "$JSON_OUTPUT" = false ]; then
-                echo -e "${YELLOW}?${NC} $name: running (status: $health)"
-            fi
-            return 0
-            ;;
-    esac
+  case "$health" in
+    healthy)
+      status="healthy"
+      # shellcheck disable=SC2034  # Used for future JSON output
+      healthy=true
+      if [ "$JSON_OUTPUT" = false ]; then
+        echo -e "${GREEN}✓${NC} $name: running (healthy)"
+        if [ -n "$url" ]; then
+          echo -e "    └─ ${BLUE}$url${NC}"
+        fi
+      fi
+      # Reset failure count on success
+      failure_counts[$container]=0
+      return 0
+      ;;
+    unhealthy)
+      status="unhealthy"
+      if [ "$JSON_OUTPUT" = false ]; then
+        echo -e "${RED}✗${NC} $name: unhealthy"
+      fi
+      # Increment failure count
+      failure_counts[$container]=$((${failure_counts[$container]:-0} + 1))
+      # Auto-restart if enabled and threshold reached
+      if [ "$AUTO_RESTART" = true ] && [ "${failure_counts[$container]}" -ge "$ALERT_THRESHOLD" ]; then
+        restart_service "$container"
+        failure_counts[$container]=0
+      fi
+      return 1
+      ;;
+    starting)
+      status="starting"
+      if [ "$JSON_OUTPUT" = false ]; then
+        echo -e "${YELLOW}◐${NC} $name: starting..."
+      fi
+      return 1
+      ;;
+    *)
+      # shellcheck disable=SC2034  # Used for future JSON output
+      status="running"
+      if [ "$JSON_OUTPUT" = false ]; then
+        echo -e "${YELLOW}?${NC} $name: running (status: $health)"
+      fi
+      return 0
+      ;;
+  esac
 }
 
 get_container_stats() {
-    local container=$1
-    docker stats --no-stream --format "{{.CPUPerc}},{{.MemUsage}}" "$container" 2>/dev/null || echo "N/A,N/A"
+  local container=$1
+  docker stats --no-stream --format "{{.CPUPerc}},{{.MemUsage}}" "$container" 2>/dev/null || echo "N/A,N/A"
 }
 
 output_json() {
-    local timestamp=$(date -Iseconds)
-    local qdrant_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_running")
-    local qdrant_stats=$(get_container_stats codeagent-qdrant)
-    local amem_storage="$HOME/.codeagent/memory"
-    local amem_status="available"
-    [ -d "$amem_storage" ] && amem_status="active"
+  local timestamp
+  timestamp=$(date -Iseconds)
+  local qdrant_status
+  qdrant_status=$(docker inspect --format='{{.State.Health.Status}}' codeagent-qdrant 2>/dev/null || echo "not_running")
+  local qdrant_stats
+  qdrant_stats=$(get_container_stats codeagent-qdrant)
+  local amem_storage="$HOME/.codeagent/memory"
+  local amem_status="available"
+  [ -d "$amem_storage" ] && amem_status="active"
 
-    cat <<EOF
+  cat <<EOF
 {
   "timestamp": "$timestamp",
   "services": {
@@ -186,89 +194,90 @@ EOF
 }
 
 run_status_check() {
-    if [ "$JSON_OUTPUT" = true ]; then
-        output_json
-        return
+  if [ "$JSON_OUTPUT" = true ]; then
+    output_json
+    return
+  fi
+
+  if [ "$WATCH_MODE" = true ]; then
+    clear
+    echo -e "${CYAN}CodeAgent Service Monitor${NC} ($(date '+%H:%M:%S')) [Ctrl+C to exit]"
+    echo "=========================="
+    if [ "$AUTO_RESTART" = true ]; then
+      echo -e "Auto-restart: ${GREEN}enabled${NC} (threshold: $ALERT_THRESHOLD failures)"
     fi
-
-    if [ "$WATCH_MODE" = true ]; then
-        clear
-        echo -e "${CYAN}CodeAgent Service Monitor${NC} ($(date '+%H:%M:%S')) [Ctrl+C to exit]"
-        echo "=========================="
-        if [ "$AUTO_RESTART" = true ]; then
-            echo -e "Auto-restart: ${GREEN}enabled${NC} (threshold: $ALERT_THRESHOLD failures)"
-        fi
-        echo ""
-    else
-        echo -e "${CYAN}CodeAgent Service Status${NC}"
-        echo "========================"
-        echo ""
-    fi
-
-    echo -e "${BLUE}Infrastructure Services${NC}"
-    echo "───────────────────────"
-    check_service "Qdrant (vectors)" "codeagent-qdrant" "http://localhost:6333"
-
-    # A-MEM uses local storage, not Docker
-    local amem_storage="$HOME/.codeagent/memory"
-    if [ -d "$amem_storage" ]; then
-        local mem_count=$(find "$amem_storage" -name "*.json" 2>/dev/null | wc -l || echo "0")
-        echo -e "${GREEN}✓${NC} A-MEM (memory): active"
-        echo -e "    └─ ${BLUE}$amem_storage${NC} ($mem_count files)"
-    else
-        echo -e "${YELLOW}○${NC} A-MEM (memory): not initialized"
-        echo -e "    └─ ${BLUE}$amem_storage${NC} (will be created on first use)"
-    fi
-
     echo ""
-    echo -e "${BLUE}Environment${NC}"
-    echo "───────────────────────"
-
-    if [ -n "$OPENAI_API_KEY" ]; then
-        # Mask the key
-        masked="${OPENAI_API_KEY:0:7}...${OPENAI_API_KEY: -4}"
-        echo -e "${GREEN}✓${NC} OPENAI_API_KEY: $masked"
-    else
-        echo -e "${YELLOW}○${NC} OPENAI_API_KEY: not set"
-    fi
-
-    if [ -n "$CODEAGENT_HOME" ]; then
-        echo -e "${GREEN}✓${NC} CODEAGENT_HOME: $CODEAGENT_HOME"
-    else
-        echo -e "${YELLOW}○${NC} CODEAGENT_HOME: not set (using default)"
-    fi
-
+  else
+    echo -e "${CYAN}CodeAgent Service Status${NC}"
+    echo "========================"
     echo ""
-    echo -e "${BLUE}MCP Servers${NC}"
-    echo "───────────────────────"
+  fi
 
-    if command -v claude &> /dev/null; then
-        # List configured MCPs
-        mcp_list=$(claude mcp list 2>/dev/null || echo "")
-        if [ -n "$mcp_list" ]; then
-            echo "$mcp_list" | head -15
-            mcp_count=$(echo "$mcp_list" | wc -l)
-            if [ "$mcp_count" -gt 15 ]; then
-                echo "  ... and $((mcp_count - 15)) more"
-            fi
-        else
-            echo -e "${YELLOW}○${NC} No MCPs configured (run 'codeagent start')"
-        fi
+  echo -e "${BLUE}Infrastructure Services${NC}"
+  echo "───────────────────────"
+  check_service "Qdrant (vectors)" "codeagent-qdrant" "http://localhost:6333"
+
+  # A-MEM uses local storage, not Docker
+  local amem_storage="$HOME/.codeagent/memory"
+  if [ -d "$amem_storage" ]; then
+    local mem_count
+    mem_count=$(find "$amem_storage" -name "*.json" 2>/dev/null | wc -l || echo "0")
+    echo -e "${GREEN}✓${NC} A-MEM (memory): active"
+    echo -e "    └─ ${BLUE}$amem_storage${NC} ($mem_count files)"
+  else
+    echo -e "${YELLOW}○${NC} A-MEM (memory): not initialized"
+    echo -e "    └─ ${BLUE}$amem_storage${NC} (will be created on first use)"
+  fi
+
+  echo ""
+  echo -e "${BLUE}Environment${NC}"
+  echo "───────────────────────"
+
+  if [ -n "$OPENAI_API_KEY" ]; then
+    # Mask the key
+    masked="${OPENAI_API_KEY:0:7}...${OPENAI_API_KEY: -4}"
+    echo -e "${GREEN}✓${NC} OPENAI_API_KEY: $masked"
+  else
+    echo -e "${YELLOW}○${NC} OPENAI_API_KEY: not set"
+  fi
+
+  if [ -n "$CODEAGENT_HOME" ]; then
+    echo -e "${GREEN}✓${NC} CODEAGENT_HOME: $CODEAGENT_HOME"
+  else
+    echo -e "${YELLOW}○${NC} CODEAGENT_HOME: not set (using default)"
+  fi
+
+  echo ""
+  echo -e "${BLUE}MCP Servers${NC}"
+  echo "───────────────────────"
+
+  if command -v claude &>/dev/null; then
+    # List configured MCPs
+    mcp_list=$(claude mcp list 2>/dev/null || echo "")
+    if [ -n "$mcp_list" ]; then
+      echo "$mcp_list" | head -15
+      mcp_count=$(echo "$mcp_list" | wc -l)
+      if [ "$mcp_count" -gt 15 ]; then
+        echo "  ... and $((mcp_count - 15)) more"
+      fi
     else
-        echo -e "${YELLOW}○${NC} Claude Code CLI not found"
+      echo -e "${YELLOW}○${NC} No MCPs configured (run 'codeagent start')"
     fi
+  else
+    echo -e "${YELLOW}○${NC} Claude Code CLI not found"
+  fi
 
-    echo ""
+  echo ""
 }
 
 # Main execution
 if [ "$WATCH_MODE" = true ]; then
-    # Watch mode - continuous monitoring
-    trap 'echo -e "\n${CYAN}Monitoring stopped.${NC}"; exit 0' INT TERM
-    while true; do
-        run_status_check
-        sleep "$WATCH_INTERVAL"
-    done
-else
+  # Watch mode - continuous monitoring
+  trap 'echo -e "\n${CYAN}Monitoring stopped.${NC}"; exit 0' INT TERM
+  while true; do
     run_status_check
+    sleep "$WATCH_INTERVAL"
+  done
+else
+  run_status_check
 fi

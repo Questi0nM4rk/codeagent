@@ -15,7 +15,9 @@ import pytest
 class TestInitReflectionTools:
     """Tests for init_reflection_tools() setup."""
 
-    def test_init_reflection_tools_sets_service(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_init_reflection_tools_sets_service(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """init_reflection_tools should set the module-level service global."""
         from codeagent.mcp.tools import reflect as ref_mod
 
@@ -30,7 +32,7 @@ class TestInitReflectionTools:
 class TestReflect:
     """Tests for the reflect() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_reflect_calls_service(self) -> None:
         """reflect() should forward all parameters to _reflection_service.reflect."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -69,7 +71,7 @@ class TestReflect:
         )
         assert result["episode_id"] == "memory:ep1"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_reflect_returns_error_on_exception(self) -> None:
         """reflect() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -87,7 +89,7 @@ class TestReflect:
 class TestImprovedAttempt:
     """Tests for the improved_attempt() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_improved_attempt_calls_service(self) -> None:
         """improved_attempt() should forward parameters to service."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -112,7 +114,7 @@ class TestImprovedAttempt:
         )
         assert result["guidance"] == "Try X"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_improved_attempt_returns_error_on_exception(self) -> None:
         """improved_attempt() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -126,7 +128,7 @@ class TestImprovedAttempt:
         assert "error" in result
         assert "Search failed" in result["error"]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_improved_attempt_with_error_pattern(self) -> None:
         """improved_attempt() should pass error_pattern to service."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -155,7 +157,7 @@ class TestImprovedAttempt:
 class TestModelEffectiveness:
     """Tests for the model_effectiveness() tool function."""
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_model_effectiveness_calls_service(self) -> None:
         """model_effectiveness() should forward parameters to service."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -179,7 +181,7 @@ class TestModelEffectiveness:
         )
         assert result["recommended_model"] == "haiku"
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_model_effectiveness_returns_error_on_exception(self) -> None:
         """model_effectiveness() should return ErrorResponse when service raises."""
         from codeagent.mcp.tools import reflect as ref_mod
@@ -193,7 +195,7 @@ class TestModelEffectiveness:
         assert "error" in result
         assert "Query failed" in result["error"]
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_model_effectiveness_with_feedback_type(self) -> None:
         """model_effectiveness() should pass feedback_type to service."""
         from codeagent.mcp.tools import reflect as ref_mod

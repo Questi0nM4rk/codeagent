@@ -7,10 +7,11 @@ All episodes are stored as 'episode' type memories in the unified memory table.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from codeagent.mcp.db.client import SurrealDBClient
-from codeagent.mcp.services.embedding_service import EmbeddingService
+if TYPE_CHECKING:
+    from codeagent.mcp.db.client import SurrealDBClient
+    from codeagent.mcp.services.embedding_service import EmbeddingService
 
 
 class ReflectionService:
@@ -25,7 +26,7 @@ class ReflectionService:
         self._db = db
         self._embedding = embedding
 
-    async def reflect(
+    async def reflect(  # noqa: PLR0913
         self,
         output: str,
         feedback: str,
@@ -55,14 +56,17 @@ class ReflectionService:
             general_lesson, episode_id, feedback_type.
         """
         reflection = {
-            "what_went_wrong": f"Output failed: {feedback[:200]}",
-            "root_cause": f"Approach: {approach}. Feedback type: {feedback_type}",
-            "what_to_try_next": f"Review the {feedback_type} and adjust approach",
-            "general_lesson": f"When encountering {feedback_type}, verify assumptions first",
+            "what_went_wrong": (f"Output failed: {feedback[:200]}"),
+            "root_cause": (f"Approach: {approach}. Feedback type: {feedback_type}"),
+            "what_to_try_next": (f"Review the {feedback_type} and adjust approach"),
+            "general_lesson": (
+                f"When encountering {feedback_type}, verify assumptions first"
+            ),
         }
 
         content = (
-            f"Task: {task}\nApproach: {approach}\nFeedback: {feedback}\nOutput: {output[:500]}"
+            f"Task: {task}\nApproach: {approach}\n"
+            f"Feedback: {feedback}\nOutput: {output[:500]}"
         )
         if code_context:
             content += f"\nContext: {code_context[:500]}"
@@ -86,7 +90,9 @@ class ReflectionService:
             {
                 "type": "episode",
                 "content": content,
-                "title": f"Episode: {task[:80]}" if task else f"Episode: {feedback_type}",
+                "title": (
+                    f"Episode: {task[:80]}" if task else f"Episode: {feedback_type}"
+                ),
                 "metadata": metadata,
                 "embedding": embedding,
                 "tags": tags,
@@ -94,7 +100,11 @@ class ReflectionService:
             },
         )
 
-        episode_id = result[0].get("id", "") if isinstance(result, list) else result.get("id", "")
+        episode_id = (
+            result[0].get("id", "")
+            if isinstance(result, list)
+            else result.get("id", "")
+        )
 
         return {
             **reflection,
@@ -156,12 +166,14 @@ class ReflectionService:
 
         lesson_texts = "; ".join(le["lesson"] for le in lessons[:3] if le["lesson"])
         return {
-            "guidance": f"Found {len(episodes)} similar episodes. Key lessons: {lesson_texts}",
+            "guidance": (
+                f"Found {len(episodes)} similar episodes. Key lessons: {lesson_texts}"
+            ),
             "similar_episodes": lessons,
             "confidence": episodes[0].get("score", 0) if episodes else 0.0,
         }
 
-    async def model_effectiveness(
+    async def model_effectiveness(  # noqa: PLR0915
         self,
         task_pattern: str,
         feedback_type: str | None = None,

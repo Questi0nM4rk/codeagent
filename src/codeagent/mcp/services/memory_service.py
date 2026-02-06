@@ -7,13 +7,14 @@ automatic graph linking on store.
 
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
-from typing import Any
+import logging
+from typing import TYPE_CHECKING, Any
 
-from codeagent.mcp.db.client import SurrealDBClient
-from codeagent.mcp.models.memory import MemoryCreate, MemoryUpdate
-from codeagent.mcp.services.embedding_service import EmbeddingService
+if TYPE_CHECKING:
+    from codeagent.mcp.db.client import SurrealDBClient
+    from codeagent.mcp.models.memory import MemoryCreate, MemoryUpdate
+    from codeagent.mcp.services.embedding_service import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,8 @@ class MemoryService:
             "by_project": project_dict,
         }
 
+    _AUTO_LINK_THRESHOLD: float = 0.7
+
     async def _auto_link(self, memory_id: str, embedding: list[float]) -> None:
         """Find top 5 similar memories and create relates_to edges.
 
@@ -204,7 +207,11 @@ class MemoryService:
             {"emb": embedding, "id": memory_id},
         )
         if similar and isinstance(similar, list) and similar[0].get("result"):
-            targets = [mem for mem in similar[0]["result"] if mem.get("score", 0) > 0.7]
+            targets = [
+                mem
+                for mem in similar[0]["result"]
+                if mem.get("score", 0) > self._AUTO_LINK_THRESHOLD
+            ]
             if targets:
                 # Batch all RELATE statements into a single multi-statement query
                 statements: list[str] = []
