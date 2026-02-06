@@ -12,6 +12,7 @@
 # - C#: #pragma warning disable, // ReSharper disable
 # - Rust: #[allow(...)], #![allow(...)]
 # - Go: //nolint
+# - Semgrep: # nosemgrep, // nosemgrep
 # - Shell: # shellcheck disable
 # - Lua: ---@diagnostic disable
 # =============================================================================
@@ -80,7 +81,7 @@ for file in "$@"; do
   fi
 done
 
-if [[ $exit_code -ne 0 ]]; then
+if [[ "$exit_code" -ne 0 ]]; then
   echo ""
   echo "ERROR: Suppression comments detected!"
   echo ""
