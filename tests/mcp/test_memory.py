@@ -271,7 +271,6 @@ class TestSearchResponse:
     def test_search_response_structure(self) -> None:
         """SearchResponse should have index, details, and total_count."""
         from codeagent.mcp.models.memory import (
-            Memory,
             MemoryType,
             SearchResponse,
             SearchResult,
@@ -285,14 +284,14 @@ class TestSearchResponse:
             score=0.9,
             snippet="test snippet",
         )
-        detail = Memory(
-            memory_id="memory:abc",
-            type=MemoryType.KNOWLEDGE,
-            content="full content",
-            embedding=[],
-            created_at=now,
-            updated_at=now,
-        )
+        detail = {
+            "memory_id": "memory:abc",
+            "type": "knowledge",
+            "content": "full content",
+            "embedding": [],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat(),
+        }
         response = SearchResponse(
             index=[result],
             details=[detail],

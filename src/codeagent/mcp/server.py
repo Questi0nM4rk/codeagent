@@ -69,28 +69,29 @@ async def run_server() -> None:
         password=os.getenv("SURREAL_PASS", "root"),  # Default dev creds
     )
     await db.connect()
-
-    schema_path = Path(__file__).parent / "db" / "schema.surql"
-    await db.initialize_schema(schema_path)
-
-    provider = EmbeddingProvider()
-    cache = EmbeddingCache()
-    embedding_svc = EmbeddingService(provider, cache)
-    memory_svc = MemoryService(db, embedding_svc)
-    search_svc = SearchService(db, embedding_svc)
-
-    memory_tools.init_memory_tools(memory_svc, search_svc)
-
-    reflection_svc = ReflectionService(db, embedding_svc)
-    reflect_tools.init_reflection_tools(reflection_svc)
-
-    task_svc = TaskService(db)
-    task_tools.init_task_tools(task_svc)
-
+    provider: EmbeddingProvider | None = None
     try:
+        schema_path = Path(__file__).parent / "db" / "schema.surql"
+        await db.initialize_schema(schema_path)
+
+        provider = EmbeddingProvider()
+        cache = EmbeddingCache()
+        embedding_svc = EmbeddingService(provider, cache)
+        memory_svc = MemoryService(db, embedding_svc)
+        search_svc = SearchService(db, embedding_svc)
+
+        memory_tools.init_memory_tools(memory_svc, search_svc)
+
+        reflection_svc = ReflectionService(db, embedding_svc)
+        reflect_tools.init_reflection_tools(reflection_svc)
+
+        task_svc = TaskService(db)
+        task_tools.init_task_tools(task_svc)
+
         await app.run_stdio_async()
     finally:
-        await provider.close()
+        if provider is not None:
+            await provider.close()
         await db.close()
 
 

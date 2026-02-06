@@ -35,6 +35,7 @@ class ReflectionService:
         model_used: str | None = None,
         code_context: str = "",
         file_path: str | None = None,
+        outcome: str = "failure",
     ) -> dict[str, Any]:
         """Analyze a failure, generate structured reflection, store as episode memory.
 
@@ -47,6 +48,7 @@ class ReflectionService:
             model_used: Which model was used (e.g. "haiku", "opus").
             code_context: Surrounding code context.
             file_path: Path to the file being worked on.
+            outcome: Episode outcome (e.g. "failure", "success"). Defaults to "failure".
 
         Returns:
             Dict with: what_went_wrong, root_cause, what_to_try_next,
@@ -60,13 +62,12 @@ class ReflectionService:
         }
 
         content = (
-            f"Task: {task}\nApproach: {approach}\n"
-            f"Feedback: {feedback}\nOutput: {output[:500]}"
+            f"Task: {task}\nApproach: {approach}\nFeedback: {feedback}\nOutput: {output[:500]}"
         )
         if code_context:
             content += f"\nContext: {code_context[:500]}"
         metadata: dict[str, Any] = {
-            "outcome": "failure",
+            "outcome": outcome,
             "feedback_type": feedback_type,
             "model_used": model_used,
             "file_path": file_path,
@@ -78,6 +79,8 @@ class ReflectionService:
             tags.append(f"model:{model_used}")
 
         embedding = await self._embedding.embed(content)
+        # Bypass MemoryService.store() intentionally: episodes use a fixed
+        # schema and don't need Zettelkasten auto-linking on creation.
         result = await self._db.create(
             "memory",
             {
@@ -220,6 +223,7 @@ class ReflectionService:
             rate = stats["success"] / stats["total"] if stats["total"] > 0 else 0
             if rate > best_rate or (
                 rate == best_rate
+                and rate > 0
                 and stats["total"] > model_stats.get(best_model, {}).get("total", 0)
             ):
                 best_rate = rate

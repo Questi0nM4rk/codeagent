@@ -15,14 +15,16 @@ import pytest
 class TestInitReflectionTools:
     """Tests for init_reflection_tools() setup."""
 
-    def test_init_reflection_tools_sets_service(self) -> None:
+    def test_init_reflection_tools_sets_service(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """init_reflection_tools should set the module-level service global."""
         from codeagent.mcp.tools import reflect as ref_mod
 
+        original = ref_mod._reflection_service
         mock_svc = object()
         ref_mod.init_reflection_tools(mock_svc)
 
         assert ref_mod._reflection_service is mock_svc
+        monkeypatch.setattr(ref_mod, "_reflection_service", original)
 
 
 class TestReflect:
@@ -119,9 +121,7 @@ class TestImprovedAttempt:
         mock_svc.improved_attempt.side_effect = RuntimeError("Search failed")
 
         with patch.object(ref_mod, "_reflection_service", mock_svc):
-            result = await ref_mod.improved_attempt(
-                task="task", original_output="out"
-            )
+            result = await ref_mod.improved_attempt(task="task", original_output="out")
 
         assert "error" in result
         assert "Search failed" in result["error"]

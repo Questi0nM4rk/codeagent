@@ -204,9 +204,7 @@ class MemoryService:
             {"emb": embedding, "id": memory_id},
         )
         if similar and isinstance(similar, list) and similar[0].get("result"):
-            targets = [
-                mem for mem in similar[0]["result"] if mem.get("score", 0) > 0.7
-            ]
+            targets = [mem for mem in similar[0]["result"] if mem.get("score", 0) > 0.7]
             if targets:
                 # Batch all RELATE statements into a single multi-statement query
                 statements: list[str] = []

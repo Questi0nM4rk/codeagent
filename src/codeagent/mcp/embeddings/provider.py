@@ -98,6 +98,9 @@ class EmbeddingProvider:
         Returns:
             Embedding vectors sorted by the ``index`` field in the API response.
         """
+        if not texts:
+            return []
+
         response = await self._client.post(
             self._API_URL,
             json={
@@ -108,6 +111,9 @@ class EmbeddingProvider:
         )
         response.raise_for_status()
 
-        data = response.json()["data"]
-        sorted_data = sorted(data, key=lambda item: item["index"])
+        body = response.json()
+        if "data" not in body:
+            msg = f"Unexpected API response: missing 'data' key in {list(body.keys())}"
+            raise ValueError(msg)
+        sorted_data = sorted(body["data"], key=lambda item: item["index"])
         return [item["embedding"] for item in sorted_data]

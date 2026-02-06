@@ -195,7 +195,7 @@ class TestListTasks:
 
         with patch.object(task_mod, "_task_service", mock_svc):
             result = await task_mod.list_tasks(
-                project="project:myproj", status="pending", type="task"
+                project="project:myproj", status="pending", task_type="task"
             )
 
         mock_svc.list_tasks.assert_awaited_once_with(
@@ -244,6 +244,4 @@ class TestListTasks:
         with patch.object(task_mod, "_task_service", mock_svc):
             await task_mod.list_tasks()
 
-        mock_svc.list_tasks.assert_awaited_once_with(
-            project=None, status=None, task_type=None
-        )
+        mock_svc.list_tasks.assert_awaited_once_with(project=None, status=None, task_type=None)

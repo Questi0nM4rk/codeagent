@@ -22,7 +22,7 @@ def _make_httpx_mock(
     """
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.status_code = status_code
-    if raise_for_status_effect:
+    if raise_for_status_effect is not None:
         mock_response.raise_for_status.side_effect = raise_for_status_effect
     else:
         mock_response.raise_for_status = MagicMock()

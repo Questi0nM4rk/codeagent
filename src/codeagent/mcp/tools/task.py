@@ -39,7 +39,7 @@ async def create_task(
     project: str,
     name: str,
     task_id: str,
-    type: str = "task",
+    task_type: str = "task",
     description: str | None = None,
     status: str = "pending",
     priority: int = 3,
@@ -55,7 +55,7 @@ async def create_task(
         project: SurrealDB record ID of the parent project.
         name: Short name describing the task.
         task_id: Human-readable task identifier (e.g. "CA-TASK-001").
-        type: Task type - 'task' or 'epic'.
+        task_type: Task type - 'task' or 'epic'.
         description: Optional longer description.
         status: Initial task status.
         priority: Priority 1 (highest) to 5 (lowest).
@@ -77,7 +77,7 @@ async def create_task(
             task_id=task_id,
             project=project,
             name=name,
-            type=TaskType(type),
+            type=TaskType(task_type),
             description=description,
             status=TaskStatus(status),
             priority=priority,
@@ -144,14 +144,14 @@ async def complete_task(
 async def list_tasks(
     project: str | None = None,
     status: str | None = None,
-    type: str | None = None,
+    task_type: str | None = None,
 ) -> dict[str, Any]:
     """List and filter tasks from the backlog.
 
     Args:
         project: Optional project filter.
         status: Optional status filter.
-        type: Optional task type filter ('task' or 'epic').
+        task_type: Optional task type filter ('task' or 'epic').
 
     Returns:
         Dict with tasks list and count, or an error response.
@@ -161,7 +161,7 @@ async def list_tasks(
             error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
         ).model_dump()
     try:
-        tasks = await _task_service.list_tasks(project=project, status=status, task_type=type)
+        tasks = await _task_service.list_tasks(project=project, status=status, task_type=task_type)
         return {"tasks": tasks, "count": len(tasks)}
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()

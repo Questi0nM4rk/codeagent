@@ -89,22 +89,27 @@ class TestToolImports:
         tool_fn = getattr(ref_mod, tool_name)
         assert callable(tool_fn)
 
-    def test_all_14_tools_accounted_for(self) -> None:
-        """There should be exactly 14 tool functions across the three tool modules."""
-        from codeagent.mcp.tools import memory as mem_mod
-        from codeagent.mcp.tools import reflect as ref_mod
-        from codeagent.mcp.tools import task as task_mod
+    def test_all_tools_registered_on_app(self) -> None:
+        """All expected tools should be registered on the FastMCP app."""
+        from codeagent.mcp.server import app
 
-        memory_tools = ["store", "search", "read", "update", "delete", "link", "stats"]
-        task_tools = ["create_task", "get_next_task", "complete_task", "list_tasks"]
-        reflection_tools = ["reflect", "improved_attempt", "model_effectiveness"]
-
-        all_tools: list[tuple[object, str]] = [
-            *[(mem_mod, t) for t in memory_tools],
-            *[(task_mod, t) for t in task_tools],
-            *[(ref_mod, t) for t in reflection_tools],
-        ]
-
-        assert len(all_tools) == 14
-        for mod, name in all_tools:
-            assert callable(getattr(mod, name)), f"{mod.__name__}.{name} not callable"
+        # FastMCP stores tools in _tool_manager._tools dict
+        registered = app._tool_manager._tools
+        expected = {
+            "store",
+            "search",
+            "read",
+            "update",
+            "delete",
+            "link",
+            "stats",
+            "create_task",
+            "get_next_task",
+            "complete_task",
+            "list_tasks",
+            "reflect",
+            "improved_attempt",
+            "model_effectiveness",
+            "ping",
+        }
+        assert set(registered.keys()) == expected

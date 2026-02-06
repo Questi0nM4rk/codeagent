@@ -53,7 +53,6 @@ class SearchService:
         filters: list[str] = []
         params: dict[str, Any] = {
             "emb": query_embedding,
-            "query": query,
             "limit": max_results,
         }
         if memory_type:

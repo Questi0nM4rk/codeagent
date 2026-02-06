@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from codeagent.mcp.db.client import SurrealDBClient
+from codeagent.mcp.models import ErrorCode
 from codeagent.mcp.models.task import TaskCreate
 
 
@@ -34,6 +35,9 @@ class TaskService:
         data = create.model_dump()
         result = await self._db.create("task", data)
         if isinstance(result, list):
+            if not result:
+                msg = "db.create returned an empty list"
+                raise RuntimeError(msg)
             result = result[0]
         return result
 
@@ -73,7 +77,7 @@ class TaskService:
             tasks = result[0]["result"]
             if tasks:
                 return tasks[0]
-        return {"error": "No pending tasks found", "code": "NOT_FOUND"}
+        return {"error": "No pending tasks found", "code": ErrorCode.NOT_FOUND}
 
     async def complete_task(
         self,
@@ -91,21 +95,24 @@ class TaskService:
         Returns:
             The updated task dict, or an error dict with code NOT_FOUND.
         """
+        set_clauses = ["status = $status", "updated_at = time::now()"]
+        params: dict[str, Any] = {"task_id": task_id, "status": "done"}
+        if resolved_by is not None:
+            set_clauses.append("resolved_by = $resolved_by")
+            params["resolved_by"] = resolved_by
+        if summary is not None:
+            set_clauses.append("summary = $summary")
+            params["summary"] = summary
+        sets = ", ".join(set_clauses)
         result = await self._db.query(
-            "UPDATE task SET status = $status, updated_at = time::now(),"
-            " resolved_by = $resolved_by, summary = $summary WHERE task_id = $task_id",
-            {
-                "task_id": task_id,
-                "status": "done",
-                "resolved_by": resolved_by,
-                "summary": summary,
-            },
+            f"UPDATE task SET {sets} WHERE task_id = $task_id",  # noqa: S608
+            params,
         )
         if result and isinstance(result, list) and result[0].get("result"):
             records = result[0]["result"]
             if records:
                 return records[0]
-        return {"error": f"Task {task_id} not found", "code": "NOT_FOUND"}
+        return {"error": f"Task {task_id} not found", "code": ErrorCode.NOT_FOUND}
 
     async def list_tasks(
         self,

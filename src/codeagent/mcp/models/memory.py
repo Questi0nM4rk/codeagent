@@ -144,5 +144,5 @@ class SearchResponse(BaseModel):
     """
 
     index: list[SearchResult]
-    details: list[Memory]
+    details: list[dict[str, Any]]
     total_count: int

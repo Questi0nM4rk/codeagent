@@ -170,8 +170,7 @@ class TestProjectTable:
 
     def test_project_prefix_unique_index(self, schema_content: str) -> None:
         """Project should have a unique index on prefix."""
-        assert "project_prefix" in schema_content
-        assert "UNIQUE" in schema_content
+        assert "DEFINE INDEX project_prefix ON project FIELDS prefix UNIQUE" in schema_content
 
 
 class TestTaskTable:
@@ -195,15 +194,12 @@ class TestTaskTable:
 
     def test_task_has_type_assert(self, schema_content: str) -> None:
         """Task type should be constrained to task/epic."""
-        assert 'DEFINE FIELD type ON task' in schema_content
+        assert "DEFINE FIELD type ON task" in schema_content
         assert '$value IN ["task", "epic"]' in schema_content
 
     def test_task_has_status_assert(self, schema_content: str) -> None:
         """Task status should be constrained to valid values."""
-        assert '"pending"' in schema_content
-        assert '"in_progress"' in schema_content
-        assert '"done"' in schema_content
-        assert '"blocked"' in schema_content
+        assert '$value IN ["pending", "in_progress", "done", "blocked"]' in schema_content
 
     def test_task_has_priority_assert(self, schema_content: str) -> None:
         """Task priority should be constrained between 1 and 5."""
@@ -229,8 +225,7 @@ class TestViews:
     def test_recent_failures_view(self, schema_content: str) -> None:
         """Schema should define a recent_failures view."""
         assert "DEFINE TABLE recent_failures AS" in schema_content
-        assert "outcome" in schema_content
-        assert "failure" in schema_content
+        assert 'metadata.outcome = "failure"' in schema_content
 
     def test_active_knowledge_view(self, schema_content: str) -> None:
         """Schema should define an active_knowledge view."""

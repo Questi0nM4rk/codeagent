@@ -83,6 +83,16 @@ class TestTaskServiceCreateTask:
 
         assert result["id"] == "task:single"
 
+    @pytest.mark.asyncio
+    async def test_create_task_raises_on_empty_list_response(self) -> None:
+        """create_task() should raise RuntimeError when db.create returns []."""
+        service, mock_db = _make_service()
+        mock_db.create.return_value = []
+
+        create = _make_task_create()
+        with pytest.raises(RuntimeError, match="empty list"):
+            await service.create_task(create)
+
 
 class TestTaskServiceGetNextTask:
     """Tests for TaskService.get_next_task() method."""
@@ -92,11 +102,7 @@ class TestTaskServiceGetNextTask:
         """get_next_task() should return the highest priority pending task."""
         service, mock_db = _make_service()
         mock_db.query.return_value = [
-            {
-                "result": [
-                    {"id": "task:a", "task_id": "CA-001", "priority": 1, "status": "pending"}
-                ]
-            }
+            {"result": [{"id": "task:a", "task_id": "CA-001", "priority": 1, "status": "pending"}]}
         ]
 
         result = await service.get_next_task()

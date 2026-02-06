@@ -186,9 +186,7 @@ class TestImprovedAttempt:
             }
         ]
 
-        result = await service.improved_attempt(
-            task="fix parser", original_output="broken"
-        )
+        result = await service.improved_attempt(task="fix parser", original_output="broken")
 
         assert "guidance" in result
         assert "similar_episodes" in result
@@ -203,9 +201,7 @@ class TestImprovedAttempt:
         mock_embedding.embed.return_value = [0.1]
         mock_db.query.return_value = [{"result": []}]
 
-        result = await service.improved_attempt(
-            task="new task", original_output="out"
-        )
+        result = await service.improved_attempt(task="new task", original_output="out")
 
         assert "No similar past episodes" in result["guidance"]
         assert result["similar_episodes"] == []
@@ -273,9 +269,7 @@ class TestModelEffectiveness:
         service, mock_db, _ = _make_service()
         mock_db.query.return_value = [{"result": []}]
 
-        await service.model_effectiveness(
-            task_pattern="code gen", feedback_type="test_failure"
-        )
+        await service.model_effectiveness(task_pattern="code gen", feedback_type="test_failure")
 
         query_str = mock_db.query.call_args[0][0]
         assert "metadata.feedback_type = $ftype" in query_str
