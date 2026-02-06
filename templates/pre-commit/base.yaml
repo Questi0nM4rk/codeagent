@@ -54,7 +54,9 @@ repos:
     hooks:
       - id: semgrep
         name: "security - semgrep SAST scan"
-        args: ["--config", "auto", "--error", "--jobs", "1"]
+        # --disable-nosem: Inline nosemgrep comments are ignored
+        # Exceptions must go in .semgrepignore (user-controlled)
+        args: ["--config", "auto", "--error", "--jobs", "1", "--disable-nosem"]
         exclude: ^tests/
 
   # ===========================================================================
