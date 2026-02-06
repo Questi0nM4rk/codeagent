@@ -34,8 +34,12 @@ app.add_tool(task_tools.get_next_task)
 app.add_tool(task_tools.complete_task)
 app.add_tool(task_tools.list_tasks)
 
+# --- Reflection tools (3 tools) ---
+app.add_tool(reflect_tools.reflect)
+app.add_tool(reflect_tools.improved_attempt)
+app.add_tool(reflect_tools.model_effectiveness)
+
 # Future tool domains:
-# - codeagent.mcp.tools.reflection
 # - codeagent.mcp.tools.codebase
 
 
@@ -75,7 +79,11 @@ async def run_server() -> None:
 
     memory_tools.init_memory_tools(memory_svc, search_svc)
 
+    from codeagent.mcp.services.reflection_service import ReflectionService
     from codeagent.mcp.services.task_service import TaskService
+
+    reflection_svc = ReflectionService(db, embedding_svc)
+    reflect_tools.init_reflection_tools(reflection_svc)
 
     task_svc = TaskService(db)
     task_tools.init_task_tools(task_svc)

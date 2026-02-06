@@ -98,14 +98,14 @@ class TestReflect:
                 approach="a",
                 model_used="opus",
                 code_context="ctx",
-                file_path="/tmp/test.py",
+                file_path="src/test.py",
             )
 
         call_kwargs = mock_svc.reflect.call_args[1]
         assert call_kwargs["feedback_type"] == "lint_failure"
         assert call_kwargs["model_used"] == "opus"
         assert call_kwargs["code_context"] == "ctx"
-        assert call_kwargs["file_path"] == "/tmp/test.py"
+        assert call_kwargs["file_path"] == "src/test.py"
 
 
 class TestImprovedAttempt:
