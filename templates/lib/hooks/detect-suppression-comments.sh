@@ -96,4 +96,4 @@ if [[ $exit_code -ne 0 ]]; then
   echo ""
 fi
 
-exit $exit_code
+exit "$exit_code"
