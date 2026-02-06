@@ -48,6 +48,7 @@ reviews:
   # Path-Specific Instructions
   # ============================================
   # Custom review focus per file pattern
+  # Uncomment and customize for your project
   path_instructions:
     - path: "**/*.py"
       instructions: |
@@ -79,6 +80,7 @@ reviews:
   # Static Analysis Tools
   # ============================================
   # CodeRabbit runs these automatically when corresponding files exist
+  # Configure specific tools or disable ones you don't need
   tools:
     # Python
     ruff:

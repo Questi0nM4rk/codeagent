@@ -18,7 +18,7 @@ unsafe-fixes = false
 select = ["ALL"]
 
 ignore = [
-  # === Formatter conflicts ===
+  # === Formatter conflicts only ===
   "W191",   # tab-indentation
   "E111",   # indentation-with-invalid-multiple
   "E114",   # indentation-with-invalid-multiple-comment
@@ -33,15 +33,19 @@ ignore = [
   "COM819", # prohibited-trailing-comma
   "ISC001", # single-line-implicit-string-concatenation
   "ISC002", # multi-line-implicit-string-concatenation
-
-  # === Disabled rule groups ===
-  "D",   # pydocstyle - docstrings not enforced yet
-  "ANN", # annotations - using mypy --strict for type checking
-
-  # === Project-wide exceptions ===
-  "TD003",  # TODOs use Epic numbers, not issue links
-  "FIX002", # TODOs are intentional reminders, not errors
 ]
+
+# Enforce docstrings - Google style required
+[lint.pydocstyle]
+convention = "google"
+
+# === TYPE ANNOTATIONS - MANDATORY ===
+[lint.flake8-annotations]
+allow-star-arg-any = false
+ignore-fully-untyped = false
+mypy-init-return = true
+suppress-dummy-args = false
+suppress-none-returning = false
 
 # Strict type checking hints
 [lint.flake8-type-checking]
@@ -52,7 +56,7 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 [lint.isort]
 force-single-line = false
 force-sort-within-sections = true
-known-first-party = ["codeagent"]
+known-first-party = []
 combine-as-imports = true
 split-on-trailing-comma = true
 force-to-top = ["__future__"]
@@ -139,7 +143,7 @@ raises-require-match-for = [
   "RuntimeError",
 ]
 
-# === PER-FILE IGNORES ===
+# === PER-FILE IGNORES - MINIMAL ===
 [lint.per-file-ignores]
 "tests/**/*.py" = [
   "S101",    # assert allowed in tests
@@ -151,24 +155,19 @@ raises-require-match-for = [
   "FBT002",  # boolean default args
   "FBT003",  # boolean positional values in calls
   "SLF001",  # private member access (tests intentionally access internals)
+  "D103",    # docstring not required for test functions
 ]
 "**/conftest.py" = [
   "FBT001", # boolean args in fixtures
   "FBT002", # boolean defaults in fixtures
 ]
 "__init__.py" = [
+  "D104", # missing docstring in public package
   "F401", # unused import (re-exports)
 ]
-"**/cli/**/*.py" = [
-  "FBT001",  # boolean flags are standard in CLI
-  "FBT002",  # boolean defaults in CLI
-  "FBT003",  # boolean values in CLI calls
-  "PLC0415", # lazy imports in CLI callbacks
-  "PLR0912", # CLI commands can have many branches
-  "PLR0915", # CLI commands can have many statements
-  "C901",    # CLI commands can be complex
-  "S603",    # subprocess calls with validated inputs
-  "S607",    # partial executable paths (using PATH)
+"conftest.py" = [
+  "D100", # missing docstring in public module
+  "D103", # missing docstring in public function
 ]
 
 [format]

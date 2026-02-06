@@ -40,6 +40,7 @@ dev = [
   "pytest-cov>=4.0",
   "ruff>=0.8.0",
   "pyright>=1.1.0",
+  "mypy>=1.0",
   "pre-commit>=3.0",
 ]
 
@@ -55,11 +56,12 @@ Repository = "https://github.com/Questi0nM4rk/codeagent"
 packages = ["src/codeagent"]
 
 [tool.hatch.build.targets.sdist]
-include = ["configs/**", "templates/**"]
-
-[tool.hatch.build.targets.wheel.shared-data]
-"configs" = "share/codeagent/configs"
-"templates" = "share/codeagent/templates"
+include = [
+  "src/**",
+  "configs/languages.yaml",
+  "templates/CLAUDE.md.template",
+  "templates/skill-template.md",
+]
 
 [tool.pyright]
 pythonVersion = "3.11"
@@ -67,3 +69,12 @@ typeCheckingMode = "standard"
 strictListInference = true
 strictDictionaryInference = true
 reportMissingTypeStubs = false
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]

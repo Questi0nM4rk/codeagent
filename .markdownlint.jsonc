@@ -37,6 +37,10 @@
 	// Handled by other tools (end-of-file-fixer)
 	"MD047": false,
 
+	// MD060: Table column style (spacing around pipes)
+	// Auto-formatter can't fix this, cosmetic only, AI doesn't care
+	"MD060": false,
+
 	// === ENABLED - Actually useful ===
 
 	// MD001: Heading levels should only increment by one
@@ -54,11 +58,11 @@
 	// MD007: Unordered list indentation
 	"MD007": { "indent": 2 },
 
-	// MD009: Trailing spaces - catches real issues
-	"MD009": { "br_spaces": 2 },
+	// MD009: Trailing spaces - handled by trailing-whitespace hook
+	"MD009": false,
 
-	// MD010: No hard tabs (except in code blocks)
-	"MD010": { "code_blocks": false },
+	// MD010: No hard tabs - handled by editorconfig
+	"MD010": false,
 
 	// MD011: Reversed link syntax [text](url) not (text)[url]
 	"MD011": true,
@@ -66,8 +70,8 @@
 	// MD012: Multiple consecutive blank lines
 	"MD012": { "maximum": 2 },
 
-	// MD014: Dollar signs in commands without showing output
-	"MD014": true,
+	// MD014: Dollar signs in commands - cosmetic, AI doesn't care
+	"MD014": false,
 
 	// MD018: No space after hash on atx style heading
 	"MD018": true,
@@ -76,7 +80,8 @@
 	"MD019": true,
 
 	// MD022: Headings should be surrounded by blank lines
-	"MD022": true,
+	// Auto-formatter can't fix this, and AI reads markdown fine without it
+	"MD022": false,
 
 	// MD023: Headings must start at beginning of line
 	"MD023": true,
@@ -129,11 +134,11 @@
 	// MD048: Code fence style
 	"MD048": { "style": "backtick" },
 
-	// MD049: Emphasis style
-	"MD049": { "style": "underscore" },
+	// MD049: Emphasis style - cosmetic, formatter can't fix
+	"MD049": false,
 
-	// MD050: Strong style
-	"MD050": { "style": "asterisk" },
+	// MD050: Strong style - cosmetic, formatter can't fix
+	"MD050": false,
 
 	// MD051: Link fragments should be valid
 	"MD051": true,
