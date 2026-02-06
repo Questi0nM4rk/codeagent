@@ -7,7 +7,6 @@ Each tool function is tested for:
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -18,17 +17,11 @@ class TestInitMemoryTools:
 
     def test_init_memory_tools_sets_services(self) -> None:
         """init_memory_tools should set the module-level service globals."""
-        from codeagent.mcp.tools.memory import (
-            _memory_service,
-            _search_service,
-            init_memory_tools,
-        )
+        from codeagent.mcp.tools import memory as mem_mod
 
         mock_mem = object()
         mock_search = object()
-        init_memory_tools(mock_mem, mock_search)
-
-        from codeagent.mcp.tools import memory as mem_mod
+        mem_mod.init_memory_tools(mock_mem, mock_search)
 
         assert mem_mod._memory_service is mock_mem
         assert mem_mod._search_service is mock_search
