@@ -31,6 +31,9 @@ jobs:
           restore-keys: |
             pre-commit-
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Install pre-commit
         run: pip install pre-commit
 
