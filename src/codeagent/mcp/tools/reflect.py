@@ -9,12 +9,13 @@ from __future__ import annotations
 from typing import Any
 
 from codeagent.mcp.models import ErrorCode, ErrorResponse
+from codeagent.mcp.services.reflection_service import ReflectionService
 
 # Service instance, set by init_reflection_tools()
-_reflection_service: Any = None
+_reflection_service: ReflectionService | None = None
 
 
-def init_reflection_tools(reflection_service: Any) -> None:
+def init_reflection_tools(reflection_service: ReflectionService) -> None:
     """Initialize tool dependencies.
 
     Must be called before any tool function is invoked.
@@ -23,7 +24,7 @@ def init_reflection_tools(reflection_service: Any) -> None:
         reflection_service: Service handling reflection, improved attempts,
             and model effectiveness queries.
     """
-    global _reflection_service  # noqa: PLW0603
+    global _reflection_service
     _reflection_service = reflection_service
 
 
@@ -52,6 +53,11 @@ async def reflect(
     Returns:
         Dict with structured reflection and episode_id, or an error response.
     """
+    if _reflection_service is None:
+        return ErrorResponse(
+            error="Reflection tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
+        ).model_dump()
     try:
         return await _reflection_service.reflect(
             output=output,
@@ -82,6 +88,11 @@ async def improved_attempt(
     Returns:
         Dict with guidance, similar episodes, and confidence, or an error response.
     """
+    if _reflection_service is None:
+        return ErrorResponse(
+            error="Reflection tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
+        ).model_dump()
     try:
         return await _reflection_service.improved_attempt(
             task=task,
@@ -106,6 +117,11 @@ async def model_effectiveness(
         Dict with recommended model, confidence, reasoning, and stats,
         or an error response.
     """
+    if _reflection_service is None:
+        return ErrorResponse(
+            error="Reflection tools not initialized",
+            code=ErrorCode.VALIDATION_ERROR,
+        ).model_dump()
     try:
         return await _reflection_service.model_effectiveness(
             task_pattern=task_pattern,

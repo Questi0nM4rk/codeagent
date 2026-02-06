@@ -7,11 +7,15 @@ automatic graph linking on store.
 
 from __future__ import annotations
 
+import logging
+from datetime import UTC, datetime
 from typing import Any
 
 from codeagent.mcp.db.client import SurrealDBClient
 from codeagent.mcp.models.memory import MemoryCreate, MemoryUpdate
 from codeagent.mcp.services.embedding_service import EmbeddingService
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryService:
@@ -42,7 +46,10 @@ class MemoryService:
         if isinstance(result, list):
             result = result[0]
         record_id = result.get("id", "")
-        await self._auto_link(record_id, embedding)
+        try:
+            await self._auto_link(record_id, embedding)
+        except Exception:  # noqa: BLE001 - auto-linking is best-effort
+            logger.warning("Auto-link failed for %s; continuing", record_id)
         return result
 
     async def read(self, memory_id: str, depth: int = 1) -> dict[str, Any]:
@@ -84,7 +91,7 @@ class MemoryService:
         data = update.model_dump(exclude_none=True, exclude={"memory_id"})
         if "content" in data:
             data["embedding"] = await self._embedding.embed(data["content"])
-        data["updated_at"] = "time::now()"
+        data["updated_at"] = datetime.now(UTC).isoformat()
         return await self._db.update(update.memory_id, data)
 
     async def delete(self, memory_id: str) -> dict[str, Any]:
@@ -197,16 +204,20 @@ class MemoryService:
             {"emb": embedding, "id": memory_id},
         )
         if similar and isinstance(similar, list) and similar[0].get("result"):
-            for mem in similar[0]["result"]:
-                if mem.get("score", 0) > 0.7:
-                    await self._db.query(
-                        "RELATE $from->relates_to->$to SET "
-                        "strength = $score, "
-                        "reason = 'auto-linked by similarity', "
-                        "auto = true",
-                        {
-                            "from": memory_id,
-                            "to": mem["id"],
-                            "score": mem["score"],
-                        },
+            targets = [
+                mem for mem in similar[0]["result"] if mem.get("score", 0) > 0.7
+            ]
+            if targets:
+                # Batch all RELATE statements into a single multi-statement query
+                statements: list[str] = []
+                params: dict[str, Any] = {"from": memory_id}
+                for idx, mem in enumerate(targets):
+                    statements.append(
+                        f"RELATE $from->relates_to->$to{idx} SET "
+                        f"strength = $score{idx}, "
+                        f"reason = 'auto-linked by similarity', "
+                        f"auto = true"
                     )
+                    params[f"to{idx}"] = mem["id"]
+                    params[f"score{idx}"] = mem["score"]
+                await self._db.query("; ".join(statements), params)

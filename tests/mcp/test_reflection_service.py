@@ -6,14 +6,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from codeagent.mcp.services.reflection_service import ReflectionService
+
 
 def _make_service(
     db: AsyncMock | None = None,
     embedding: AsyncMock | None = None,
-) -> tuple[object, AsyncMock, AsyncMock]:
+) -> tuple[ReflectionService, AsyncMock, AsyncMock]:
     """Create a ReflectionService with mock dependencies."""
-    from codeagent.mcp.services.reflection_service import ReflectionService
-
     mock_db = db or AsyncMock()
     mock_embedding = embedding or AsyncMock()
     service = ReflectionService(db=mock_db, embedding=mock_embedding)

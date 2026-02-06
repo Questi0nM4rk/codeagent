@@ -6,11 +6,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from codeagent.mcp.models.task import TaskCreate
+from codeagent.mcp.services.task_service import TaskService
 
-def _make_task_create(**overrides: object) -> object:
+
+def _make_task_create(**overrides: object) -> TaskCreate:
     """Create a TaskCreate instance with defaults."""
-    from codeagent.mcp.models.task import TaskCreate
-
     defaults: dict[str, object] = {
         "task_id": "CA-TASK-001",
         "project": "project:testproj",
@@ -22,10 +23,8 @@ def _make_task_create(**overrides: object) -> object:
 
 def _make_service(
     db: AsyncMock | None = None,
-) -> tuple[object, AsyncMock]:
+) -> tuple[TaskService, AsyncMock]:
     """Create a TaskService with a mock DB dependency."""
-    from codeagent.mcp.services.task_service import TaskService
-
     mock_db = db or AsyncMock()
     service = TaskService(db=mock_db)
     return service, mock_db

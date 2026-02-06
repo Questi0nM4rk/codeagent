@@ -6,10 +6,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from codeagent.mcp.models.memory import MemoryCreate, MemoryUpdate
+from codeagent.mcp.services.memory_service import MemoryService
 
-def _make_memory_create(**overrides: object) -> object:
+
+def _make_memory_create(**overrides: object) -> MemoryCreate:
     """Create a MemoryCreate instance with defaults."""
-    from codeagent.mcp.models.memory import MemoryCreate, MemoryType
+    from codeagent.mcp.models.memory import MemoryType
 
     defaults = {
         "content": "Test memory content",
@@ -22,10 +25,8 @@ def _make_memory_create(**overrides: object) -> object:
     return MemoryCreate(**defaults)  # type: ignore[arg-type]
 
 
-def _make_memory_update(**overrides: object) -> object:
+def _make_memory_update(**overrides: object) -> MemoryUpdate:
     """Create a MemoryUpdate instance with defaults."""
-    from codeagent.mcp.models.memory import MemoryUpdate
-
     defaults = {"memory_id": "memory:abc123"}
     defaults.update(overrides)
     return MemoryUpdate(**defaults)  # type: ignore[arg-type]
@@ -34,10 +35,8 @@ def _make_memory_update(**overrides: object) -> object:
 def _make_service(
     db: AsyncMock | None = None,
     embedding: AsyncMock | None = None,
-) -> tuple[object, AsyncMock, AsyncMock]:
+) -> tuple[MemoryService, AsyncMock, AsyncMock]:
     """Create a MemoryService with mock dependencies."""
-    from codeagent.mcp.services.memory_service import MemoryService
-
     mock_db = db or AsyncMock()
     mock_embedding = embedding or AsyncMock()
     service = MemoryService(db=mock_db, embedding=mock_embedding)
@@ -210,18 +209,18 @@ class TestMemoryServiceUpdate:
     @pytest.mark.asyncio
     async def test_update_skips_embedding_for_metadata_only(self) -> None:
         """update() should not re-embed when only metadata fields change."""
-        service, mock_db, mock_embedding = _make_service()
+        service, mock_db, _mock_embedding = _make_service()
         mock_db.update.return_value = {"id": "memory:abc"}
 
         update = _make_memory_update(title="New Title", confidence=0.9)
         await service.update(update)
 
-        mock_embedding.embed.assert_not_called()
+        _mock_embedding.embed.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_update_sets_updated_at(self) -> None:
         """update() should set the updated_at timestamp."""
-        service, mock_db, mock_embedding = _make_service()
+        service, mock_db, _mock_embedding = _make_service()
         mock_db.update.return_value = {"id": "memory:abc"}
 
         update = _make_memory_update(title="New Title")
@@ -233,7 +232,7 @@ class TestMemoryServiceUpdate:
     @pytest.mark.asyncio
     async def test_update_returns_result(self) -> None:
         """update() should return the updated record."""
-        service, mock_db, mock_embedding = _make_service()
+        service, mock_db, _mock_embedding = _make_service()
         mock_db.update.return_value = {"id": "memory:abc", "title": "Updated"}
 
         update = _make_memory_update(title="Updated")
@@ -391,15 +390,21 @@ class TestMemoryServiceAutoLink:
                     ]
                 }
             ],
-            # RELATE calls
-            [{"result": "ok"}],
+            # Single batched RELATE call for both matches
             [{"result": "ok"}],
         ]
 
         await service._auto_link("memory:new", [0.1, 0.2])
 
-        # Should have called query for similarity search + 2 RELATE statements
-        assert mock_db.query.call_count == 3
+        # Should have called query for similarity search + 1 batched RELATE
+        assert mock_db.query.call_count == 2
+        # Verify the batched RELATE contains both targets
+        relate_call = mock_db.query.call_args_list[1]
+        relate_query = relate_call[0][0]
+        assert relate_query.count("RELATE") == 2
+        relate_params = relate_call[0][1]
+        assert relate_params["to0"] == "memory:similar1"
+        assert relate_params["to1"] == "memory:similar2"
 
     @pytest.mark.asyncio
     async def test_auto_link_skips_low_similarity(self) -> None:

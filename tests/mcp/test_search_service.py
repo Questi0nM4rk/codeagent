@@ -153,14 +153,14 @@ class TestSearchServiceSearch:
                     ]
                 }
             ],
-            # Graph traversal result
-            [{"result": [{"related": ["memory:def"]}]}],
+            # Batched graph traversal result (one query for all IDs)
+            [{"result": [{"id": "memory:abc", "related": ["memory:def"]}]}],
         ]
 
         result = await service.search(query="test", include_graph=True)
 
         assert len(result["details"]) == 1
-        assert "related" in result["details"][0]
+        assert result["details"][0]["related"] == ["memory:def"]
 
     @pytest.mark.asyncio
     async def test_search_truncates_long_content_for_snippets(self) -> None:

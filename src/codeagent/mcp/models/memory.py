@@ -55,7 +55,7 @@ class Memory(BaseModel):
     embedding: list[float] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     project: str | None = None
-    confidence: float = 1.0
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     access_count: int = 0
     last_accessed: datetime | None = None
     source_task: str | None = None
@@ -86,7 +86,7 @@ class MemoryCreate(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
     project: str | None = None
-    confidence: float = 1.0
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     source_task: str | None = None
 
 
@@ -110,7 +110,7 @@ class MemoryUpdate(BaseModel):
     title: str | None = None
     metadata: dict[str, Any] | None = None
     tags: list[str] | None = None
-    confidence: float | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class SearchResult(BaseModel):

@@ -62,4 +62,5 @@ class EmbeddingService:
             for (idx, text), emb in zip(misses, embeddings, strict=True):
                 results[idx] = emb
                 self._cache.put(text, emb)
+        assert all(r is not None for r in results), "embed_batch: cache/provider mismatch"
         return [r for r in results if r is not None]  # type narrowing

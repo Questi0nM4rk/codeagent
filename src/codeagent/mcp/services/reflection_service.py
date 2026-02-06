@@ -173,7 +173,10 @@ class ReflectionService:
             Dict with: recommended_model, confidence, reasoning, stats.
         """
         filters = ["type = 'episode'"]
-        params: dict[str, Any] = {"pattern": task_pattern}
+        params: dict[str, Any] = {}
+        if task_pattern:
+            filters.append("content CONTAINS $pattern")
+            params["pattern"] = task_pattern
         if feedback_type:
             filters.append("metadata.feedback_type = $ftype")
             params["ftype"] = feedback_type

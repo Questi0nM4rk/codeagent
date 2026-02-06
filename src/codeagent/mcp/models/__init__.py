@@ -25,18 +25,15 @@ from codeagent.mcp.models.task import (
 )
 
 __all__ = [
-    # Common
     "ErrorCode",
     "ErrorResponse",
-    # Memory
     "Memory",
     "MemoryCreate",
     "MemoryType",
     "MemoryUpdate",
+    "Project",
     "SearchResponse",
     "SearchResult",
-    # Task
-    "Project",
     "Task",
     "TaskCreate",
     "TaskStatus",

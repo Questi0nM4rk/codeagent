@@ -11,35 +11,21 @@ from pydantic import ValidationError
 class TestMemoryType:
     """Tests for MemoryType enum."""
 
-    def test_memory_type_knowledge(self) -> None:
-        """MemoryType must include knowledge."""
+    @pytest.mark.parametrize(
+        ("attr", "expected_value"),
+        [
+            ("KNOWLEDGE", "knowledge"),
+            ("EPISODE", "episode"),
+            ("DECISION", "decision"),
+            ("PATTERN", "pattern"),
+            ("CODE_CHUNK", "code_chunk"),
+        ],
+    )
+    def test_memory_type_values(self, attr: str, expected_value: str) -> None:
+        """MemoryType must include all expected type values."""
         from codeagent.mcp.models.memory import MemoryType
 
-        assert MemoryType.KNOWLEDGE == "knowledge"
-
-    def test_memory_type_episode(self) -> None:
-        """MemoryType must include episode."""
-        from codeagent.mcp.models.memory import MemoryType
-
-        assert MemoryType.EPISODE == "episode"
-
-    def test_memory_type_decision(self) -> None:
-        """MemoryType must include decision."""
-        from codeagent.mcp.models.memory import MemoryType
-
-        assert MemoryType.DECISION == "decision"
-
-    def test_memory_type_pattern(self) -> None:
-        """MemoryType must include pattern."""
-        from codeagent.mcp.models.memory import MemoryType
-
-        assert MemoryType.PATTERN == "pattern"
-
-    def test_memory_type_code_chunk(self) -> None:
-        """MemoryType must include code_chunk."""
-        from codeagent.mcp.models.memory import MemoryType
-
-        assert MemoryType.CODE_CHUNK == "code_chunk"
+        assert getattr(MemoryType, attr) == expected_value
 
     def test_memory_type_is_str_enum(self) -> None:
         """MemoryType values should be usable as strings."""

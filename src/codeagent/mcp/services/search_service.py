@@ -1,4 +1,4 @@
-"""Hybrid search over memories using HNSW + BM25 with RRF fusion.
+"""Vector similarity search over memories using HNSW indexing.
 
 Provides vector similarity search with optional filters for type, project,
 and tags. Supports graph traversal to include related memories.
@@ -13,7 +13,7 @@ from codeagent.mcp.services.embedding_service import EmbeddingService
 
 
 class SearchService:
-    """Hybrid search over memories using HNSW + BM25 with RRF fusion.
+    """Vector similarity search over memories using HNSW indexing.
 
     Args:
         db: SurrealDB client for querying.
@@ -27,13 +27,14 @@ class SearchService:
     async def search(
         self,
         query: str,
+        *,
         memory_type: str | None = None,
         project: str | None = None,
         tags: list[str] | None = None,
         max_results: int = 10,
         include_graph: bool = False,
     ) -> dict[str, Any]:
-        """Hybrid search returning index + details.
+        """Vector similarity search returning index + details.
 
         Args:
             query: The search query text.
@@ -69,7 +70,12 @@ class SearchService:
         where = f" AND {' AND '.join(filters)}" if filters else ""
 
         # S608: where clause is built from fixed column names, not user input
-        surql = f"SELECT id, type, title, content, vector::similarity::cosine(embedding, $emb) AS vec_score FROM memory WHERE embedding <|5,40|> $emb{where} ORDER BY vec_score DESC LIMIT $limit"  # noqa: S608, E501
+        surql = (
+            "SELECT id, type, title, content,"  # noqa: S608
+            " vector::similarity::cosine(embedding, $emb) AS vec_score"
+            f" FROM memory WHERE embedding <|5,40|> $emb{where}"
+            " ORDER BY vec_score DESC LIMIT $limit"
+        )
 
         results = await self._db.query(surql, params)
 
@@ -77,6 +83,24 @@ class SearchService:
             return {"index": [], "details": [], "total_count": 0}
 
         rows: list[dict[str, Any]] = results[0]["result"]
+
+        # Pre-fetch graph relationships in a single batched query to avoid N+1
+        related_map: dict[str, list[Any]] = {}
+        if include_graph and rows:
+            row_ids = [row.get("id") for row in rows if row.get("id")]
+            if row_ids:
+                graph_result = await self._db.query(
+                    "SELECT id, ->relates_to->memory.id AS related FROM memory WHERE id IN $ids",
+                    {"ids": row_ids},
+                )
+                if (
+                    graph_result
+                    and isinstance(graph_result, list)
+                    and graph_result[0].get("result")
+                ):
+                    for entry in graph_result[0]["result"]:
+                        entry_id = entry.get("id", "")
+                        related_map[entry_id] = entry.get("related", [])
 
         index: list[dict[str, Any]] = []
         details: list[dict[str, Any]] = []
@@ -96,12 +120,9 @@ class SearchService:
 
             detail = dict(row)
             if include_graph:
-                related = await self._db.query(
-                    "SELECT ->relates_to->memory.id AS related FROM $id",
-                    {"id": row.get("id")},
-                )
-                if related and related[0].get("result"):
-                    detail["related"] = related[0]["result"]
+                row_id = row.get("id", "")
+                if row_id in related_map:
+                    detail["related"] = related_map[row_id]
             details.append(detail)
 
         return {"index": index, "details": details, "total_count": len(rows)}

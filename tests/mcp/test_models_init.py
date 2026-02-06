@@ -13,34 +13,39 @@ class TestModelsExports:
         assert MemoryType.KNOWLEDGE == "knowledge"
 
     def test_exports_memory(self) -> None:
-        """Package should export Memory."""
+        """Package should re-export Memory with correct identity."""
         from codeagent.mcp.models import Memory
+        from codeagent.mcp.models.memory import Memory as OrigMemory
 
-        assert Memory is not None
+        assert Memory is OrigMemory
 
     def test_exports_memory_create(self) -> None:
-        """Package should export MemoryCreate."""
+        """Package should re-export MemoryCreate with correct identity."""
         from codeagent.mcp.models import MemoryCreate
+        from codeagent.mcp.models.memory import MemoryCreate as OrigMemoryCreate
 
-        assert MemoryCreate is not None
+        assert MemoryCreate is OrigMemoryCreate
 
     def test_exports_memory_update(self) -> None:
-        """Package should export MemoryUpdate."""
+        """Package should re-export MemoryUpdate with correct identity."""
         from codeagent.mcp.models import MemoryUpdate
+        from codeagent.mcp.models.memory import MemoryUpdate as OrigMemoryUpdate
 
-        assert MemoryUpdate is not None
+        assert MemoryUpdate is OrigMemoryUpdate
 
     def test_exports_search_result(self) -> None:
-        """Package should export SearchResult."""
+        """Package should re-export SearchResult with correct identity."""
         from codeagent.mcp.models import SearchResult
+        from codeagent.mcp.models.memory import SearchResult as OrigSearchResult
 
-        assert SearchResult is not None
+        assert SearchResult is OrigSearchResult
 
     def test_exports_search_response(self) -> None:
-        """Package should export SearchResponse."""
+        """Package should re-export SearchResponse with correct identity."""
         from codeagent.mcp.models import SearchResponse
+        from codeagent.mcp.models.memory import SearchResponse as OrigSearchResponse
 
-        assert SearchResponse is not None
+        assert SearchResponse is OrigSearchResponse
 
     def test_exports_task_status(self) -> None:
         """Package should export TaskStatus."""
@@ -55,28 +60,32 @@ class TestModelsExports:
         assert TaskType.TASK == "task"
 
     def test_exports_task(self) -> None:
-        """Package should export Task."""
+        """Package should re-export Task with correct identity."""
         from codeagent.mcp.models import Task
+        from codeagent.mcp.models.task import Task as OrigTask
 
-        assert Task is not None
+        assert Task is OrigTask
 
     def test_exports_task_create(self) -> None:
-        """Package should export TaskCreate."""
+        """Package should re-export TaskCreate with correct identity."""
         from codeagent.mcp.models import TaskCreate
+        from codeagent.mcp.models.task import TaskCreate as OrigTaskCreate
 
-        assert TaskCreate is not None
+        assert TaskCreate is OrigTaskCreate
 
     def test_exports_project(self) -> None:
-        """Package should export Project."""
+        """Package should re-export Project with correct identity."""
         from codeagent.mcp.models import Project
+        from codeagent.mcp.models.task import Project as OrigProject
 
-        assert Project is not None
+        assert Project is OrigProject
 
     def test_exports_error_response(self) -> None:
-        """Package should export ErrorResponse."""
+        """Package should re-export ErrorResponse with correct identity."""
         from codeagent.mcp.models import ErrorResponse
+        from codeagent.mcp.models.common import ErrorResponse as OrigErrorResponse
 
-        assert ErrorResponse is not None
+        assert ErrorResponse is OrigErrorResponse
 
     def test_exports_error_code(self) -> None:
         """Package should export ErrorCode."""

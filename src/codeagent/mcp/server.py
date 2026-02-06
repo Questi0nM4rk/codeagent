@@ -59,12 +59,14 @@ async def run_server() -> None:
     from codeagent.mcp.embeddings import EmbeddingCache, EmbeddingProvider
     from codeagent.mcp.services.embedding_service import EmbeddingService
     from codeagent.mcp.services.memory_service import MemoryService
+    from codeagent.mcp.services.reflection_service import ReflectionService
     from codeagent.mcp.services.search_service import SearchService
+    from codeagent.mcp.services.task_service import TaskService
 
     db = SurrealDBClient(
         url=os.getenv("SURREAL_URL", "ws://localhost:8000"),
         username=os.getenv("SURREAL_USER", "root"),
-        password=os.getenv("SURREAL_PASS", "root"),  # noqa: S106 - Default dev creds
+        password=os.getenv("SURREAL_PASS", "root"),  # Default dev creds
     )
     await db.connect()
 
@@ -79,18 +81,17 @@ async def run_server() -> None:
 
     memory_tools.init_memory_tools(memory_svc, search_svc)
 
-    from codeagent.mcp.services.reflection_service import ReflectionService
-    from codeagent.mcp.services.task_service import TaskService
-
     reflection_svc = ReflectionService(db, embedding_svc)
     reflect_tools.init_reflection_tools(reflection_svc)
 
     task_svc = TaskService(db)
     task_tools.init_task_tools(task_svc)
 
-    await app.run_stdio_async()
-
-    await db.close()
+    try:
+        await app.run_stdio_async()
+    finally:
+        await provider.close()
+        await db.close()
 
 
 def main() -> None:

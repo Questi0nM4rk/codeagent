@@ -8,6 +8,35 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+
+def _make_httpx_mock(
+    *,
+    status_code: int = 200,
+    json_data: dict[str, object] | None = None,
+    raise_for_status_effect: Exception | None = None,
+) -> tuple[AsyncMock, MagicMock]:
+    """Create a mock httpx.AsyncClient and Response pair.
+
+    Returns:
+        A tuple of (mock_client, mock_response).
+    """
+    mock_response = MagicMock(spec=httpx.Response)
+    mock_response.status_code = status_code
+    if raise_for_status_effect:
+        mock_response.raise_for_status.side_effect = raise_for_status_effect
+    else:
+        mock_response.raise_for_status = MagicMock()
+    if json_data is not None:
+        mock_response.json.return_value = json_data
+
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    mock_client.post.return_value = mock_response
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+
+    return mock_client, mock_response
+
+
 # ---------------------------------------------------------------------------
 # EmbeddingProvider tests
 # ---------------------------------------------------------------------------
@@ -20,7 +49,7 @@ class TestEmbeddingProviderInit:
         """EmbeddingProvider accepts an explicit API key."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
-        provider = EmbeddingProvider(api_key="sk-test-key")  # noqa: S106
+        provider = EmbeddingProvider(api_key="sk-test-key")
         assert provider._api_key == "sk-test-key"
 
     def test_init_reads_api_key_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -56,20 +85,12 @@ class TestEmbeddingProviderEmbed:
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
         expected_embedding = [0.1, 0.2, 0.3]
-        mock_response = MagicMock(spec=httpx.Response)
-        mock_response.status_code = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json.return_value = {
-            "data": [{"embedding": expected_embedding, "index": 0}],
-        }
-
-        mock_client = AsyncMock(spec=httpx.AsyncClient)
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client, _mock_response = _make_httpx_mock(
+            json_data={"data": [{"embedding": expected_embedding, "index": 0}]},
+        )
 
         with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
-            provider = EmbeddingProvider(api_key="sk-test")  # noqa: S106
+            provider = EmbeddingProvider(api_key="sk-test")
             result = await provider.embed("hello world")
 
         assert result == expected_embedding
@@ -79,21 +100,21 @@ class TestEmbeddingProviderEmbed:
         """embed() sends the correct payload to OpenAI's API."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
-        mock_response = MagicMock(spec=httpx.Response)
-        mock_response.status_code = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json.return_value = {
-            "data": [{"embedding": [0.0], "index": 0}],
-        }
+        mock_client, _mock_response = _make_httpx_mock(
+            json_data={"data": [{"embedding": [0.0], "index": 0}]},
+        )
 
-        mock_client = AsyncMock(spec=httpx.AsyncClient)
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
-        with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
-            provider = EmbeddingProvider(api_key="sk-test")  # noqa: S106
+        with patch(
+            "codeagent.mcp.embeddings.provider.httpx.AsyncClient",
+            return_value=mock_client,
+        ) as mock_cls:
+            provider = EmbeddingProvider(api_key="sk-test")
             await provider.embed("test text")
+
+        # Headers are now pre-set on the reusable client at construction time
+        ctor_kwargs = mock_cls.call_args[1]
+        assert ctor_kwargs["headers"]["Authorization"] == "Bearer sk-test"
+        assert ctor_kwargs["headers"]["Content-Type"] == "application/json"
 
         mock_client.post.assert_called_once()
         call_args = mock_client.post.call_args
@@ -104,30 +125,26 @@ class TestEmbeddingProviderEmbed:
         assert payload["model"] == "text-embedding-3-small"
         assert payload["dimensions"] == 1536
 
-        headers = call_args[1]["headers"]
-        assert headers["Authorization"] == "Bearer sk-test"
-        assert headers["Content-Type"] == "application/json"
-
     @pytest.mark.asyncio
     async def test_embed_raises_on_api_error(self) -> None:
         """embed() propagates httpx.HTTPStatusError on API failure."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
-        mock_response = MagicMock(spec=httpx.Response)
-        mock_response.status_code = 401
-        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-            "Unauthorized",
-            request=MagicMock(spec=httpx.Request),
-            response=mock_response,
+        mock_request = MagicMock(spec=httpx.Request)
+        mock_error_response = MagicMock(spec=httpx.Response)
+        mock_error_response.status_code = 401
+
+        mock_client, _mock_response = _make_httpx_mock(
+            status_code=401,
+            raise_for_status_effect=httpx.HTTPStatusError(
+                "Unauthorized",
+                request=mock_request,
+                response=mock_error_response,
+            ),
         )
 
-        mock_client = AsyncMock(spec=httpx.AsyncClient)
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
         with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
-            provider = EmbeddingProvider(api_key="sk-bad")  # noqa: S106
+            provider = EmbeddingProvider(api_key="sk-bad")
             with pytest.raises(httpx.HTTPStatusError):
                 await provider.embed("test")
 
@@ -141,24 +158,18 @@ class TestEmbeddingProviderEmbedBatch:
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
         # API may return results out of order
-        mock_response = MagicMock(spec=httpx.Response)
-        mock_response.status_code = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json.return_value = {
-            "data": [
-                {"embedding": [0.3, 0.3], "index": 2},
-                {"embedding": [0.1, 0.1], "index": 0},
-                {"embedding": [0.2, 0.2], "index": 1},
-            ],
-        }
-
-        mock_client = AsyncMock(spec=httpx.AsyncClient)
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client, _mock_response = _make_httpx_mock(
+            json_data={
+                "data": [
+                    {"embedding": [0.3, 0.3], "index": 2},
+                    {"embedding": [0.1, 0.1], "index": 0},
+                    {"embedding": [0.2, 0.2], "index": 1},
+                ],
+            },
+        )
 
         with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
-            provider = EmbeddingProvider(api_key="sk-test")  # noqa: S106
+            provider = EmbeddingProvider(api_key="sk-test")
             result = await provider.embed_batch(["a", "b", "c"])
 
         assert len(result) == 3
@@ -171,23 +182,17 @@ class TestEmbeddingProviderEmbedBatch:
         """embed_batch() sends all texts in one API call."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
-        mock_response = MagicMock(spec=httpx.Response)
-        mock_response.status_code = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json.return_value = {
-            "data": [
-                {"embedding": [0.0], "index": 0},
-                {"embedding": [0.0], "index": 1},
-            ],
-        }
-
-        mock_client = AsyncMock(spec=httpx.AsyncClient)
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client, _mock_response = _make_httpx_mock(
+            json_data={
+                "data": [
+                    {"embedding": [0.0], "index": 0},
+                    {"embedding": [0.0], "index": 1},
+                ],
+            },
+        )
 
         with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
-            provider = EmbeddingProvider(api_key="sk-test")  # noqa: S106
+            provider = EmbeddingProvider(api_key="sk-test")
             await provider.embed_batch(["text1", "text2"])
 
         mock_client.post.assert_called_once()
@@ -199,21 +204,21 @@ class TestEmbeddingProviderEmbedBatch:
         """embed_batch() propagates httpx.HTTPStatusError on API failure."""
         from codeagent.mcp.embeddings.provider import EmbeddingProvider
 
-        mock_response = MagicMock(spec=httpx.Response)
-        mock_response.status_code = 500
-        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-            "Server Error",
-            request=MagicMock(spec=httpx.Request),
-            response=mock_response,
+        mock_request = MagicMock(spec=httpx.Request)
+        mock_error_response = MagicMock(spec=httpx.Response)
+        mock_error_response.status_code = 500
+
+        mock_client, _mock_response = _make_httpx_mock(
+            status_code=500,
+            raise_for_status_effect=httpx.HTTPStatusError(
+                "Server Error",
+                request=mock_request,
+                response=mock_error_response,
+            ),
         )
 
-        mock_client = AsyncMock(spec=httpx.AsyncClient)
-        mock_client.post.return_value = mock_response
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-
         with patch("codeagent.mcp.embeddings.provider.httpx.AsyncClient", return_value=mock_client):
-            provider = EmbeddingProvider(api_key="sk-test")  # noqa: S106
+            provider = EmbeddingProvider(api_key="sk-test")
             with pytest.raises(httpx.HTTPStatusError):
                 await provider.embed_batch(["a", "b"])
 
@@ -318,13 +323,17 @@ class TestEmbeddingsPackageExports:
     """Tests that the embeddings package exports expected symbols."""
 
     def test_exports_embedding_provider(self) -> None:
-        """embeddings package exports EmbeddingProvider."""
+        """embeddings package re-exports EmbeddingProvider with correct identity."""
         from codeagent.mcp.embeddings import EmbeddingProvider
+        from codeagent.mcp.embeddings.provider import (
+            EmbeddingProvider as OrigEmbeddingProvider,
+        )
 
-        assert EmbeddingProvider is not None
+        assert EmbeddingProvider is OrigEmbeddingProvider
 
     def test_exports_embedding_cache(self) -> None:
-        """embeddings package exports EmbeddingCache."""
+        """embeddings package re-exports EmbeddingCache with correct identity."""
         from codeagent.mcp.embeddings import EmbeddingCache
+        from codeagent.mcp.embeddings.cache import EmbeddingCache as OrigEmbeddingCache
 
-        assert EmbeddingCache is not None
+        assert EmbeddingCache is OrigEmbeddingCache

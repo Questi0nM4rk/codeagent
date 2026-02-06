@@ -44,11 +44,11 @@ class TestAnalyzerDefinition:
 
     def test_analyzer_uses_blank_tokenizer(self, schema_content: str) -> None:
         """Analyzer should use blank tokenizer."""
-        assert "blank" in schema_content
+        assert "TOKENIZERS blank" in schema_content
 
     def test_analyzer_uses_camel_tokenizer(self, schema_content: str) -> None:
         """Analyzer should use camel tokenizer."""
-        assert "camel" in schema_content
+        assert "TOKENIZERS blank, class, camel" in schema_content
 
 
 class TestMemoryTable:
@@ -195,8 +195,8 @@ class TestTaskTable:
 
     def test_task_has_type_assert(self, schema_content: str) -> None:
         """Task type should be constrained to task/epic."""
-        assert '"task"' in schema_content
-        assert '"epic"' in schema_content
+        assert 'DEFINE FIELD type ON task' in schema_content
+        assert '$value IN ["task", "epic"]' in schema_content
 
     def test_task_has_status_assert(self, schema_content: str) -> None:
         """Task status should be constrained to valid values."""

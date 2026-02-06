@@ -42,6 +42,12 @@ class TaskService:
 
         Anti-scope-creep: returns ONE task only.
 
+        **Dependency contract**: This method only returns tasks whose
+        ``depends_on`` array is empty (length 0). Callers are responsible for
+        clearing entries from ``depends_on`` as upstream dependencies resolve.
+        This is an intentional simplification -- dependency resolution is the
+        caller's concern, not the query's.
+
         Args:
             project: Optional project filter.
 
@@ -56,6 +62,7 @@ class TaskService:
 
         where = " AND ".join(filters)
         # S608: where clause is built from fixed column names, not user input
+        # Only tasks with empty depends_on are eligible; see docstring contract.
         result = await self._db.query(
             f"SELECT * FROM task WHERE {where}"  # noqa: S608
             " AND array::len(depends_on) = 0"

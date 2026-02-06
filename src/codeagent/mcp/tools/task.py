@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import ValidationError
+
 from codeagent.mcp.models import (
     ErrorCode,
     ErrorResponse,
@@ -15,12 +17,13 @@ from codeagent.mcp.models import (
     TaskStatus,
     TaskType,
 )
+from codeagent.mcp.services.task_service import TaskService
 
 # Service instance, set by init_task_tools()
-_task_service: Any = None
+_task_service: TaskService | None = None
 
 
-def init_task_tools(task_service: Any) -> None:
+def init_task_tools(task_service: TaskService) -> None:
     """Initialize tool dependencies.
 
     Must be called before any tool function is invoked.
@@ -28,7 +31,7 @@ def init_task_tools(task_service: Any) -> None:
     Args:
         task_service: Service handling task lifecycle operations.
     """
-    global _task_service  # noqa: PLW0603
+    global _task_service
     _task_service = task_service
 
 
@@ -65,6 +68,10 @@ async def create_task(
     Returns:
         Dict with the created task or an error response.
     """
+    if _task_service is None:
+        return ErrorResponse(
+            error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         create = TaskCreate(
             task_id=task_id,
@@ -80,9 +87,12 @@ async def create_task(
             parent=parent,
             suggested_model=suggested_model,
         )
+    except (ValueError, ValidationError) as e:
+        return ErrorResponse(error=str(e), code=ErrorCode.VALIDATION_ERROR).model_dump()
+    try:
         return await _task_service.create_task(create)
     except Exception as e:  # noqa: BLE001
-        return ErrorResponse(error=str(e), code=ErrorCode.VALIDATION_ERROR).model_dump()
+        return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
 
 async def get_next_task(
@@ -96,6 +106,10 @@ async def get_next_task(
     Returns:
         Dict with the next task or an error response.
     """
+    if _task_service is None:
+        return ErrorResponse(
+            error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         return await _task_service.get_next_task(project=project)
     except Exception as e:  # noqa: BLE001
@@ -117,10 +131,12 @@ async def complete_task(
     Returns:
         Dict with the updated task or an error response.
     """
+    if _task_service is None:
+        return ErrorResponse(
+            error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
-        return await _task_service.complete_task(
-            task_id, resolved_by=resolved_by, summary=summary
-        )
+        return await _task_service.complete_task(task_id, resolved_by=resolved_by, summary=summary)
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
@@ -140,10 +156,12 @@ async def list_tasks(
     Returns:
         Dict with tasks list and count, or an error response.
     """
+    if _task_service is None:
+        return ErrorResponse(
+            error="Task tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
-        tasks = await _task_service.list_tasks(
-            project=project, status=status, task_type=type
-        )
+        tasks = await _task_service.list_tasks(project=project, status=status, task_type=type)
         return {"tasks": tasks, "count": len(tasks)}
     except Exception as e:  # noqa: BLE001
         return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()

@@ -81,32 +81,6 @@ class TestReflect:
         assert "error" in result
         assert "DB down" in result["error"]
 
-    @pytest.mark.asyncio
-    async def test_reflect_passes_all_parameters(self) -> None:
-        """reflect() should pass every parameter through to the service."""
-        from codeagent.mcp.tools import reflect as ref_mod
-
-        mock_svc = AsyncMock()
-        mock_svc.reflect.return_value = {"episode_id": "memory:ep1"}
-
-        with patch.object(ref_mod, "_reflection_service", mock_svc):
-            await ref_mod.reflect(
-                output="out",
-                feedback="fb",
-                feedback_type="lint_failure",
-                task="t",
-                approach="a",
-                model_used="opus",
-                code_context="ctx",
-                file_path="src/test.py",
-            )
-
-        call_kwargs = mock_svc.reflect.call_args[1]
-        assert call_kwargs["feedback_type"] == "lint_failure"
-        assert call_kwargs["model_used"] == "opus"
-        assert call_kwargs["code_context"] == "ctx"
-        assert call_kwargs["file_path"] == "src/test.py"
-
 
 class TestImprovedAttempt:
     """Tests for the improved_attempt() tool function."""

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import ValidationError
+
 from codeagent.mcp.models import (
     ErrorCode,
     ErrorResponse,
@@ -15,13 +17,15 @@ from codeagent.mcp.models import (
     MemoryType,
     MemoryUpdate,
 )
+from codeagent.mcp.services.memory_service import MemoryService
+from codeagent.mcp.services.search_service import SearchService
 
 # Service instances, set by init_memory_tools()
-_memory_service: Any = None
-_search_service: Any = None
+_memory_service: MemoryService | None = None
+_search_service: SearchService | None = None
 
 
-def init_memory_tools(memory_service: Any, search_service: Any) -> None:
+def init_memory_tools(memory_service: MemoryService, search_service: SearchService) -> None:
     """Initialize tool dependencies.
 
     Must be called before any tool function is invoked.
@@ -30,7 +34,7 @@ def init_memory_tools(memory_service: Any, search_service: Any) -> None:
         memory_service: Service handling memory CRUD and linking.
         search_service: Service handling hybrid search.
     """
-    global _memory_service, _search_service  # noqa: PLW0603
+    global _memory_service, _search_service
     _memory_service = memory_service
     _search_service = search_service
 
@@ -60,6 +64,10 @@ async def store(
     Returns:
         Dict with the created memory or an error response.
     """
+    if _memory_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         create = MemoryCreate(
             type=MemoryType(type),
@@ -71,9 +79,12 @@ async def store(
             confidence=confidence,
             source_task=source_task,
         )
+    except (ValueError, ValidationError) as e:
+        return ErrorResponse(error=str(e), code=ErrorCode.VALIDATION_ERROR).model_dump()
+    try:
         return await _memory_service.store(create)
     except Exception as e:  # noqa: BLE001
-        return ErrorResponse(error=str(e), code=ErrorCode.VALIDATION_ERROR).model_dump()
+        return ErrorResponse(error=str(e), code=ErrorCode.DB_ERROR).model_dump()
 
 
 async def search(
@@ -82,6 +93,7 @@ async def search(
     project: str | None = None,
     tags: list[str] | None = None,
     max_results: int = 10,
+    *,
     include_graph: bool = False,
 ) -> dict[str, Any]:
     """Hybrid search across memory types.
@@ -97,6 +109,10 @@ async def search(
     Returns:
         Dict with search results or an error response.
     """
+    if _search_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         return await _search_service.search(
             query=query,
@@ -123,6 +139,10 @@ async def read(
     Returns:
         Dict with the memory record or an error response.
     """
+    if _memory_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         return await _memory_service.read(id, depth=min(depth, 3))
     except Exception as e:  # noqa: BLE001
@@ -150,6 +170,10 @@ async def update(
     Returns:
         Dict with the updated memory or an error response.
     """
+    if _memory_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         upd = MemoryUpdate(
             memory_id=id,
@@ -173,6 +197,10 @@ async def delete(id: str) -> dict[str, Any]:
     Returns:
         Dict with deletion status or an error response.
     """
+    if _memory_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         return await _memory_service.delete(id)
     except Exception as e:  # noqa: BLE001
@@ -196,6 +224,10 @@ async def link(
     Returns:
         Dict with link status or an error response.
     """
+    if _memory_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         return await _memory_service.link(from_id, to_id, reason, strength)
     except Exception as e:  # noqa: BLE001
@@ -215,6 +247,10 @@ async def stats(
     Returns:
         Dict with statistics or an error response.
     """
+    if _memory_service is None:
+        return ErrorResponse(
+            error="Memory tools not initialized", code=ErrorCode.VALIDATION_ERROR
+        ).model_dump()
     try:
         return await _memory_service.stats(project, type)
     except Exception as e:  # noqa: BLE001

@@ -57,8 +57,7 @@ class TestEmbeddingServiceEmbed:
 
         mock_cache.put.assert_not_called()
 
-    @pytest.mark.asyncio
-    async def test_embed_uses_default_cache_when_none_provided(self) -> None:
+    def test_embed_uses_default_cache_when_none_provided(self) -> None:
         """EmbeddingService should create a default EmbeddingCache when none given."""
         from codeagent.mcp.embeddings.cache import EmbeddingCache
         from codeagent.mcp.services.embedding_service import EmbeddingService
