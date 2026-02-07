@@ -1,0 +1,37 @@
+# =============================================================================
+# Suppression Allowlist
+# =============================================================================
+# Approved inline suppressions. Each line is a grep -E pattern matched against
+# the full line text. Only these specific patterns are permitted in production
+# code. Adding new entries requires explicit user approval with a documented
+# reason.
+#
+# Format: regex pattern (matched case-insensitive)
+# =============================================================================
+
+# --- Python: ruff noqa ---
+
+# BLE001: MCP tool boundaries must catch all exceptions to return error responses
+noqa: BLE001
+
+# PLR0913: MCP tool functions have many parameters by protocol design
+noqa: PLR0913
+
+# PLC0415: Lazy imports for performance (heavy modules loaded on demand)
+noqa: PLC0415
+
+# PLW0603: Dependency injection via module-level global (DI pattern)
+noqa: PLW0603
+
+# --- Python: type checking ---
+
+# type: ignore[override]: Pydantic/framework method signature mismatches
+type: ignore\[override\]
+
+# --- Shell: shellcheck ---
+
+# SC2317: Functions called indirectly (trap handlers, pre-commit hooks)
+shellcheck disable=SC2317
+
+# SC2329: Functions defined but called via variable/eval
+shellcheck disable=SC2329
