@@ -57,23 +57,32 @@ def run_generate_configs(
         console.print("[green]Registry is valid.[/]")
         return True
 
-    configs_dir = get_configs_dir()
+    # Look for base templates: project's configs/ first, then global
+    local_configs = project_path / "configs"
+    global_configs = get_configs_dir()
+
+    def _find_base(name: str) -> Path | None:
+        for d in [local_configs, global_configs]:
+            p = d / name
+            if p.exists():
+                return p
+        return None
 
     # Generate ruff.toml
-    base_ruff = configs_dir / "ruff.toml"
-    if base_ruff.exists():
+    base_ruff = _find_base("ruff.toml")
+    if base_ruff:
         generate_ruff(registry, base_ruff, project_path / "ruff.toml")
         console.print("[green]\u2713[/] Generated ruff.toml")
 
     # Generate biome.json
-    base_biome = configs_dir / "biome.json"
-    if base_biome.exists():
+    base_biome = _find_base("biome.json")
+    if base_biome:
         generate_biome(registry, base_biome, project_path / "biome.json")
         console.print("[green]\u2713[/] Generated biome.json")
 
     # Generate .markdownlint.jsonc
-    base_mdlint = configs_dir / ".markdownlint.jsonc"
-    if base_mdlint.exists():
+    base_mdlint = _find_base(".markdownlint.jsonc")
+    if base_mdlint:
         generate_markdownlint(
             registry,
             base_mdlint,
