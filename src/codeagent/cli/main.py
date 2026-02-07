@@ -76,6 +76,26 @@ def init(
     )
 
 
+@app.command("generate-configs")
+def generate_configs(
+    project_dir: str = typer.Argument(
+        ".",
+        help="Project directory containing .guardrails-exceptions.toml",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Validate registry only, don't write files",
+    ),
+) -> None:
+    """Generate tool configs from .guardrails-exceptions.toml."""
+    from codeagent.guardrails.generate import run_generate_configs
+
+    success = run_generate_configs(project_dir=project_dir, dry_run=dry_run)
+    if not success:
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def start() -> None:
     """Start CodeAgent services (SurrealDB)."""

@@ -104,6 +104,18 @@ def run_init(
             shutil.copy(workflow_src, workflow_dst)
             console.print("[green]✓[/] Created .github/workflows/claude-review.yaml")
 
+    # Scaffold .guardrails-exceptions.toml if not present
+    exceptions_path = project_path / ".guardrails-exceptions.toml"
+    if not exceptions_path.exists() or force:
+        _scaffold_exceptions_file(exceptions_path)
+        console.print("[green]\u2713[/] Created .guardrails-exceptions.toml")
+
+    # Generate merged configs from registry + base templates
+    if exceptions_path.exists():
+        from codeagent.guardrails.generate import run_generate_configs
+
+        run_generate_configs(project_dir=str(project_path))
+
     # Create .claude/ structure
     claude_dir = project_path / ".claude"
     claude_dir.mkdir(exist_ok=True)
@@ -146,3 +158,53 @@ def run_init(
             console.print("[green]✓[/] Initialized secrets baseline")
 
     console.print("\n[bold green]CodeAgent initialized successfully![/]")
+
+
+_SCAFFOLD_TEMPLATE = """\
+# =============================================================================
+# .guardrails-exceptions.toml - Unified Exception Registry
+# =============================================================================
+# SINGLE SOURCE OF TRUTH for all lint/type/analysis exceptions in this project.
+#
+# DO NOT MODIFY unless you are the project owner.
+# AI agents MUST NOT edit this file. Ask the project owner to add exceptions.
+#
+# Regenerate tool configs: codeagent generate-configs
+# =============================================================================
+
+schema_version = 1
+
+[global.ruff]
+# Formatter conflicts (always needed when using ruff format)
+"W191"   = "formatter-conflict: tab-indentation"
+"E111"   = "formatter-conflict: indentation-with-invalid-multiple"
+"E114"   = "formatter-conflict: indentation-with-invalid-multiple-comment"
+"E117"   = "formatter-conflict: over-indented"
+"D206"   = "formatter-conflict: indent-with-spaces"
+"D300"   = "formatter-conflict: triple-single-quotes"
+"Q000"   = "formatter-conflict: bad-quotes-inline-string"
+"Q001"   = "formatter-conflict: bad-quotes-multiline-string"
+"Q002"   = "formatter-conflict: bad-quotes-docstring"
+"Q003"   = "formatter-conflict: avoidable-escaped-quote"
+"COM812" = "formatter-conflict: missing-trailing-comma"
+"COM819" = "formatter-conflict: prohibited-trailing-comma"
+"ISC001" = "formatter-conflict: single-line-implicit-string-concatenation"
+"ISC002" = "formatter-conflict: multi-line-implicit-string-concatenation"
+
+[global.codespell]
+skip = [".git", "*.lock", "*.baseline", "node_modules", "venv", ".venv"]
+ignore_words = []
+
+# Add file_exceptions, inline_suppressions, and skip sections as needed.
+# See: https://github.com/Questi0nM4rk/codeagent for documentation.
+"""
+
+
+def _scaffold_exceptions_file(path: Path) -> None:
+    """Write a minimal .guardrails-exceptions.toml scaffold.
+
+    Args:
+        path: Where to write the file.
+
+    """
+    path.write_text(_SCAFFOLD_TEMPLATE)
