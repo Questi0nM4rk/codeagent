@@ -52,6 +52,7 @@ pytest --cov=src --cov-report=term-missing
 ### Type Hints
 
 ### Good Example: Generics and Protocols
+
 ```python
 from collections.abc import Callable, Iterable
 from typing import TypeVar
@@ -78,6 +79,7 @@ class Repository(Protocol[T]):
 - Union with `|` syntax (3.10+)
 
 ### Bad Example
+
 ```python
 def process_items(items, func):
     return [func(item) for item in items]
@@ -89,6 +91,7 @@ def process_items(items, func):
 ### Dataclasses
 
 ### Good Example: Frozen Dataclass with Validation
+
 ```python
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -127,6 +130,7 @@ class UserCreate(BaseModel):
 ### Result Pattern (No Exceptions)
 
 ### Good Example: Result Type with Pattern Matching
+
 ```python
 from dataclasses import dataclass
 from typing import Generic, TypeVar
@@ -184,6 +188,7 @@ async def fetch_all(urls: list[str]) -> list[Response]:
 ## Testing
 
 ### Good Example: Test Class with Fixtures and Mocks
+
 ```python
 import pytest
 from unittest.mock import Mock
@@ -234,6 +239,53 @@ class TestUserService:
 def test_uppercase(input_str: str, expected: str) -> None:
     assert input_str.upper() == expected
 ```
+
+## Project Conventions (CodeAgent)
+
+### Required in Every File
+
+
+```python
+from __future__ import annotations  # ALWAYS first import (I002)
+```
+
+### Type Annotation Style
+
+
+- `X | None` not `Optional[X]` (UP007)
+- `list[str]` not `List[str]` (UP006)
+- Use `TYPE_CHECKING` pattern for type-only imports (TC001):
+```python
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+```
+
+### A002: Never Shadow Builtins
+
+
+Never use these as parameter/variable names: `type`, `id`, `input`, `format`, `list`, `dict`, `set`, `map`, `filter`, `hash`, `help`, `dir`, `vars`, `next`, `iter`, `open`, `range`, `round`, `sum`, `min`, `max`, `all`, `any`, `abs`, `len`, `print`, `sorted`, `reversed`, `zip`, `enumerate`, `super`, `property`, `classmethod`, `staticmethod`.
+
+Use descriptive alternatives: `item_type`, `item_id`, `user_input`, `fmt`.
+
+### Acceptable `# noqa:` Patterns
+
+
+| Pattern | When |
+|---------|------|
+| `# noqa: BLE001` | MCP tool boundaries (catch-all for error response) |
+| `# noqa: PLR0913` | MCP tool functions (many params by design) |
+| `# noqa: PLC0415` | Lazy imports for performance |
+| `# noqa: PLW0603` | Dependency injection via global |
+
+### Type Checking: Both pyright + mypy
+
+
+- pyright in `standard` mode (pyproject.toml config)
+- mypy in `--strict` mode (pre-commit hook)
+- Both must pass before merge
 
 ## Common Rationalizations
 

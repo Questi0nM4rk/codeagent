@@ -1,0 +1,248 @@
+# =============================================================================
+# .guardrails-exceptions.toml - Unified Exception Registry
+# =============================================================================
+# SINGLE SOURCE OF TRUTH for all lint/type/analysis exceptions in this project.
+#
+# DO NOT MODIFY unless you are the project owner.
+# AI agents MUST NOT edit this file. Ask the project owner to add exceptions.
+#
+# This file is consumed by `codeagent generate-configs` which produces:
+#   ruff.toml, biome.json, .markdownlint.jsonc, .codespellrc,
+#   .suppression-allowlist, pyproject.toml [tool.pyright]
+#
+# Regenerate: codeagent generate-configs
+# Validate:   codeagent generate-configs --dry-run
+# =============================================================================
+
+schema_version = 1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GLOBAL RULE EXCEPTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+# Rules disabled project-wide. Each entry requires a reason.
+
+[global.ruff]
+# Formatter conflicts (ruff recommends disabling when using ruff format)
+"W191"   = "formatter-conflict: tab-indentation"
+"E111"   = "formatter-conflict: indentation-with-invalid-multiple"
+"E114"   = "formatter-conflict: indentation-with-invalid-multiple-comment"
+"E117"   = "formatter-conflict: over-indented"
+"D206"   = "formatter-conflict: indent-with-spaces"
+"D300"   = "formatter-conflict: triple-single-quotes"
+"Q000"   = "formatter-conflict: bad-quotes-inline-string"
+"Q001"   = "formatter-conflict: bad-quotes-multiline-string"
+"Q002"   = "formatter-conflict: bad-quotes-docstring"
+"Q003"   = "formatter-conflict: avoidable-escaped-quote"
+"COM812" = "formatter-conflict: missing-trailing-comma"
+"COM819" = "formatter-conflict: prohibited-trailing-comma"
+"ISC001" = "formatter-conflict: single-line-implicit-string-concatenation"
+"ISC002" = "formatter-conflict: multi-line-implicit-string-concatenation"
+
+# Disabled rule groups
+"D"      = "docstrings not enforced yet (enable incrementally)"
+"ANN"    = "using mypy --strict for type annotations instead"
+
+# Project-wide exceptions
+"TD003"  = "TODOs use Epic numbers, not issue links"
+"FIX002" = "TODOs are intentional reminders, not errors"
+
+[global.markdownlint]
+"MD013" = "line-length: soft wraps fine, editors handle this"
+"MD031" = "fenced-code-blank-lines: triggers on valid markdown"
+"MD032" = "lists-blank-lines: triggers on valid markdown"
+"MD033" = "inline-html: HTML sometimes needed in documentation"
+"MD036" = "emphasis-as-heading: false positives on bold text"
+"MD040" = "fenced-code-language: plain text blocks need no language"
+"MD041" = "first-line-heading: not all files start with headings"
+"MD047" = "single-trailing-newline: handled by end-of-file-fixer hook"
+
+[global.codespell]
+skip = [".git", "*.lock", "*.baseline", "node_modules", "venv", ".venv"]
+ignore_words = ["brin"]
+
+[global.pyright]
+reportMissingTypeStubs = false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PER-FILE/PATTERN EXCEPTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[file_exceptions]]
+glob = "tests/**/*.py"
+tool = "ruff"
+rules = [
+  "S101",    # assert allowed in tests
+  "ARG001",  # unused function argument (fixtures)
+  "ARG002",  # unused method argument
+  "PLR2004", # magic value comparison in tests
+  "PLC0415", # imports inside functions
+  "FBT001",  # boolean positional args
+  "FBT002",  # boolean default args
+  "FBT003",  # boolean positional values in calls
+  "SLF001",  # private member access (tests access internals)
+]
+reason = "Test files: asserts, fixtures, magic values, boolean params, internals"
+
+[[file_exceptions]]
+glob = "**/conftest.py"
+tool = "ruff"
+rules = ["FBT001", "FBT002"]
+reason = "Fixtures commonly use boolean parameters"
+
+[[file_exceptions]]
+glob = "__init__.py"
+tool = "ruff"
+rules = ["F401"]
+reason = "Re-exports in __init__.py appear unused to linter"
+
+[[file_exceptions]]
+glob = "**/cli/**/*.py"
+tool = "ruff"
+rules = [
+  "FBT001",  # boolean flags are standard in CLI
+  "FBT002",  # boolean defaults in CLI
+  "FBT003",  # boolean values in CLI calls
+  "PLC0415", # lazy imports in CLI callbacks
+  "PLR0912", # CLI commands can have many branches
+  "PLR0915", # CLI commands can have many statements
+  "C901",    # CLI commands can be complex
+  "S603",    # subprocess calls with validated inputs
+  "S607",    # partial executable paths (using PATH)
+]
+reason = "CLI commands: boolean flags, lazy imports, complex dispatch, subprocess"
+
+[[file_exceptions]]
+glob = ["*.config.ts", "*.config.js", "*.config.mjs", "*.config.cjs", "vite.config.*", "vitest.config.*", "next.config.*", "tailwind.config.*"]
+tool = "biome"
+rules = ["style/noDefaultExport"]
+reason = "Config files require default exports by convention"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APPROVED INLINE SUPPRESSIONS
+# ─────────────────────────────────────────────────────────────────────────────
+# The ONLY inline suppression comments permitted in production code.
+# detect-suppression-comments hook validates against this list.
+# --ignore-noqa stays on: these are documentary, per-file-ignores do the work.
+
+[[inline_suppressions]]
+pattern = "noqa: BLE001"
+glob = "**/tools/*.py"
+reason = "MCP tool boundaries must catch all exceptions to return error responses"
+
+[[inline_suppressions]]
+pattern = "noqa: PLR0913"
+glob = ["**/tools/*.py", "**/services/*.py"]
+reason = "MCP tool/service functions have many parameters by protocol design"
+
+[[inline_suppressions]]
+pattern = "noqa: PLC0415"
+glob = "**/server.py"
+reason = "Lazy imports for performance (heavy modules loaded on demand)"
+
+[[inline_suppressions]]
+pattern = "noqa: PLW0603"
+glob = "**/tools/*.py"
+reason = "Dependency injection via module-level global (DI pattern)"
+
+[[inline_suppressions]]
+pattern = "noqa: S608"
+glob = ["**/services/*.py", "**/server.py"]
+reason = "SurrealQL/SQL with parameterized queries (not user-controlled f-strings)"
+
+[[inline_suppressions]]
+pattern = "noqa: C901"
+glob = "**/services/search_service.py"
+reason = "Search function has inherent branching complexity"
+
+[[inline_suppressions]]
+pattern = "noqa: PLR0912"
+glob = ["**/services/search_service.py", "**/cli/**/*.py"]
+reason = "Search/CLI functions have many branches by design"
+
+[[inline_suppressions]]
+pattern = "noqa: PLR0915"
+glob = ["**/services/*.py", "**/cli/**/*.py"]
+reason = "Service/CLI functions have many statements by design"
+
+[[inline_suppressions]]
+pattern = "noqa: S106"
+glob = "tests/**/*.py"
+reason = "Test code uses hardcoded secrets for testing"
+
+[[inline_suppressions]]
+pattern = "type: ignore\\[import-untyped\\]"
+glob = "**/server.py"
+reason = "libsql_experimental has no type stubs"
+
+[[inline_suppressions]]
+pattern = "type: ignore\\[(assignment|misc)\\]"
+glob = "**/server.py"
+reason = "Optional dependency fallback pattern (set to None when not installed)"
+
+[[inline_suppressions]]
+pattern = "type: ignore\\[(arg-type|call-arg)\\]"
+glob = "tests/**/*.py"
+reason = "Tests intentionally pass invalid types to validate error handling"
+
+[[inline_suppressions]]
+pattern = "type: ignore\\[no-untyped-def\\]"
+glob = "**/server.py"
+reason = "DB accessor returns untyped connection from third-party lib"
+
+[[inline_suppressions]]
+pattern = "type: ignore\\[attr-defined\\]"
+glob = "**/server.py"
+reason = "libsql_experimental attributes not recognized by type checker"
+
+[[inline_suppressions]]
+pattern = "type: ignore\\[union-attr\\]"
+glob = "**/server.py"
+reason = "Optional dependency may be None at module level"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2034"
+glob = ["install.sh", "**/installers/*.sh"]
+reason = "Variables used for future logging or captured by caller"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2043"
+glob = "install.sh"
+reason = "Single-item loop for future expansion"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2086"
+glob = "**/installers/*.sh"
+reason = "Intentional word splitting on installer arguments"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2016"
+glob = "**/hooks/dangerous-command-check.sh"
+reason = "Intentionally matching literal $HOME string in patterns"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2221"
+glob = "**/hooks/dangerous-command-check.sh"
+reason = "Intentional pattern overlap for defense in depth"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2222"
+glob = "**/hooks/dangerous-command-check.sh"
+reason = "Intentional pattern overlap for defense in depth"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2317"
+glob = "**/*.sh"
+reason = "Functions called indirectly (trap handlers, pre-commit hooks)"
+
+[[inline_suppressions]]
+pattern = "shellcheck disable=SC2329"
+glob = "**/*.sh"
+reason = "Functions defined but called via variable/eval"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SKIP PATTERNS
+# ─────────────────────────────────────────────────────────────────────────────
+
+[skip]
+semgrep = ["tests/"]
+codespell = [".git", "*.lock", "*.baseline", "node_modules", "venv", ".venv"]

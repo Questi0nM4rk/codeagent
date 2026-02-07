@@ -1,3 +1,15 @@
+# AI Guardrails (installed by ai-guardrails-init)
+lib/hooks/
+.secrets.baseline
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# uv lock (generated)
+uv.lock
+
 # Environment
 .env
 .env.*

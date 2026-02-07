@@ -1,230 +1,123 @@
 -- CodeAgent Unified Database Schema
--- SurrealDB v2.x schema definition for memory, episodes, and codebase chunks
+-- SurrealDB v2.x schema for the unified MCP server
+-- Reference: docs/surrealdb-schema-reference.md
 
 -- ============================================================================
--- Memory table (from A-MEM)
--- Stores semantic knowledge with automatic linking capabilities
+-- Analyzer
+-- Custom text analyzer for full-text search across memory content
 -- ============================================================================
 
-DEFINE TABLE memory SCHEMAFULL;
+DEFINE ANALYZER memory_analyzer
+    TOKENIZERS blank, class, camel, punct
+    FILTERS snowball(english), lowercase;
 
-DEFINE FIELD content ON memory TYPE string
-    ASSERT $value != NONE AND $value != "";
+-- ============================================================================
+-- Memory Table
+-- Core table. All memory types live here with a type discriminator.
+-- Stores semantic knowledge, episodes, decisions, patterns, and code chunks.
+-- ============================================================================
 
-DEFINE FIELD keywords ON memory TYPE array<string>
-    DEFAULT [];
+DEFINE TABLE memory SCHEMAFULL CHANGEFEED 90d;
 
-DEFINE FIELD context ON memory TYPE string
-    DEFAULT "";
+-- Core fields
+DEFINE FIELD type ON memory TYPE string
+    ASSERT $value IN ["knowledge", "episode", "decision", "pattern", "code_chunk"];
+DEFINE FIELD content ON memory TYPE string;
+DEFINE FIELD title ON memory TYPE option<string>;
+DEFINE FIELD metadata ON memory FLEXIBLE TYPE object;
+DEFINE FIELD embedding ON memory TYPE array<float>;
+DEFINE FIELD tags ON memory TYPE array<string> DEFAULT [];
+DEFINE FIELD project ON memory TYPE option<string>;
+DEFINE FIELD confidence ON memory TYPE float DEFAULT 1.0;
+DEFINE FIELD access_count ON memory TYPE int DEFAULT 0;
+DEFINE FIELD last_accessed ON memory TYPE option<datetime>;
+DEFINE FIELD source_task ON memory TYPE option<record<task>>;
+DEFINE FIELD created_at ON memory TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON memory TYPE datetime DEFAULT time::now();
 
-DEFINE FIELD tags ON memory TYPE array<string>
-    DEFAULT [];
-
-DEFINE FIELD embedding ON memory TYPE array<float>
-    ASSERT array::len($value) == 1536 OR array::len($value) == 0;
-
-DEFINE FIELD created_at ON memory TYPE datetime
-    DEFAULT time::now();
-
-DEFINE FIELD updated_at ON memory TYPE datetime
-    DEFAULT time::now();
-
--- Vector index for semantic similarity search (OpenAI embedding dimension)
-DEFINE INDEX memory_embedding ON memory FIELDS embedding MTREE DIMENSION 1536;
-
--- Full-text search on content
-DEFINE INDEX memory_content_search ON memory FIELDS content SEARCH ANALYZER ascii BM25;
-
--- Tag filtering
+-- Indexes
+DEFINE INDEX memory_vec ON memory FIELDS embedding
+    HNSW DIMENSION 1536 DIST COSINE TYPE F32 EFC 200 M 16;
+DEFINE INDEX memory_fts ON memory FIELDS content
+    SEARCH ANALYZER memory_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX memory_type ON memory FIELDS type;
+DEFINE INDEX memory_project ON memory FIELDS project;
 DEFINE INDEX memory_tags ON memory FIELDS tags;
 
-
 -- ============================================================================
--- Episode table (from Reflection)
--- Stores episodic memory of task attempts for learning from experience
--- ============================================================================
-
-DEFINE TABLE episode SCHEMAFULL;
-
-DEFINE FIELD task ON episode TYPE string
-    ASSERT $value != NONE AND $value != "";
-
-DEFINE FIELD approach ON episode TYPE string
-    DEFAULT "";
-
-DEFINE FIELD outcome ON episode TYPE string
-    ASSERT $value IN ["success", "partial", "failure"]
-    DEFAULT "failure";
-
-DEFINE FIELD feedback ON episode TYPE string
-    DEFAULT "";
-
-DEFINE FIELD feedback_type ON episode TYPE string
-    DEFAULT "";
-
-DEFINE FIELD reflection ON episode TYPE object
-    DEFAULT {};
-
-DEFINE FIELD code_context ON episode TYPE option<string>;
-
-DEFINE FIELD file_path ON episode TYPE option<string>;
-
-DEFINE FIELD tags ON episode TYPE array<string>
-    DEFAULT [];
-
-DEFINE FIELD model_used ON episode TYPE option<string>;
-
-DEFINE FIELD backlog_task_id ON episode TYPE option<record<backlog>>;
-
-DEFINE FIELD effectiveness_score ON episode TYPE option<float>;
-
-DEFINE FIELD created_at ON episode TYPE datetime
-    DEFAULT time::now();
-
--- Index for finding similar tasks
-DEFINE INDEX episode_task ON episode FIELDS task SEARCH ANALYZER ascii BM25;
-
--- Filter by outcome
-DEFINE INDEX episode_outcome ON episode FIELDS outcome;
-
--- Filter by model
-DEFINE INDEX episode_model ON episode FIELDS model_used;
-
-
--- ============================================================================
--- Chunk table (from codebase-mcp)
--- Stores code chunks for semantic code search
+-- Graph Relations (relates_to)
+-- Zettelkasten-style bidirectional links between memories.
+-- Auto-linking is handled in Python, not as a DB event.
 -- ============================================================================
 
-DEFINE TABLE chunk SCHEMAFULL;
+DEFINE TABLE relates_to SCHEMAFULL TYPE RELATION IN memory OUT memory;
 
-DEFINE FIELD file_path ON chunk TYPE string
-    ASSERT $value != NONE AND $value != "";
-
-DEFINE FIELD content ON chunk TYPE string
-    ASSERT $value != NONE;
-
-DEFINE FIELD language ON chunk TYPE string
-    DEFAULT "unknown";
-
-DEFINE FIELD symbol_type ON chunk TYPE option<string>;
-
-DEFINE FIELD symbol_name ON chunk TYPE option<string>;
-
-DEFINE FIELD start_line ON chunk TYPE int
-    ASSERT $value >= 0
-    DEFAULT 0;
-
-DEFINE FIELD end_line ON chunk TYPE int
-    ASSERT $value >= 0
-    DEFAULT 0;
-
-DEFINE FIELD embedding ON chunk TYPE array<float>
-    ASSERT array::len($value) == 1536 OR array::len($value) == 0;
-
-DEFINE FIELD project ON chunk TYPE string
-    ASSERT $value != NONE AND $value != "";
-
-DEFINE FIELD hash ON chunk TYPE string
-    ASSERT $value != NONE AND $value != "";
-
-DEFINE FIELD created_at ON chunk TYPE datetime
-    DEFAULT time::now();
-
-DEFINE FIELD updated_at ON chunk TYPE datetime
-    DEFAULT time::now();
-
--- Vector index for semantic code search
-DEFINE INDEX chunk_embedding ON chunk FIELDS embedding MTREE DIMENSION 1536;
-
--- Project filtering
-DEFINE INDEX chunk_project ON chunk FIELDS project;
-
--- File path lookup
-DEFINE INDEX chunk_file_path ON chunk FIELDS file_path;
-
--- Symbol lookup
-DEFINE INDEX chunk_symbol ON chunk FIELDS symbol_name;
-
--- Deduplication by hash
-DEFINE INDEX chunk_hash ON chunk FIELDS hash UNIQUE;
-
+DEFINE FIELD strength ON relates_to TYPE float
+    ASSERT $value >= 0.0 AND $value <= 1.0;
+DEFINE FIELD reason ON relates_to TYPE string;
+DEFINE FIELD auto ON relates_to TYPE bool DEFAULT false;
+DEFINE FIELD created_at ON relates_to TYPE datetime DEFAULT time::now();
 
 -- ============================================================================
--- Memory links (graph relationships)
--- Tracks automatic associations between memories (Zettelkasten-style)
+-- Project Table
+-- Tracks project metadata for task organization.
 -- ============================================================================
 
-DEFINE TABLE links SCHEMAFULL TYPE RELATION FROM memory TO memory;
+DEFINE TABLE project SCHEMAFULL;
 
-DEFINE FIELD strength ON links TYPE float
-    ASSERT $value >= 0.0 AND $value <= 1.0
-    DEFAULT 0.5;
+DEFINE FIELD name ON project TYPE string;
+DEFINE FIELD prefix ON project TYPE string;
+DEFINE FIELD description ON project TYPE option<string>;
+DEFINE FIELD created_at ON project TYPE datetime DEFAULT time::now();
 
-DEFINE FIELD link_type ON links TYPE string
-    DEFAULT "semantic";
-
-DEFINE FIELD created_at ON links TYPE datetime
-    DEFAULT time::now();
-
--- Index for traversing links by strength
-DEFINE INDEX links_strength ON links FIELDS strength;
-
+DEFINE INDEX project_prefix ON project FIELDS prefix UNIQUE;
 
 -- ============================================================================
--- Lesson links (episode effectiveness tracking)
--- Tracks which lessons helped in subsequent episodes
+-- Task Table
+-- Tracks work items with priority, status, and file boundaries.
 -- ============================================================================
 
-DEFINE TABLE lesson_link SCHEMAFULL TYPE RELATION FROM episode TO episode;
+DEFINE TABLE task SCHEMAFULL CHANGEFEED 30d;
 
-DEFINE FIELD led_to_success ON lesson_link TYPE bool
-    DEFAULT false;
+DEFINE FIELD task_id ON task TYPE string;
+DEFINE FIELD project ON task TYPE record<project>;
+DEFINE FIELD name ON task TYPE string;
+DEFINE FIELD type ON task TYPE string DEFAULT "task"
+    ASSERT $value IN ["task", "epic"];
+DEFINE FIELD description ON task TYPE option<string>;
+DEFINE FIELD status ON task TYPE string DEFAULT "pending"
+    ASSERT $value IN ["pending", "in_progress", "done", "blocked"];
+DEFINE FIELD priority ON task TYPE int DEFAULT 3
+    ASSERT $value >= 1 AND $value <= 5;
+DEFINE FIELD files_exclusive ON task TYPE array<string> DEFAULT [];
+DEFINE FIELD files_readonly ON task TYPE array<string> DEFAULT [];
+DEFINE FIELD depends_on ON task TYPE array<record<task>> DEFAULT [];
+DEFINE FIELD parent ON task TYPE option<record<task>>;
+DEFINE FIELD resolved_by ON task TYPE option<record<memory>>;
+DEFINE FIELD suggested_model ON task TYPE option<string>;
+DEFINE FIELD created_at ON task TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON task TYPE datetime DEFAULT time::now();
 
-DEFINE FIELD created_at ON lesson_link TYPE datetime
-    DEFAULT time::now();
-
+DEFINE INDEX task_id_idx ON task FIELDS task_id UNIQUE;
+DEFINE INDEX task_status ON task FIELDS status;
+DEFINE INDEX task_project ON task FIELDS project;
 
 -- ============================================================================
--- Backlog tasks (single-task exposure)
--- Prevents scope creep by exposing only one task at a time
+-- Views
+-- Pre-computed virtual tables for hot query paths.
 -- ============================================================================
 
-DEFINE TABLE backlog SCHEMAFULL;
+DEFINE TABLE recent_failures AS
+    SELECT * FROM memory
+    WHERE type = "episode" AND metadata.outcome = "failure"
+    ORDER BY created_at DESC LIMIT 50;
 
-DEFINE FIELD title ON backlog TYPE string
-    ASSERT $value != NONE AND $value != "";
+DEFINE TABLE active_knowledge AS
+    SELECT * FROM memory
+    WHERE type = "knowledge" AND confidence > 0.5
+    ORDER BY access_count DESC LIMIT 100;
 
-DEFINE FIELD description ON backlog TYPE string
-    DEFAULT "";
-
-DEFINE FIELD status ON backlog TYPE string
-    ASSERT $value IN ["pending", "in_progress", "blocked", "completed", "cancelled"]
-    DEFAULT "pending";
-
-DEFINE FIELD priority ON backlog TYPE int
-    ASSERT $value >= 1 AND $value <= 5
-    DEFAULT 3;
-
-DEFINE FIELD suggested_model ON backlog TYPE string
-    DEFAULT "haiku";
-
-DEFINE FIELD parent_task_id ON backlog TYPE option<record<backlog>>;
-
-DEFINE FIELD dependencies ON backlog TYPE array<record<backlog>>
-    DEFAULT [];
-
-DEFINE FIELD tags ON backlog TYPE array<string>
-    DEFAULT [];
-
-DEFINE FIELD created_at ON backlog TYPE datetime
-    DEFAULT time::now();
-
-DEFINE FIELD updated_at ON backlog TYPE datetime
-    DEFAULT time::now();
-
--- Status filtering
-DEFINE INDEX backlog_status ON backlog FIELDS status;
-
--- Priority sorting
-DEFINE INDEX backlog_priority ON backlog FIELDS priority;
+DEFINE TABLE pending_tasks AS
+    SELECT * FROM task
+    WHERE status = "pending"
+    ORDER BY priority ASC, created_at ASC;
